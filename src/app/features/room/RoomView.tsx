@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useEffect } from 'react'; // Added useEffect
 import { Box, Text, config } from 'folds';
-import { EventType, Room } from 'matrix-js-sdk';
+import { CallEvent, EventType, MatrixClient, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { useStateEvent } from '../../hooks/useStateEvent';
@@ -24,8 +24,9 @@ import { useSetting } from '../../state/hooks/settings';
 import { useAccessibleTagColors, usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { useTheme } from '../../hooks/useTheme';
 import { logger } from 'matrix-js-sdk/lib/logger';
-import { ClientWidgetApi, Widget, WidgetKind } from 'matrix-widget-api';
+import { ClientWidgetApi, IWidget, IWidgetData, Widget, WidgetKind } from 'matrix-widget-api';
 import { SmallWidgetDriver } from './SmallWidgetDriver';
+import EventEmitter from 'events';
 
 const FN_KEYS_REGEX = /^F\d+$/;
 const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
@@ -65,26 +66,105 @@ const getWidgetUrl = (mx, roomId) => {
   const baseUrl = window.location.href;
   const params = new URLSearchParams({
     embed: "true", // We're embedding EC within another application
-    widgetId: "test",
+    widgetId: `element-call-${roomId}`,
+    appPrompt: "false",
     // Template variables are used, so that this can be configured using the  data.
-    preload: "$preload", // We want it to load in the background.
-    // skipLobby: "true", // Skip the lobby in case we show a lobby component of our own.
-    returnToLobby: "$returnToLobby", // Returns to the lobby (instead of blank screen) when the call ends. (For video rooms)
-    perParticipantE2EE: "$perParticipantE2EE",
+    preload: "true", // We want it to load in the background.
+    intent: "join_existing",
+    // skipLobby: "false", // Skip the lobby in case we show a lobby component of our own.
+    returnToLobby: "true", // Returns to the lobby (instead of blank screen) when the call ends. (For video rooms)
+    perParticipantE2EE: "true",
     hideHeader: "true", // Hide the header since our room header is enough
     userId: mx.getUserId()!,
     deviceId: mx.getDeviceId()!,
     roomId: roomId,
-    baseUrl: window.location.href,
-    parentUrl: baseUrl,
+    baseUrl: mx.baseUrl,
+    parentUrl: window.location.origin,
     // lang: getCurrentLanguage().replace("_", "-"),
     // fontScale: (FontWatcher.getRootFontSize() / FontWatcher.getBrowserDefaultFontSize()).toString(),
-    theme: "$org.matrix.msc2873.client_theme",
+    // theme: "$org.matrix.msc2873.client_theme",
 });
 const replacedUrl = params.toString().replace(/%24/g, "$");
-const url= 'https://elementcall.example.quest' + `#?${replacedUrl}`;
+const url= 'https://livekit.hampter.quest' + `#?${replacedUrl}`;
 logger.error(url);
+logger.error(baseUrl);
+logger.error(mx.baseUrl);
+logger.error(window.location.origin);
+logger.error('EQRWEROIEQWRJQWEROEWQRJEWQORWQEORJWQEJROQEWRJQWEORJWEQRJQWRE')
   return url;
+}
+
+interface IApp extends IWidget {
+  "client": MatrixClient;
+  "roomId": string;
+  "eventId"?: string; // not present on virtual widgets
+  // eslint-disable-next-line camelcase
+  "avatar_url"?: string; // MSC2765 https://github.com/matrix-org/matrix-doc/pull/2765
+  // Whether the widget was created from `widget_build_url` and thus is a call widget of some kind
+  "io.element.managed_hybrid"?: boolean;
+}
+
+class CinnyWidget extends Widget {
+  public constructor(private rawDefinition: IApp) {
+    super(rawDefinition);
+  }
+}
+
+class Edget extends EventEmitter {
+  private client: MatrixClient;
+  private messaging: ClientWidgetApi | null = null;
+  private mockWidget: CinnyWidget;
+  private roomId?: string;
+  private type: string;
+
+  constructor(private iapp: IApp) {
+    super();
+    this.client = iapp.client;
+    this.roomId = iapp.roomId;
+    this.type = iapp.type;
+
+    this.mockWidget = new CinnyWidget(iapp);
+  }
+  
+  startMessaging(iframe: HTMLIFrameElement) : any {
+      // Ensure driver is correctly instantiated with necessary parameters
+      // The second argument `[]` might need adjustment based on SmallWidgetDriver's needs (e.g., allowed capabilities)
+      const driver = new SmallWidgetDriver(this.client, [], this.mockWidget, WidgetKind.Room, true, this.roomId);
+
+      this.messaging = new ClientWidgetApi(this.mockWidget, iframe, driver);
+      this.messaging.on("preparing", () => this.emit("preparing"));
+      this.messaging.on("error:preparing", (err: unknown) => this.emit("error:preparing", err));
+      this.messaging.once("ready", () => {
+        this.emit("ready");
+    });
+    return this.messaging;
+    //this.messaging.on("capabilitiesNotified", () => this.emit("capabilitiesNotified"));
+  }
+
+}
+
+const getWidgetData = (client: MatrixClient, roomId: string, currentData: Object, overwriteData: Object) : IWidgetData => {
+  let perParticipantE2EE = true;
+  return {
+    ...currentData,
+    ...overwriteData,
+    perParticipantE2EE,
+  }
+};
+
+const createVirtualWidget = (client : MatrixClient, id : string, creatorUserId : string, name : string, type :string, url : string, waitForIframeLoad : boolean, data : IWidgetData, roomId : string) : IApp => {
+  return {
+    client,
+    id,
+    creatorUserId,
+    name,
+    type,
+    url,
+    waitForIframeLoad,
+    data,
+    roomId,
+
+  }
 }
 
 
@@ -153,23 +233,32 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
       logger.info(`Setting up widget API for room ${roomId}`);
 
-      const widget = new Widget({
-        id: 'test-call-widget', // Match ID used in URL params
-        creatorUserId: mx.getUserId()!,
-        type: 'm.custom', // Or appropriate widget type e.g., m.video
-        url: url,
-        roomId: roomId, // Pass roomId if needed by Widget constructor
-        waitForIframeLoad: false,
-        // Add other necessary Widget properties
-      });
+      const userId : string = mx.getUserId() ?? '';
 
-      // Ensure driver is correctly instantiated with necessary parameters
-      // The second argument `[]` might need adjustment based on SmallWidgetDriver's needs (e.g., allowed capabilities)
-      driver = new SmallWidgetDriver(mx, [], widget, WidgetKind.Room, true, roomId);
-
-      widgetApi = new ClientWidgetApi(widget, iframe, driver);
-      // widgetApi.start(); // Start communication if required by your setup
-
+      
+      const app = createVirtualWidget(
+        mx,
+        `element-call-${roomId}`, 
+        userId,
+        'Element Call', 
+        'm.call', 
+        url, 
+        false, 
+        getWidgetData(
+          mx,
+          roomId,
+          {},
+          {skipLobby: true,
+            preload: false,
+            returnToLobby: false,
+          }),
+        roomId);
+        
+        const widget = new Edget(app);
+        const test = widget.startMessaging(iframe);
+        logger.error('Before join');
+        test.transport.send("io.element.join", {});
+        test.emit("io.element.join");
       // Return a cleanup function
       return () => {
         logger.info(`Cleaning up widget API for room ${roomId}`);
@@ -177,8 +266,8 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         // This might involve calling stop methods, removing listeners, etc.
         // Example: widgetApi?.stop();
         // Example: driver?.stop();
-        widgetApi = null;
-        driver = null;
+        widgetApi;// = null;
+        driver;// = null;
         // Clear iframe src to stop loading/activity
         if (iframeRef.current) {
             iframeRef.current.src = 'about:blank';
