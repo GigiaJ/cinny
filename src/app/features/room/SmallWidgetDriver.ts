@@ -405,7 +405,7 @@ export class SmallWidgetDriver extends WidgetDriver {
         const state = room.getLiveTimeline().getState(Direction.Forward);
         if (state === undefined) return [];
 
-        if (stateKey === undefined)
+        if (stateKey === undefined) 
             return state.getStateEvents(eventType).map((e) => e.getEffectiveEvent() as IRoomEvent);
         const event = state.getStateEvents(eventType, stateKey);
         return event === null ? [] : [event.getEffectiveEvent() as IRoomEvent];
@@ -500,13 +500,11 @@ export class SmallWidgetDriver extends WidgetDriver {
      * client.
      * @returns The room IDs.
      */
-    /*
     public getKnownRooms(): string[] {
         return this.mxClient
-            .getVisibleRooms(SettingsStore.getValue("feature_dynamic_room_predecessors"))
+            .getVisibleRooms()
             .map((r) => r.roomId);
     }
-            */
 
     /**
      * Expresses a {@link MatrixError} as a JSON payload
