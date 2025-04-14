@@ -232,6 +232,21 @@ export function RoomViewHeader() {
 
   const setPeopleDrawer = useSetSetting(settingsAtom, 'isPeopleDrawer');
 
+  // I assume there is a global state so I don't have to run this check every time but for now we'll stub this in
+  const isDirectMessage = () => {
+    const mDirectsEvent = mx.getAccountData('m.direct');
+    const { roomId } = room;
+    return (
+      Object.values(mDirectsEvent?.event.content).filter((e) => {
+        if (e.indexOf(roomId) === 0) return true;
+      }).length !== 0
+    );
+  };
+
+  const handleCall: MouseEventHandler<HTMLButtonElement> = (evt) => {
+    setMenuAnchor(evt.currentTarget.getBoundingClientRect());
+  };
+
   const handleSearchClick = () => {
     const searchParams: _SearchPathSearchParams = {
       rooms: room.roomId,
@@ -325,6 +340,24 @@ export function RoomViewHeader() {
           </Box>
         </Box>
         <Box shrink="No">
+          {isDirectMessage() && (
+            <TooltipProvider
+              position="Bottom"
+              align="End"
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>Start a call</Text>
+                </Tooltip>
+              }
+            >
+              {(triggerRef) => (
+                <IconButton onClick={handleCall} ref={triggerRef}>
+                  <Icon size="400" src={Icons.Phone} />
+                </IconButton>
+              )}
+            </TooltipProvider>
+          )}
           {!ecryptedRoom && (
             <TooltipProvider
               position="Bottom"
@@ -398,6 +431,7 @@ export function RoomViewHeader() {
               </FocusTrap>
             }
           />
+
           {screenSize === ScreenSize.Desktop && (
             <TooltipProvider
               position="Bottom"
