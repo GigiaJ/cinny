@@ -1,5 +1,12 @@
 import EventEmitter from 'events';
-import { KnownMembership, MatrixClient, MatrixEvent } from 'matrix-js-sdk';
+import {
+  ClientEvent,
+  Direction,
+  KnownMembership,
+  MatrixClient,
+  MatrixEvent,
+  MatrixEventEvent,
+} from 'matrix-js-sdk';
 import {
   ClientWidgetApi,
   IRoomEvent,
@@ -7,6 +14,7 @@ import {
   IWidget,
   IWidgetData,
   MatrixCapabilities,
+  WidgetApiFromWidgetAction,
   WidgetKind,
 } from 'matrix-widget-api';
 import { logger } from 'matrix-js-sdk/lib/logger';
