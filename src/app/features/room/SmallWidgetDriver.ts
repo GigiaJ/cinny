@@ -14,6 +14,10 @@ import {
   type ISearchUserDirectoryResult,
   type IGetMediaConfigResult,
   type UpdateDelayedEventAction,
+  OpenIDRequestState,
+  IOpenIDCredentials,
+  SimpleObservable,
+  IOpenIDUpdate,
 } from 'matrix-widget-api';
 import {
   EventType,
@@ -383,6 +387,13 @@ export class SmallWidgetDriver extends WidgetDriver {
     }
 
     return results.map((e) => e.getEffectiveEvent() as IRoomEvent);
+  }
+
+  public async askOpenID(observer: SimpleObservable<IOpenIDUpdate>): Promise<void> {
+    return observer.update({
+      state: OpenIDRequestState.Allowed,
+      token: await this.mxClient.getOpenIdToken(),
+    });
   }
 
   /**
