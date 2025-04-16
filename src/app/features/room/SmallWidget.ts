@@ -2,6 +2,7 @@ import EventEmitter from 'events';
 import {
   ClientEvent,
   Direction,
+  IEvent,
   KnownMembership,
   MatrixClient,
   MatrixEvent,
@@ -35,18 +36,18 @@ export const getWidgetUrl = (mx: MatrixClient, roomId: string): URL => {
   const params = new URLSearchParams({
     embed: 'true',
     widgetId: `element-call-${roomId}`,
-    preload: 'true', // Consider if preloading is always desired
-    skipLobby: 'false', // Configurable based on needs
+    appPrompt: 'false',
+    preload: 'true',
+    skipLobby: 'true',
+    intent: 'join_existing',
     returnToLobby: 'true',
     perParticipantE2EE: 'true',
     hideHeader: 'true',
     userId: mx.getUserId()!,
     deviceId: mx.getDeviceId()!,
     roomId: roomId,
-    baseUrl: mx.baseUrl!, // Ensure baseUrl is available
-    parentUrl: window.location.origin, // Optional, might be needed by widget
-    // lang: getCurrentLanguage().replace("_", "-"), // Add language if needed
-    // theme: "$org.matrix.msc2873.client_theme", // Add theme if needed
+    baseUrl: mx.baseUrl!,
+    parentUrl: window.location.origin,
   });
 
   // Replace '$' encoded as %24 if necessary for template variables
@@ -131,27 +132,27 @@ export class Edget extends EventEmitter {
     }
 
     this.messaging.on('action:org.matrix.msc2876.read_events', (ev: CustomEvent) => {
-      ev.preventDefault();
       const room = this.client.getRoom(this.roomId);
-      logger.error('CAN WE GET MUCH HIGHER');
+      const events: Partial<IEvent>[] = [];
+      const { type } = ev.detail.data;
 
-      if (room === null) return [];
-      const state = room.getLiveTimeline().getState(Direction.Forward);
-      if (state === undefined) return [];
+      ev.preventDefault();
 
-      //logger.error("CAN WE GET MUCH HIGHER");
-      const event = state.getStateEvents(ev.type, 'true');
-      logger.error(event);
-      logger.error(ev);
-      logger.error(state);
-      if (true === undefined) {
-        return state.getStateEvents(ev.type).map((e) => e.getEffectiveEvent() as IRoomEvent);
+      if (room === null) {
+        return this.messaging?.transport.reply(ev.detail, { events });
       }
-      //const event = state.getStateEvents(ev.type, 'true');
-      logger.error(event);
-      return event === null ? [] : [event.getEffectiveEvent() as IRoomEvent];
+      const state = room.getLiveTimeline().getState(Direction.Forward);
+      if (state === undefined) {
+        return this.messaging?.transport.reply(ev.detail, { events });
+      }
 
-      this.messaging?.transport.reply(ev.detail, { event: ['CATS BABY'] });
+      const stateEvents = state.events?.get(type);
+
+      for (const [key, eventObject] of stateEvents?.entries() ?? []) {
+        events.push(eventObject.event);
+      }
+
+      return this.messaging?.transport.reply(ev.detail, { events });
     });
 
     this.client.on(ClientEvent.Event, this.onEvent);
