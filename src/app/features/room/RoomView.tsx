@@ -26,6 +26,8 @@ import { useSetting } from '../../state/hooks/settings';
 import { useAccessibleTagColors, usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { useTheme } from '../../hooks/useTheme';
 import { createVirtualWidget, Edget, getWidgetData, getWidgetUrl } from './SmallWidget';
+import { PersistentCallContainer } from '../../pages/call/PersistentCallContainer';
+import { CallActivationEffect } from '../../pages/call/CallActivation';
 
 // --- Constants ---
 const FN_KEYS_REGEX = /^F\d+$/;
@@ -77,9 +79,6 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   // Refs
   const roomInputRef = useRef<HTMLDivElement>(null);
   const roomViewRef = useRef<HTMLDivElement>(null); // Ref for the main Page container
-  const iframeRef = useRef<HTMLIFrameElement>(null); // Ref for the iframe element
-  const widgetApiRef = useRef<ClientWidgetApi | null>(null); // Ref to store the widget API instance
-  const edgetRef = useRef<Edget | null>(null); // Ref to store the Edget instance
 
   // State & Hooks
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
@@ -123,136 +122,23 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     )
   );
 
-  // Effect to setup and cleanup the widget API for call rooms
-  useEffect(() => {
-    // Only run if it's a call room
-    if (isCall) {
-      const iframeElement = iframeRef.current;
-      // Ensure iframe element exists before proceeding
-      if (!iframeElement) {
-        logger.warn(`Iframe element not found for room ${roomId}, cannot initialize widget.`);
-        return;
-      }
-
-      logger.info(`Setting up Element Call widget for room ${roomId}`);
-      const userId = mx.getUserId() ?? ''; // Ensure userId is not null
-      const url = getWidgetUrl(mx, roomId); // Generate the widget URL
-
-      // 1. Create the virtual widget definition
-      const app = createVirtualWidget(
-        mx,
-        `element-call-${roomId}`,
-        userId,
-        'Element Call',
-        'm.call', // Widget type
-        url,
-        false, // waitForIframeLoad - false as we manually control src loading
-        getWidgetData(
-          // Widget data
-          mx,
-          roomId,
-          {}, // Initial data (can be fetched if needed)
-          {
-            // Overwrite/specific data
-            skipLobby: true, // Example configuration
-            preload: false, // Set preload based on whether you want background loading
-            returnToLobby: false, // Example configuration
-          }
-        ),
-        roomId
-      );
-
-      // 2. Instantiate Edget to manage widget communication
-      const edget = new Edget(app);
-      edgetRef.current = edget; // Store instance in ref
-
-      // 3. Start the widget messaging *before* setting the iframe src
-      try {
-        const widgetApi = edget.startMessaging(iframeElement);
-        widgetApiRef.current = widgetApi; // Store API instance
-
-        // Listen for the 'ready' event from the widget API
-        widgetApi.once('ready', () => {
-          logger.info(`Element Call widget is ready for room ${roomId}.`);
-          // Perform actions needed once the widget confirms it's ready
-          // Example: widgetApi.transport.send("action", { data: "..." });
-        });
-
-        widgetApi.on('action:im.vector.hangup', () => {
-          logger.info(`Received hangup action from widget in room ${roomId}.`);
-          // Handle hangup logic (e.g., navigate away, update room state)
-        });
-
-        // Add other necessary event listeners from the widget API
-        // widgetApi.on("action:some_other_action", (ev) => { ... });
-
-        // 4. Set the iframe src *after* messaging is initialized
-        logger.info(`Setting iframe src for room ${roomId}: ${url.toString()}`);
-        iframeElement.src = url.toString();
-      } catch (error) {
-        logger.error(`Error initializing widget messaging for room ${roomId}:`, error);
-        // Handle initialization error (e.g., show an error message to the user)
-      }
-
-      // 5. Return cleanup function
-      return () => {
-        logger.info(`Cleaning up Element Call widget for room ${roomId}`);
-        // Stop messaging and clean up resources
-        if (edgetRef.current) {
-          edgetRef.current.stopMessaging();
-          edgetRef.current = null;
-        }
-        widgetApiRef.current = null; // Clear API ref
-
-        // Clear iframe src to stop activity and free resources
-        if (iframeRef.current) {
-          iframeRef.current.src = 'about:blank';
-          logger.info(`Cleared iframe src for room ${roomId}`);
-        }
-      };
-    } else {
-      // If not a call room, ensure any previous call state is cleaned up
-      // (This might be redundant if component unmounts/remounts correctly, but safe)
-      if (widgetApiRef.current && iframeRef.current) {
-        logger.info(`Room ${roomId} is no longer a call room, ensuring cleanup.`);
-        if (edgetRef.current) {
-          edgetRef.current.stopMessaging();
-          edgetRef.current = null;
-        }
-        widgetApiRef.current = null;
-        iframeRef.current.src = 'about:blank';
-      }
-    }
-
-    // Explicitly return undefined if not a call room or no cleanup needed initially
-    return undefined;
-  }, [isCall, mx, roomId, editor]); // Dependencies: run effect if these change
-
   // --- Render Logic ---
 
   // Render Call View
   if (isCall) {
-    // Initial src is set to about:blank. The useEffect hook will set the actual src later.
     return (
       <Page
         ref={roomViewRef}
-        style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          width: '0%',
+          overflow: 'hidden',
+        }}
       >
         <RoomViewHeader />
-        {/* Box grows to fill available space */}
-        <Box grow="Yes" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
-          <iframe
-            ref={iframeRef}
-            src="about:blank" // Start with a blank page
-            style={{ width: '100%', height: '100%', border: 'none', display: 'block' }}
-            title={`Element Call - ${room.name || roomId}`}
-            // Sandbox attributes for security. Adjust as needed by Element Call.
-            //sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
-            // Permissions policy for features like camera, microphone.
-            allow="microphone; camera; display-capture; autoplay; clipboard-write;"
-          />
-        </Box>
-        {/* Optional: Minimal footer or status indicators */}
+        <CallActivationEffect />
       </Page>
     );
   }
