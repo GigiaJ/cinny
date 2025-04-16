@@ -200,21 +200,21 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
       {/* Pass actual powerLevels if required */}
       <PowerLevelsContextProvider value={powerLevels}>
         {/* Route/Space specific context providers MUST wrap both Space and Header */}
-        <RouteSpaceProvider>
-          <SpaceRouteRoomProvider>
-            {/* Main layout container inside providers: Flex Row */}
-            {/* Assuming Box handles flex layout */}
-            <Box direction="Row" grow="Yes" style={{ height: '100%', width: '100%' }}>
-              {/* --- Left Side (Nav/Space) --- */}
-              <Box
-                shrink="No"
-                style={{
-                  width: '250px',
-                  height: '100%',
-                  overflowY: 'auto',
-                  borderRight: '1px solid #ccc',
-                }}
-              >
+        {/* Main layout container inside providers: Flex Row */}
+        {/* Assuming Box handles flex layout */}
+        <Box direction="Row" grow="Yes" style={{ height: '100%', width: '100%' }}>
+          {/* --- Left Side (Nav/Space) --- */}
+          <Box
+            shrink="No"
+            style={{
+              width: '250px',
+              height: '100%',
+              overflowY: 'auto',
+              borderRight: '1px solid #ccc',
+            }}
+          >
+            <RouteSpaceProvider>
+              <SpaceRouteRoomProvider>
                 {' '}
                 {/* Example style */}
                 {/* PageRoot likely renders the nav prop */}
@@ -226,49 +226,53 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
                     </MobileFriendlyPageNav>
                   }
                 />
-              </Box>
-              {/* --- Right Side (Header + Iframe) --- */}
-              {/* This Box takes remaining space and arranges header/iframe vertically */}
-              <Box
-                grow="Yes"
-                direction="Column"
-                style={{ height: '100%', width: '100%', overflow: 'hidden' }}
-              >
-                {/* Header Area */}
-                <Box grow="No">
-                  {' '}
-                  {/* Header doesn't grow/shrink */}
-                  {/* RoomViewHeader requires the providers above */}
+              </SpaceRouteRoomProvider>
+            </RouteSpaceProvider>
+          </Box>
+          {/* --- Right Side (Header + Iframe) --- */}
+          {/* This Box takes remaining space and arranges header/iframe vertically */}
+          <Box
+            grow="Yes"
+            direction="Column"
+            style={{ height: '100%', width: '100%', overflow: 'hidden' }}
+          >
+            {/* Header Area */}
+            <Box grow="No">
+              {' '}
+              {/* Header doesn't grow/shrink */}
+              {/* RoomViewHeader requires the providers above */}
+              <RouteSpaceProvider>
+                <SpaceRouteRoomProvider>
                   <RoomViewHeader />
-                </Box>
+                </SpaceRouteRoomProvider>
+              </RouteSpaceProvider>
+            </Box>
 
-                {/* Iframe Area (takes remaining space) */}
-                <Box grow="Yes" style={{ position: 'relative' }}>
-                  {' '}
-                  {/* Use relative positioning for absolute child */}
-                  <iframe
-                    ref={iframeRef}
-                    style={{
-                      // Use absolute positioning to fill the parent Box
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      border: 'none',
-                    }}
-                    title={`Persistent Element Call`}
-                    sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
-                    allow="microphone; camera; display-capture; autoplay; clipboard-write;"
-                    src="about:blank" // useEffect sets the correct src
-                  />
-                </Box>
-              </Box>{' '}
-              {/* End Right Side Box */}
-            </Box>{' '}
-            {/* End Main Layout Box (Row) */}
-          </SpaceRouteRoomProvider>
-        </RouteSpaceProvider>
+            {/* Iframe Area (takes remaining space) */}
+            <Box grow="Yes" style={{ position: 'relative' }}>
+              {' '}
+              {/* Use relative positioning for absolute child */}
+              <iframe
+                ref={iframeRef}
+                style={{
+                  // Use absolute positioning to fill the parent Box
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+                title={`Persistent Element Call`}
+                sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
+                allow="microphone; camera; display-capture; autoplay; clipboard-write;"
+                src="about:blank" // useEffect sets the correct src
+              />
+            </Box>
+          </Box>{' '}
+          {/* End Right Side Box */}
+        </Box>{' '}
+        {/* End Main Layout Box (Row) */}
       </PowerLevelsContextProvider>
     </div> // End Outer Container Div
   );
