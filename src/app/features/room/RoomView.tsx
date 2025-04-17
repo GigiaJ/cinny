@@ -1,10 +1,8 @@
-import React, { useCallback, useRef, useEffect } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Box, Text, config } from 'folds'; // Assuming 'folds' is a UI library
 import { EventType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
 import { isKeyHotkey } from 'is-hotkey';
-import { ClientWidgetApi } from 'matrix-widget-api';
-import { logger } from 'matrix-js-sdk/lib/logger';
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { StateEvent } from '../../../types/matrix/room';
 import { usePowerLevelsAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels';
@@ -25,14 +23,9 @@ import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import { useAccessibleTagColors, usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { useTheme } from '../../hooks/useTheme';
-import { createVirtualWidget, Edget, getWidgetData, getWidgetUrl } from './SmallWidget';
-import { PersistentCallContainer } from '../../pages/call/PersistentCallContainer';
 import { CallActivationEffect } from '../../pages/call/CallActivation';
 
-// --- Constants ---
 const FN_KEYS_REGEX = /^F\d+$/;
-
-// --- Helper Functions ---
 
 /**
  * Determines if a keyboard event should trigger focusing the message input field.
@@ -41,15 +34,12 @@ const FN_KEYS_REGEX = /^F\d+$/;
  */
 const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
   const { code } = evt;
-  // Ignore if modifier keys are pressed
   if (evt.metaKey || evt.altKey || evt.ctrlKey) {
     return false;
   }
 
-  // Ignore function keys (F1, F2, etc.)
   if (FN_KEYS_REGEX.test(code)) return false;
 
-  // Ignore specific control/navigation keys
   if (
     code.startsWith('OS') ||
     code.startsWith('Meta') ||
@@ -61,26 +51,19 @@ const shouldFocusMessageField = (evt: KeyboardEvent): boolean => {
     code.startsWith('End') ||
     code.startsWith('Home') ||
     code === 'Tab' ||
-    code === 'Space' || // Allow space if needed elsewhere, but not for focusing input
-    code === 'Enter' || // Allow enter if needed elsewhere
+    code === 'Space' ||
+    code === 'Enter' ||
     code === 'NumLock' ||
     code === 'ScrollLock'
   ) {
     return false;
   }
-
-  // If none of the above conditions met, it's likely a character key
   return true;
 };
 
-// --- RoomView Component ---
-
 export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
-  // Refs
   const roomInputRef = useRef<HTMLDivElement>(null);
-  const roomViewRef = useRef<HTMLDivElement>(null); // Ref for the main Page container
-
-  // State & Hooks
+  const roomViewRef = useRef<HTMLDivElement>(null);
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const { roomId } = room;
   const editor = useEditor();
@@ -95,36 +78,27 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const [powerLevelTags, getPowerLevelTag] = usePowerLevelTags(room, powerLevels);
   const theme = useTheme();
   const accessibleTagColors = useAccessibleTagColors(theme.kind, powerLevelTags);
-  const isCall = room.isCallRoom(); // Determine if it's a call room
-
-  // Effect for focusing input on key press (for non-call rooms)
+  const isCall = room.isCallRoom();
   useKeyDown(
     window,
     useCallback(
       (evt) => {
-        // Don't focus if an editable element already has focus
         if (editableActiveElement()) return;
-        // Don't focus if a modal is likely open
         if (document.querySelector('.ReactModalPortal > *') || navigation.isRawModalVisible) {
           return;
         }
-        // Don't focus if in a call view (no text editor)
         if (isCall) return;
 
-        // Check if the key pressed should trigger focus or is paste hotkey
         if (shouldFocusMessageField(evt) || isKeyHotkey('mod+v', evt)) {
           if (editor) {
             ReactEditor.focus(editor);
           }
         }
       },
-      [editor, isCall] // Dependencies
+      [editor, isCall]
     )
   );
 
-  // --- Render Logic ---
-
-  // Render Call View
   if (isCall) {
     return (
       <Page
@@ -143,14 +117,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
     );
   }
 
-  // Render Standard Text/Timeline Room View
   return (
     <Page ref={roomViewRef}>
       <RoomViewHeader />
       {/* Main timeline area */}
       <Box grow="Yes" direction="Column" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <RoomTimeline
-          key={roomId} // Key helps React reset state when room changes
+          key={roomId}
           room={room}
           eventId={eventId}
           roomInputRef={roomInputRef}
@@ -160,11 +133,9 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         />
         <RoomViewTyping room={room} />
       </Box>
-      {/* Input area and potentially other footer elements */}
       <Box shrink="No" direction="Column">
         <div style={{ padding: `0 ${config.space.S400}` }}>
           {' '}
-          {/* Use theme spacing */}
           {tombstoneEvent ? (
             <RoomTombstone
               roomId={roomId}
@@ -178,7 +149,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
                   room={room}
                   editor={editor}
                   roomId={roomId}
-                  fileDropContainerRef={roomViewRef} // Pass the Page ref for file drops
+                  fileDropContainerRef={roomViewRef}
                   ref={roomInputRef}
                   getPowerLevelTag={getPowerLevelTag}
                   accessibleTagColors={accessibleTagColors}
@@ -195,7 +166,6 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
             </>
           )}
         </div>
-        {/* Following/Activity Feed */}
         {hideActivity ? <RoomViewFollowingPlaceholder /> : <RoomViewFollowing room={room} />}
       </Box>
     </Page>
