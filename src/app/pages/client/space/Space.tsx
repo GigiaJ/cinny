@@ -82,7 +82,7 @@ import { useCallState } from '../CallProvider';
 
 /**
  * Processes the raw hierarchy from useSpaceJoinedHierarchy into a flat list
- * suitable for the virtualizer, including collapsible headers for text/voice channels.
+ * suitable for the virtualizer, including collapsible headers for text/voice rooms.
  * Removes the top-level "Rooms" category header.
  *
  * @param hierarchy - The raw hierarchy data (array of { roomId: string }).
@@ -109,7 +109,7 @@ const processHierarchyForVirtualizer = (
 
     if (currentCategoryRooms.text.length > 0) {
       processed.push({
-        type: 'channel_header',
+        type: 'room_header',
         title: 'Text Rooms',
         categoryId: textCategoryId,
         key: `${parentId}-text-header`,
@@ -123,7 +123,7 @@ const processHierarchyForVirtualizer = (
 
     if (currentCategoryRooms.voice.length > 0) {
       processed.push({
-        type: 'channel_header',
+        type: 'room_header',
         title: 'Call Rooms',
         categoryId: voiceCategoryId,
         key: `${parentId}-voice-header`,
@@ -358,7 +358,15 @@ function SpaceHeader() {
 }
 
 function FixedBottomNavArea() {
-  const { sendWidgetAction, activeCallRoomId } = useCallState();
+  const {
+    sendWidgetAction,
+    activeCallRoomId,
+    isAudioEnabled,
+    isVideoEnabled,
+    toggleAudio,
+    toggleVideo,
+    hangUp,
+  } = useCallState();
   const mx = useMatrixClient();
   const userName = mx.getUser(mx.getUserId() ?? '')?.displayName ?? mx.getUserId() ?? 'User';
 
@@ -371,22 +379,15 @@ function FixedBottomNavArea() {
       .catch((err) => logger.error(`FixedBottomNavArea: Failed action '${action}':`, err));
   };
 
-  const handleToggleMuteClick = () => {
-    const action = WidgetApiToWidgetAction.SetAudioInputMuted;
-    const data = {};
-    logger.debug(`FixedBottomNavArea: Sending action '${action}'`);
-    sendWidgetAction(action, data)
-      .then(() => logger.info(`FixedBottomNavArea: Action '${action}' sent.`))
-      .catch((err) => logger.error(`FixedBottomNavArea: Failed action '${action}':`, err));
-  };
-
   if (!activeCallRoomId) {
     return (
       <Box
         direction="Column"
-        gap="200"
-        padding="300"
-        style={{ flexShrink: 0, borderTop: `1px solid` }}
+        gap="500"
+        style={{
+          flexShrink: 0,
+          borderTop: `1px solid #e0e0e0`,
+        }}
       >
         <Text size="T200" color="Muted" align="Center">
           No active call
@@ -396,27 +397,26 @@ function FixedBottomNavArea() {
   }
 
   return (
-    <Text size="T200" color="Muted" align="Center">
-      {mx.getRoom(activeCallRoomId)?.normalizedName}
-    </Text>
-  );
-} /*
-<Box
-      direction="Column"
-      gap="200"
-      padding="300"
-      style={{ flexShrink: 0, borderTop: `1px solid ${config?.color?.LineStrong ?? '#ccc'}` }}
-    >
-      <Box direction="Row" gap="200" justifyContent="Center">
-        <Button onClick={handleSendMessageClick} size="200" variant="Primary" fill="Outline">
-          <Icon src={Icons.Alphabet} size="100" />
-        </Button>
-        <Button onClick={handleToggleMuteClick} size="200" variant="Surface">
-          <Icon src={Icons.VolumeMute} size="100" />
-        </Button>
+    <Box direction="Column">
+      <Box
+        direction="Row"
+        gap="500"
+        style={{
+          flexShrink: 0,
+          borderTop: `1px solid #e0e0e0`,
+        }}
+      >
+        {/* Going to need better icons for this */}
+        <button onClick={toggleAudio}> Muted:{(!isAudioEnabled).toString()} </button>
+        <button onClick={toggleVideo}> Videosn't:{(!isVideoEnabled).toString()} </button>
       </Box>
+      <Box>
+        <button onClick={hangUp}> Hangup </button>
+      </Box>
+      <Box>{mx.getRoom(activeCallRoomId)?.normalizedName}</Box>
     </Box>
-    */
+  );
+}
 
 export function Space() {
   const mx = useMatrixClient();
@@ -493,7 +493,7 @@ export function Space() {
         scrollRef={scrollRef}
         style={{ flexGrow: 1, overflowY: 'auto', overflowX: 'hidden' }}
       >
-        <Box direction="Column" gap="300" paddingBottom="400">
+        <Box direction="Column" gap="300">
           <NavCategory>
             <NavItem variant="Background" radii="400" aria-selected={lobbySelected}>
               <NavLink to={getSpaceLobbyPath(getCanonicalAliasOrRoomId(mx, space.roomId))}>
@@ -559,16 +559,15 @@ export function Space() {
                     </div>
                   );
                 }
-                case 'channel_header': {
+                case 'room_header': {
                   const { title, categoryId } = item;
                   return (
-                    <Box paddingLeft="400" paddingTop="200" paddingBottom="100">
+                    <Box>
                       <NavCategoryHeader variant="Subtle">
                         <RoomNavCategoryButton
                           data-category-id={categoryId}
                           onClick={handleCategoryClick}
                           closed={closedCategories.has(categoryId)}
-                          isSubCategory
                         >
                           {title}
                         </RoomNavCategoryButton>
@@ -579,7 +578,7 @@ export function Space() {
                 case 'room': {
                   const { room } = item;
                   return (
-                    <Box paddingLeft="500">
+                    <Box>
                       <RoomNavItem
                         room={room}
                         selected={selectedRoomId === room.roomId}
