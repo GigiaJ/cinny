@@ -17,6 +17,7 @@ import { MobileFriendlyPageNav } from '../MobileFriendly';
 import { SPACE_PATH } from '../paths';
 import { PowerLevelsContextProvider } from '../../hooks/usePowerLevels';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
+import { useClientConfig } from '../../hooks/useClientConfig';
 
 interface PersistentCallContainerProps {
   isVisible: boolean;
@@ -26,6 +27,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   const { activeCallRoomId, setActiveCallRoomId } = useCallState();
   const mx = useMatrixClient();
   const room = useSelectedRoom();
+  const clientConfig = useClientConfig();
 
   logger.info(room);
 
@@ -51,7 +53,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
     };
 
     if (activeCallRoomId && mx?.getUserId()) {
-      const newUrl = getWidgetUrl(mx, activeCallRoomId);
+      const newUrl = getWidgetUrl(mx, activeCallRoomId, clientConfig.elementCallUrl ?? '');
       const userId = mx.getUserId() ?? '';
       const app = createVirtualWidget(
         mx,
