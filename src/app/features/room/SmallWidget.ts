@@ -28,10 +28,9 @@ import { SmallWidgetDriver } from './SmallWidgetDriver';
  * @param roomId - The ID of the room.
  * @returns The generated URL object.
  */
-export const getWidgetUrl = (mx: MatrixClient, roomId: string): URL => {
+export const getWidgetUrl = (mx: MatrixClient, roomId: string, elementCallUrl: string): URL => {
   const baseUrl = window.location.origin;
-  // Ensure the path is correct relative to the application's structure
-  let url = new URL('./dist/element-call/dist/index.html', baseUrl);
+  const url = new URL(elementCallUrl) ?? new URL('./dist/element-call/dist/index.html', baseUrl);
 
   const params = new URLSearchParams({
     embed: 'true',
@@ -50,17 +49,13 @@ export const getWidgetUrl = (mx: MatrixClient, roomId: string): URL => {
     parentUrl: window.location.origin,
   });
 
-  // Replace '$' encoded as %24 if necessary for template variables
   const replacedParams = params.toString().replace(/%24/g, '$');
-  url.hash = `#?${replacedParams}`; // Use #? for query parameters in the hash
+  url.hash = `#?${replacedParams}`;
 
-  logger.info('Generated Element Call Widget URL:', url.toString()); // Use info level for clarity
+  logger.info('Generated Element Call Widget URL:', url.toString());
   return url;
 };
 
-// --- Widget Interfaces and Classes ---
-
-// Interface describing the data structure for the widget
 export interface IApp extends IWidget {
   client: MatrixClient;
   roomId: string;
@@ -69,8 +64,7 @@ export interface IApp extends IWidget {
   'io.element.managed_hybrid'?: boolean;
 }
 
-// Custom EventEmitter class to manage widget communication setup
-export class Edget extends EventEmitter {
+export class SmallWidget extends EventEmitter {
   private client: MatrixClient;
 
   private messaging: ClientWidgetApi | null = null;
@@ -263,7 +257,8 @@ export class Edget extends EventEmitter {
       if (timelineEvent.getId() === upToEventId) {
         // The event must be somewhere before the "read up to" marker
         return false;
-      } else if (timelineEvent.getId() === ev.getId()) {
+      }
+      if (timelineEvent.getId() === ev.getId()) {
         // The event is after the marker; advance it
         this.readUpToMap[roomId] = evId;
         return true;
@@ -320,7 +315,7 @@ export class Edget extends EventEmitter {
     if (this.messaging) {
       // Potentially call stop() or remove listeners if the API provides such methods
       // this.messaging.stop(); // Example if a stop method exists
-      this.messaging.removeAllListeners(); // Remove listeners attached by Edget
+      this.messaging.removeAllListeners(); // Remove listeners attached by SmallWidget
       logger.info(`Widget messaging stopped for widgetId: ${this.mockWidget.id}`);
       this.messaging = null;
     }
@@ -344,7 +339,7 @@ export const getWidgetData = (
   overwriteData: object
 ): IWidgetData => {
   // Example: Determine E2EE based on room state if needed
-  let perParticipantE2EE = true; // Default or based on logic
+  const perParticipantE2EE = true; // Default or based on logic
   // const roomEncryption = client.getRoom(roomId)?.currentState.getStateEvents(EventType.RoomEncryption, "");
   // if (roomEncryption) perParticipantE2EE = true; // Simplified example
 
