@@ -30,16 +30,19 @@ import { SmallWidgetDriver } from './SmallWidgetDriver';
  */
 export const getWidgetUrl = (mx: MatrixClient, roomId: string, elementCallUrl: string): URL => {
   const baseUrl = window.location.origin;
-  const url = new URL(elementCallUrl) ?? new URL('./dist/element-call/dist/index.html', baseUrl);
+  const url =
+    new URL(`${elementCallUrl}/room`) ?? new URL('./dist/element-call/dist/index.html', baseUrl);
+
+  logger.error(url);
 
   const params = new URLSearchParams({
-    embed: 'true',
+    //embed: 'true',
     widgetId: `element-call-${roomId}`,
     appPrompt: 'false',
-    preload: 'true',
+    preload: 'false',
     skipLobby: 'true',
-    intent: 'join_existing',
-    returnToLobby: 'true',
+    //intent: 'join_existing',
+    //returnToLobby: 'true',
     perParticipantE2EE: 'true',
     hideHeader: 'true',
     userId: mx.getUserId()!,
@@ -148,6 +151,15 @@ export class SmallWidget extends EventEmitter {
 
       return this.messaging?.transport.reply(ev.detail, { events });
     });
+
+    /*
+    this.messaging?.on('action:content_loaded', () => {
+      this.messaging?.transport?.send('io.element.join', {
+        audioInput: 'true',
+        videoInput: 'true',
+      });
+    });
+    */
 
     this.client.on(ClientEvent.Event, this.onEvent);
     this.client.on(MatrixEventEvent.Decrypted, this.onEventDecrypted);
@@ -313,14 +325,11 @@ export class SmallWidget extends EventEmitter {
    */
   stopMessaging() {
     if (this.messaging) {
-      // Potentially call stop() or remove listeners if the API provides such methods
-      // this.messaging.stop(); // Example if a stop method exists
+      this.messaging.stop(); // Example if a stop method exists
       this.messaging.removeAllListeners(); // Remove listeners attached by SmallWidget
       logger.info(`Widget messaging stopped for widgetId: ${this.mockWidget.id}`);
       this.messaging = null;
     }
-    // Clean up driver resources if necessary
-    // driver.stop(); // Example
   }
 }
 
