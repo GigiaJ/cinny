@@ -10,6 +10,8 @@
   ],
   "allowCustomHomeservers": true,
 
+  "elementCallUrl": "https://elementcall.example.com",
+
   "featuredCommunities": {
     "openAsDefault": false,
     "spaces": [
