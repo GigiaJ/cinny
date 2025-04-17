@@ -25,7 +25,6 @@ export function CallProvider({ children }: CallProviderProps) {
   const [activeApiTransport, setActiveApiTransport] = useState<ITransport | null>(null);
   const [transportRoomId, setTransportRoomId] = useState<string | null>(null);
 
-  // --- Actions ---
   const setActiveCallRoomId = useCallback(
     (roomId: string | null) => {
       logger.debug(`CallContext: Setting activeCallRoomId to ${roomId}`);
@@ -96,7 +95,6 @@ export function CallProvider({ children }: CallProviderProps) {
     [activeApiTransport, activeCallRoomId, transportRoomId]
   );
 
-  // --- Memoize Context Value ---
   const contextValue = useMemo<CallContextState>(
     () => ({
       activeCallRoomId,
