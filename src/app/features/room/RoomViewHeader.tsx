@@ -21,12 +21,11 @@ import {
   RectCords,
   Badge,
   Spinner,
-} from 'folds'; // Assuming 'folds' is your UI library
+} from 'folds';
 import { useNavigate } from 'react-router-dom';
 import { JoinRule, Room } from 'matrix-js-sdk';
 import { useAtomValue } from 'jotai';
 
-// --- Required Imports (Adjust paths as needed) ---
 import { useStateEvent } from '../../hooks/useStateEvent';
 import { PageHeader } from '../../components/page';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
@@ -41,7 +40,7 @@ import { useSpaceOptionally } from '../../hooks/useSpace';
 import { getHomeSearchPath, getSpaceSearchPath, withSearchParam } from '../../pages/pathUtils';
 import { getCanonicalAliasOrRoomId, isRoomAlias, mxcUrlToHttp } from '../../utils/matrix';
 import { _SearchPathSearchParams } from '../../pages/paths';
-import * as css from './RoomViewHeader.css'; // Assuming CSS Modules
+import * as css from './RoomViewHeader.css';
 import { useRoomUnread } from '../../state/hooks/unread';
 import { usePowerLevelsAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import { markAsRead } from '../../../client/action/notifications';
@@ -67,14 +66,11 @@ import {
   useRoomsNotificationPreferencesContext,
 } from '../../hooks/useRoomsNotificationPreferences';
 
-// --- RoomMenu Component (Assuming it's defined elsewhere or here) ---
-// (Include the RoomMenu component code from the previous snippet here if needed)
 type RoomMenuProps = {
   room: Room;
   requestClose: () => void;
 };
 const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose }, ref) => {
-  // ... (RoomMenu implementation from previous snippet) ...
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
@@ -213,9 +209,7 @@ const RoomMenu = forwardRef<HTMLDivElement, RoomMenuProps>(({ room, requestClose
   );
 });
 
-// --- RoomViewHeader Component ---
 export function RoomViewHeader() {
-  // --- Hooks ---
   const navigate = useNavigate();
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
@@ -238,22 +232,19 @@ export function RoomViewHeader() {
 
   const setPeopleDrawer = useSetSetting(settingsAtom, 'isPeopleDrawer');
 
-  // --- Event Handlers ---
+  // I assume there is a global state so I don't have to run this check every time but for now we'll stub this in
   const isDirectMessage = () => {
-    // Simplified check - consider optimizing if performance is an issue
     const mDirectsEvent = mx.getAccountData('m.direct');
     const { roomId } = room;
     return (
-      !!mDirectsEvent?.event.content &&
-      Object.values(mDirectsEvent.event.content).flat().includes(roomId)
+      Object.values(mDirectsEvent?.event.content).filter((e) => {
+        if (e.indexOf(roomId) === 0) return true;
+      }).length !== 0
     );
   };
 
   const handleCall: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    // Placeholder for call initiation logic
-    console.log('Initiate call');
-    // Potentially set anchor for a call menu if needed, similar to other menus
-    // setMenuAnchor(evt.currentTarget.getBoundingClientRect());
+    setMenuAnchor(evt.currentTarget.getBoundingClientRect());
   };
 
   const handleSearchClick = () => {
@@ -274,29 +265,21 @@ export function RoomViewHeader() {
     setPinMenuAnchor(evt.currentTarget.getBoundingClientRect());
   };
 
-  // --- Render ---
   return (
-    // Use PageHeader component for consistent header styling
     <PageHeader balance={screenSize === ScreenSize.Mobile}>
-      {/* Main container Box: Uses Flexbox (row), aligns items vertically centered */}
-      <Box grow="Yes" alignItems="Center" gap="300">
-        {' '}
-        {/* Adjust gap as needed */}
-        {/* --- LEFT GROUP --- */}
-        {/* This Box groups elements intended for the left side */}
-        {/* It takes only the width required by its content */}
-        <Box alignItems="Center" gap="300">
-          {/* Back button shown only on mobile */}
-          {screenSize === ScreenSize.Mobile && (
-            <BackRouteHandler>
-              {(onBack) => (
+      <Box grow="Yes" gap="300">
+        {screenSize === ScreenSize.Mobile && (
+          <BackRouteHandler>
+            {(onBack) => (
+              <Box shrink="No" alignItems="Center">
                 <IconButton onClick={onBack}>
                   <Icon src={Icons.ArrowLeft} />
                 </IconButton>
-              )}
-            </BackRouteHandler>
-          )}
-          {/* Avatar shown only on desktop */}
+              </Box>
+            )}
+          </BackRouteHandler>
+        )}
+        <Box grow="Yes" alignItems="Center" gap="300">
           {screenSize !== ScreenSize.Mobile && (
             <Avatar size="300">
               <RoomAvatar
@@ -313,17 +296,14 @@ export function RoomViewHeader() {
               />
             </Avatar>
           )}
-          {/* Room name and topic */}
           <Box direction="Column">
             <Text size={topic ? 'H5' : 'H3'} truncate>
               {name}
             </Text>
-            {/* Topic is conditionally rendered and includes logic for an overlay */}
             {topic && (
               <UseStateProvider initial={false}>
                 {(viewTopic, setViewTopic) => (
                   <>
-                    {/* Overlay for viewing full topic */}
                     <Overlay open={viewTopic} backdrop={<OverlayBackdrop />}>
                       <OverlayCenter>
                         <FocusTrap
@@ -342,12 +322,11 @@ export function RoomViewHeader() {
                         </FocusTrap>
                       </OverlayCenter>
                     </Overlay>
-                    {/* Clickable truncated topic text */}
                     <Text
                       as="button"
                       type="button"
                       onClick={() => setViewTopic(true)}
-                      className={css.HeaderTopic} // Apply specific styles if needed
+                      className={css.HeaderTopic}
                       size="T200"
                       priority="300"
                       truncate
@@ -359,18 +338,8 @@ export function RoomViewHeader() {
               </UseStateProvider>
             )}
           </Box>
-        </Box>{' '}
-        {/* --- END OF LEFT GROUP --- */}
-        {/* --- SPACER --- */}
-        {/* This empty Box has 'grow="Yes"', making it expand */}
-        {/* It pushes the Left Group and Right Group to opposite ends */}
-        <Box grow="Yes" />
-        {/* --- RIGHT GROUP --- */}
-        {/* This Box groups elements intended for the right side */}
-        {/* 'shrink="No"' prevents it from collapsing if space is tight */}
-        {/* Items are vertically centered, gap adjusted for icons */}
-        <Box shrink="No" alignItems="Center" gap="100">
-          {/* Call button, shown only for Direct Messages */}
+        </Box>
+        <Box shrink="No">
           {isDirectMessage() && (
             <TooltipProvider
               position="Bottom"
@@ -389,7 +358,6 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
-          {/* Search button, hidden for encrypted rooms */}
           {!ecryptedRoom && (
             <TooltipProvider
               position="Bottom"
@@ -407,7 +375,6 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
-          {/* Pinned Messages button */}
           <TooltipProvider
             position="Bottom"
             offset={4}
@@ -419,15 +386,18 @@ export function RoomViewHeader() {
           >
             {(triggerRef) => (
               <IconButton
-                style={{ position: 'relative' }} // Needed for Badge positioning
+                style={{ position: 'relative' }}
                 onClick={handleOpenPinMenu}
                 ref={triggerRef}
-                aria-pressed={!!pinMenuAnchor} // Indicate state when menu is open
+                aria-pressed={!!pinMenuAnchor}
               >
-                {/* Badge showing pin count */}
                 {pinnedEvents.length > 0 && (
                   <Badge
-                    style={{ position: 'absolute', left: toRem(3), top: toRem(3) }}
+                    style={{
+                      position: 'absolute',
+                      left: toRem(3),
+                      top: toRem(3),
+                    }}
                     variant="Secondary"
                     size="400"
                     fill="Solid"
@@ -442,7 +412,26 @@ export function RoomViewHeader() {
               </IconButton>
             )}
           </TooltipProvider>
-          {/* Members button, shown only on desktop */}
+          <PopOut
+            anchor={pinMenuAnchor}
+            position="Bottom"
+            content={
+              <FocusTrap
+                focusTrapOptions={{
+                  initialFocus: false,
+                  returnFocusOnDeactivate: false,
+                  onDeactivate: () => setPinMenuAnchor(undefined),
+                  clickOutsideDeactivates: true,
+                  isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                  isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                  escapeDeactivates: stopPropagation,
+                }}
+              >
+                <RoomPinMenu room={room} requestClose={() => setPinMenuAnchor(undefined)} />
+              </FocusTrap>
+            }
+          />
+
           {screenSize === ScreenSize.Desktop && (
             <TooltipProvider
               position="Bottom"
@@ -460,7 +449,6 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
-          {/* More Options button */}
           <TooltipProvider
             position="Bottom"
             align="End"
@@ -477,37 +465,28 @@ export function RoomViewHeader() {
               </IconButton>
             )}
           </TooltipProvider>
-        </Box>{' '}
-        {/* --- END OF RIGHT GROUP --- */}
-        {/* PopOuts render their content outside the normal flow (usually via React Portals) */}
-        {/* They are placed here logically near their trigger buttons */}
-        <PopOut
-          anchor={pinMenuAnchor} // Anchored to the pin button's position
-          position="Bottom"
-          content={
-            // FocusTrap manages keyboard focus within the menu
-            <FocusTrap
-              focusTrapOptions={{ /* ... focus options ... */ escapeDeactivates: stopPropagation }}
-            >
-              <RoomPinMenu room={room} requestClose={() => setPinMenuAnchor(undefined)} />
-            </FocusTrap>
-          }
-        />
-        <PopOut
-          anchor={menuAnchor} // Anchored to the 'more options' button's position
-          position="Bottom"
-          align="End"
-          content={
-            // FocusTrap manages keyboard focus within the menu
-            <FocusTrap
-              focusTrapOptions={{ /* ... focus options ... */ escapeDeactivates: stopPropagation }}
-            >
-              <RoomMenu room={room} requestClose={() => setMenuAnchor(undefined)} />
-            </FocusTrap>
-          }
-        />
-      </Box>{' '}
-      {/* --- END OF MAIN CONTAINER BOX --- */}
+          <PopOut
+            anchor={menuAnchor}
+            position="Bottom"
+            align="End"
+            content={
+              <FocusTrap
+                focusTrapOptions={{
+                  initialFocus: false,
+                  returnFocusOnDeactivate: false,
+                  onDeactivate: () => setMenuAnchor(undefined),
+                  clickOutsideDeactivates: true,
+                  isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                  isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                  escapeDeactivates: stopPropagation,
+                }}
+              >
+                <RoomMenu room={room} requestClose={() => setMenuAnchor(undefined)} />
+              </FocusTrap>
+            }
+          />
+        </Box>
+      </Box>
     </PageHeader>
   );
 }
