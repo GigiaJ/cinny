@@ -163,12 +163,11 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         )}
 
         <Box
-          grow="Yes"
           direction="Column"
-          style={{ height: '100%', width: '100%', overflow: 'hidden' }}
+          style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden' }}
         >
           {activeCallRoomId && room && (
-            <Box grow="No">
+            <Box direction="Column" style={{ width: '100%' }}>
               <PowerLevelsContextProvider value={null}>
                 <RouteSpaceProvider>
                   <SpaceRouteRoomProvider>
