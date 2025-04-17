@@ -1,7 +1,7 @@
 import React, { ReactNode, useMemo } from 'react';
 import { Box } from 'folds';
-import { useCallState } from './CallProvider';
 import { useParams } from 'react-router-dom';
+import { useCallState } from './CallProvider';
 import { PersistentCallContainer } from '../call/PersistentCallContainer';
 
 type ClientLayoutProps = {
