@@ -386,7 +386,7 @@ function FixedBottomNavArea() {
         direction="Column"
         gap="200"
         padding="300"
-        style={{ flexShrink: 0, borderTop: `1px solid ${config?.color?.LineStrong ?? '#ccc'}` }}
+        style={{ flexShrink: 0, borderTop: `1px solid` }}
       >
         <Text size="T200" color="Muted" align="Center">
           No active call
@@ -397,7 +397,7 @@ function FixedBottomNavArea() {
 
   return (
     <Text size="T200" color="Muted" align="Center">
-      {}
+      {mx.getRoom(activeCallRoomId)?.normalizedName}
     </Text>
   );
 } /*
