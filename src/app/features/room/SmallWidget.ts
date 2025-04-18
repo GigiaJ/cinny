@@ -42,7 +42,7 @@ export const getWidgetUrl = (mx: MatrixClient, roomId: string, elementCallUrl: s
     preload: 'false',
     skipLobby: 'true',
     //intent: 'join_existing',
-    //returnToLobby: 'true',
+    returnToLobby: 'true',
     perParticipantE2EE: 'true',
     hideHeader: 'true',
     userId: mx.getUserId()!,
