@@ -8,12 +8,7 @@ import React, {
   useEffect,
 } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
-import {
-  WidgetApiToWidgetAction,
-  ITransport,
-  WidgetApiAction,
-  WidgetApiFromWidgetAction,
-} from 'matrix-widget-api';
+import { WidgetApiToWidgetAction, ITransport, WidgetApiAction } from 'matrix-widget-api';
 
 interface MediaStatePayload {
   audioEnabled?: boolean;
@@ -21,6 +16,7 @@ interface MediaStatePayload {
 }
 
 const WIDGET_MEDIA_STATE_UPDATE_ACTION = 'io.element.device_mute';
+const WIDGET_HANGUP_ACTION = 'io.element.hangup';
 
 const SET_MEDIA_STATE_ACTION = 'io.element.device_mute';
 
@@ -36,8 +32,10 @@ interface CallContextState {
   ) => Promise<void>;
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
+  isChatOpen: boolean;
   toggleAudio: () => Promise<void>;
   toggleVideo: () => Promise<void>;
+  toggleChat: () => Promise<void>;
 }
 
 const CallContext = createContext<CallContextState | undefined>(undefined);
@@ -48,6 +46,7 @@ interface CallProviderProps {
 
 const DEFAULT_AUDIO_ENABLED = false;
 const DEFAULT_VIDEO_ENABLED = false;
+const DEFAULT_CHAT_OPENED = false;
 
 export function CallProvider({ children }: CallProviderProps) {
   const [activeCallRoomId, setActiveCallRoomIdState] = useState<string | null>(null);
@@ -56,11 +55,13 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const [isAudioEnabled, setIsAudioEnabledState] = useState<boolean>(DEFAULT_AUDIO_ENABLED);
   const [isVideoEnabled, setIsVideoEnabledState] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
+  const [isChatOpen, setIsChatOpenState] = useState<boolean>(DEFAULT_CHAT_OPENED);
 
   const resetMediaState = useCallback(() => {
     logger.debug('CallContext: Resetting media state to defaults.');
     setIsAudioEnabledState(DEFAULT_AUDIO_ENABLED);
     setIsVideoEnabledState(DEFAULT_VIDEO_ENABLED);
+    setIsChatOpenState(DEFAULT_CHAT_OPENED);
   }, []);
 
   const setActiveCallRoomId = useCallback(
@@ -154,13 +155,13 @@ export function CallProvider({ children }: CallProviderProps) {
     };
 
     logger.debug(`CallContext: Setting up listeners for transport in room ${activeCallRoomId}`);
-    transport.on(`action:${WidgetApiFromWidgetAction.HangupCall}`, handleHangup); // Use standard hangup action name
+    transport.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup); // Use standard hangup action name
     transport.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
 
     return () => {
       logger.debug(`CallContext: Cleaning up listeners for transport in room ${activeCallRoomId}`);
       if (transport) {
-        transport.off(`action:${WidgetApiFromWidgetAction.HangupCall}`, handleHangup);
+        transport.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
         transport.off(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
       }
     };
@@ -169,6 +170,7 @@ export function CallProvider({ children }: CallProviderProps) {
     activeCallRoomId,
     transportRoomId,
     hangUp,
+    isChatOpen,
     isAudioEnabled,
     isVideoEnabled,
   ]);
@@ -235,6 +237,11 @@ export function CallProvider({ children }: CallProviderProps) {
     }
   }, [isVideoEnabled, isAudioEnabled, sendWidgetAction]);
 
+  const toggleChat = useCallback(async () => {
+    const newState = !isChatOpen;
+    setIsChatOpenState(!newState);
+  }, [isChatOpen]);
+
   const contextValue = useMemo<CallContextState>(
     () => ({
       activeCallRoomId,
@@ -243,10 +250,12 @@ export function CallProvider({ children }: CallProviderProps) {
       activeApiTransport,
       registerActiveTransport,
       sendWidgetAction,
+      isChatOpen,
       isAudioEnabled,
       isVideoEnabled,
       toggleAudio,
       toggleVideo,
+      toggleChat,
     }),
     [
       activeCallRoomId,
