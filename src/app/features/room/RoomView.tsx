@@ -23,7 +23,6 @@ import { settingsAtom } from '../../state/settings';
 import { useSetting } from '../../state/hooks/settings';
 import { useAccessibleTagColors, usePowerLevelTags } from '../../hooks/usePowerLevelTags';
 import { useTheme } from '../../hooks/useTheme';
-import { CallActivationEffect } from '../../pages/call/CallActivation';
 
 const FN_KEYS_REGEX = /^F\d+$/;
 
@@ -78,7 +77,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
   const [powerLevelTags, getPowerLevelTag] = usePowerLevelTags(room, powerLevels);
   const theme = useTheme();
   const accessibleTagColors = useAccessibleTagColors(theme.kind, powerLevelTags);
-  const isCall = room.isCallRoom();
+
   useKeyDown(
     window,
     useCallback(
@@ -87,7 +86,6 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
         if (document.querySelector('.ReactModalPortal > *') || navigation.isRawModalVisible) {
           return;
         }
-        if (isCall) return;
 
         if (shouldFocusMessageField(evt) || isKeyHotkey('mod+v', evt)) {
           if (editor) {
@@ -95,32 +93,13 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
           }
         }
       },
-      [editor, isCall]
+      [editor]
     )
   );
-
-  if (isCall) {
-    return (
-      <Page
-        ref={roomViewRef}
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          width: '0%',
-          overflow: 'hidden',
-        }}
-      >
-        <RoomViewHeader />
-        <CallActivationEffect />
-      </Page>
-    );
-  }
 
   return (
     <Page ref={roomViewRef}>
       <RoomViewHeader />
-      {/* Main timeline area */}
       <Box grow="Yes" direction="Column" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <RoomTimeline
           key={roomId}
