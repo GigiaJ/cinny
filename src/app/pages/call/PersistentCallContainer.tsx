@@ -15,9 +15,11 @@ import { Page, PageRoot } from '../../components/page';
 import { RouteSpaceProvider, Space, SpaceRouteRoomProvider } from '../client/space';
 import { MobileFriendlyPageNav } from '../MobileFriendly';
 import { SPACE_PATH } from '../paths';
-import { PowerLevelsContextProvider } from '../../hooks/usePowerLevels';
+import { PowerLevelsContextProvider, usePowerLevels } from '../../hooks/usePowerLevels';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useClientConfig } from '../../hooks/useClientConfig';
+import { RoomView } from '../../features/room/RoomView';
+import { useParams } from 'react-router-dom';
 
 interface PersistentCallContainerProps {
   isVisible: boolean;
@@ -25,9 +27,12 @@ interface PersistentCallContainerProps {
 
 export function PersistentCallContainer({ isVisible }: PersistentCallContainerProps) {
   const { activeCallRoomId, setActiveCallRoomId, registerActiveTransport } = useCallState();
+  const { eventId } = useParams();
   const mx = useMatrixClient();
-  const room = useSelectedRoom();
+  const roomId = useSelectedRoom();
   const clientConfig = useClientConfig();
+  const room = mx.getRoom(roomId);
+  const powerLevels = usePowerLevels(room ?? null);
 
   logger.info(room);
 
@@ -59,12 +64,12 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
       }
       widgetApiRef.current = null;
       smallWidgetRef.current = null;
-      iframeRef.current.src = 'about:blank';
+      if (iframeRef.current) iframeRef.current.src = 'about:blank';
     };
 
     if (activeCallRoomId && mx?.getUserId()) {
       if (cleanupRoomId !== activeCallRoomId) {
-        const newUrl = getWidgetUrl(mx, room, clientConfig.elementCallUrl ?? '');
+        const newUrl = getWidgetUrl(mx, roomId, clientConfig.elementCallUrl ?? '');
 
         if (iframeRef.current && iframeRef.current.src !== newUrl.toString()) {
           logger.info(
@@ -140,7 +145,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   return (
     <Page style={containerStyle}>
       <Box direction="Row" grow="Yes" style={{ height: '100%', width: '100%' }}>
-        {activeCallRoomId && room && (
+        {activeCallRoomId && roomId && (
           <Box
             shrink="No"
             style={{
@@ -166,9 +171,9 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
           direction="Column"
           style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden' }}
         >
-          {activeCallRoomId && room && (
+          {activeCallRoomId && roomId && (
             <Box direction="Column" style={{ width: '100%' }}>
-              <PowerLevelsContextProvider value={null}>
+              <PowerLevelsContextProvider value={powerLevels}>
                 <RouteSpaceProvider>
                   <SpaceRouteRoomProvider>
                     <RoomViewHeader />
@@ -194,6 +199,17 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
               src="about:blank"
             />
           </Box>
+        </Box>
+        <Box direction="Column" style={{ position: 'relative' }}>
+          {activeCallRoomId && roomId !== null && (
+            <PowerLevelsContextProvider value={powerLevels}>
+              <RouteSpaceProvider>
+                <SpaceRouteRoomProvider>
+                  <RoomView room={room} eventId={eventId} />
+                </SpaceRouteRoomProvider>
+              </RouteSpaceProvider>
+            </PowerLevelsContextProvider>
+          )}
         </Box>
       </Box>
     </Page>
