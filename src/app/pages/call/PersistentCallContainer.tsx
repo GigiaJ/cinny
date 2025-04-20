@@ -20,6 +20,7 @@ import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useClientConfig } from '../../hooks/useClientConfig';
 import { RoomView } from '../../features/room/RoomView';
 import { useParams } from 'react-router-dom';
+import { PowerLevelsContainer } from './PowerLevelsContainer';
 
 interface PersistentCallContainerProps {
   isVisible: boolean;
@@ -31,8 +32,12 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   const mx = useMatrixClient();
   const roomId = useSelectedRoom();
   const clientConfig = useClientConfig();
+  // Make a new TSX element for usePowerLevels that falls in line with how they are using it for RoomView
+  // That way we avoid this lobby issue. We should still be able to plant that new element
+  // In the same blocks we have?
+  // If not we need to find some dummy ID to place as the default behavior.
+  // But the ideal is to avoid this check unless it CAN be applicable
   const room = mx.getRoom(roomId);
-  const powerLevels = usePowerLevels(room ?? null);
 
   logger.info(room);
 
@@ -153,8 +158,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
               overflowY: 'auto',
             }}
           >
-            <RouteSpaceProvider>
-              <SpaceRouteRoomProvider>
+                <PowerLevelsContainer>
                 <PageRoot
                   nav={
                     <MobileFriendlyPageNav path={SPACE_PATH}>
@@ -162,8 +166,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
                     </MobileFriendlyPageNav>
                   }
                 />
-              </SpaceRouteRoomProvider>
-            </RouteSpaceProvider>
+                </PowerLevelsContainer>
           </Box>
         )}
 
@@ -173,13 +176,9 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         >
           {activeCallRoomId && roomId && (
             <Box direction="Column" style={{ width: '100%' }}>
-              <PowerLevelsContextProvider value={powerLevels}>
-                <RouteSpaceProvider>
-                  <SpaceRouteRoomProvider>
+              <PowerLevelsContainer>
                     <RoomViewHeader />
-                  </SpaceRouteRoomProvider>
-                </RouteSpaceProvider>
-              </PowerLevelsContextProvider>
+                    </PowerLevelsContainer>
             </Box>
           )}
           <Box grow="Yes" style={{ position: 'relative' }}>
@@ -202,13 +201,9 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         </Box>
         <Box direction="Column" style={{ position: 'relative' }}>
           {activeCallRoomId && roomId !== null && (
-            <PowerLevelsContextProvider value={powerLevels}>
-              <RouteSpaceProvider>
-                <SpaceRouteRoomProvider>
+            <PowerLevelsContainer>
                   <RoomView room={room} eventId={eventId} />
-                </SpaceRouteRoomProvider>
-              </RouteSpaceProvider>
-            </PowerLevelsContextProvider>
+                  </PowerLevelsContainer>
           )}
         </Box>
       </Box>
