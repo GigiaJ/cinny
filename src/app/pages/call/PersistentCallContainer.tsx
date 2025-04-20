@@ -32,11 +32,6 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   const mx = useMatrixClient();
   const roomId = useSelectedRoom();
   const clientConfig = useClientConfig();
-  // Make a new TSX element for usePowerLevels that falls in line with how they are using it for RoomView
-  // That way we avoid this lobby issue. We should still be able to plant that new element
-  // In the same blocks we have?
-  // If not we need to find some dummy ID to place as the default behavior.
-  // But the ideal is to avoid this check unless it CAN be applicable
   const room = mx.getRoom(roomId);
 
   logger.info(room);
