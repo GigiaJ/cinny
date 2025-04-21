@@ -32,7 +32,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   const mx = useMatrixClient();
   const roomId = useSelectedRoom();
   const clientConfig = useClientConfig();
-  const room = mx.getRoom(roomId);
+  const room = mx.getRoom(roomId) ?? null;
 
   logger.info(room);
 
@@ -145,7 +145,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   return (
     <Page style={containerStyle}>
       <Box direction="Row" grow="Yes" style={{ height: '100%', width: '100%' }}>
-        {activeCallRoomId && roomId && (
+        {activeCallRoomId && roomId && room !== null && (
           <Box
             shrink="No"
             style={{
@@ -153,15 +153,15 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
               overflowY: 'auto',
             }}
           >
-                <PowerLevelsContainer>
-                <PageRoot
-                  nav={
-                    <MobileFriendlyPageNav path={SPACE_PATH}>
-                      <Space />
-                    </MobileFriendlyPageNav>
-                  }
-                />
-                </PowerLevelsContainer>
+            <PowerLevelsContainer>
+              <PageRoot
+                nav={
+                  <MobileFriendlyPageNav path={SPACE_PATH}>
+                    <Space />
+                  </MobileFriendlyPageNav>
+                }
+              />
+            </PowerLevelsContainer>
           </Box>
         )}
 
@@ -169,11 +169,11 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
           direction="Column"
           style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden' }}
         >
-          {activeCallRoomId && roomId && (
+          {activeCallRoomId && roomId && room !== null && (
             <Box direction="Column" style={{ width: '100%' }}>
               <PowerLevelsContainer>
-                    <RoomViewHeader />
-                    </PowerLevelsContainer>
+                <RoomViewHeader />
+              </PowerLevelsContainer>
             </Box>
           )}
           <Box grow="Yes" style={{ position: 'relative' }}>
@@ -195,10 +195,10 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
           </Box>
         </Box>
         <Box direction="Column" style={{ position: 'relative' }}>
-          {activeCallRoomId && roomId !== null && (
+          {activeCallRoomId && roomId && room !== null && (
             <PowerLevelsContainer>
-                  <RoomView room={room} eventId={eventId} />
-                  </PowerLevelsContainer>
+              <RoomView room={room} eventId={eventId} />
+            </PowerLevelsContainer>
           )}
         </Box>
       </Box>
