@@ -56,7 +56,10 @@ function guessDMRoomTargetId(room, myUserId) {
   room.getJoinedMembers().forEach((member) => {
     if (member.userId === myUserId) return;
 
-    if (typeof oldestMemberTs === 'undefined' || (member.events.member && member.events.member.getTs() < oldestMemberTs)) {
+    if (
+      typeof oldestMemberTs === 'undefined' ||
+      (member.events.member && member.events.member.getTs() < oldestMemberTs)
+    ) {
       oldestMember = member;
       oldestMemberTs = member.events.member.getTs();
     }
@@ -64,14 +67,21 @@ function guessDMRoomTargetId(room, myUserId) {
   if (oldestMember) return oldestMember.userId;
 
   // if there are no joined members other than us, use the oldest member
-  room.getLiveTimeline().getState(EventTimeline.FORWARDS)?.getMembers().forEach((member) => {
-    if (member.userId === myUserId) return;
+  room
+    .getLiveTimeline()
+    .getState(EventTimeline.FORWARDS)
+    ?.getMembers()
+    .forEach((member) => {
+      if (member.userId === myUserId) return;
 
-    if (typeof oldestMemberTs === 'undefined' || (member.events.member && member.events.member.getTs() < oldestMemberTs)) {
-      oldestMember = member;
-      oldestMemberTs = member.events.member.getTs();
-    }
-  });
+      if (
+        typeof oldestMemberTs === 'undefined' ||
+        (member.events.member && member.events.member.getTs() < oldestMemberTs)
+      ) {
+        oldestMember = member;
+        oldestMemberTs = member.events.member.getTs();
+      }
+    });
 
   if (typeof oldestMember === 'undefined') return myUserId;
   return oldestMember.userId;
@@ -117,7 +127,13 @@ async function create(mx, options, isDM = false) {
     }
     return result;
   } catch (e) {
-    const errcodes = ['M_UNKNOWN', 'M_BAD_JSON', 'M_ROOM_IN_USE', 'M_INVALID_ROOM_STATE', 'M_UNSUPPORTED_ROOM_VERSION'];
+    const errcodes = [
+      'M_UNKNOWN',
+      'M_BAD_JSON',
+      'M_ROOM_IN_USE',
+      'M_INVALID_ROOM_STATE',
+      'M_UNSUPPORTED_ROOM_VERSION',
+    ];
     if (errcodes.includes(e.errcode)) {
       throw new Error(e);
     }
@@ -149,7 +165,7 @@ async function createDM(mx, userIdOrIds, isEncrypted = true) {
 
 async function createRoom(mx, opts) {
   // joinRule: 'public' | 'invite' | 'restricted'
-  const { name, topic, joinRule } = opts;
+  const { name, roomType, topic, joinRule } = opts;
   const alias = opts.alias ?? undefined;
   const parentId = opts.parentId ?? undefined;
   const isSpace = opts.isSpace ?? false;
@@ -161,12 +177,16 @@ async function createRoom(mx, opts) {
   const options = {
     creation_content: undefined,
     name,
+    roomType,
     topic,
     visibility,
     room_alias_name: alias,
     initial_state: [],
     power_level_content_override: undefined,
   };
+  if (roomType) {
+    options.creation_content = { type: 'org.matrix.msc3417.call' };
+  }
   if (isSpace) {
     options.creation_content = { type: 'm.space' };
   }
@@ -211,10 +231,12 @@ async function createRoom(mx, opts) {
       type: 'm.room.join_rules',
       content: {
         join_rule: 'restricted',
-        allow: [{
-          type: 'm.room_membership',
-          room_id: parentId,
-        }],
+        allow: [
+          {
+            type: 'm.room_membership',
+            room_id: parentId,
+          },
+        ],
       },
     });
   }
@@ -222,18 +244,22 @@ async function createRoom(mx, opts) {
   const result = await create(mx, options);
 
   if (parentId) {
-    await mx.sendStateEvent(parentId, 'm.space.child', {
-      auto_join: false,
-      suggested: false,
-      via: [getIdServer(mx.getUserId())],
-    }, result.room_id);
+    await mx.sendStateEvent(
+      parentId,
+      'm.space.child',
+      {
+        auto_join: false,
+        suggested: false,
+        via: [getIdServer(mx.getUserId())],
+      },
+      result.room_id
+    );
   }
 
   return result;
 }
 
 async function ignore(mx, userIds) {
-
   let ignoredUsers = mx.getIgnoredUsers().concat(userIds);
   ignoredUsers = [...new Set(ignoredUsers)];
   await mx.setIgnoredUsers(ignoredUsers);
@@ -251,32 +277,51 @@ async function setPowerLevel(mx, roomId, userId, powerLevel) {
 
 async function setMyRoomNick(mx, roomId, nick) {
   const room = mx.getRoom(roomId);
-  const mEvent = room.getLiveTimeline().getState(EventTimeline.FORWARDS).getStateEvents('m.room.member', mx.getUserId());
+  const mEvent = room
+    .getLiveTimeline()
+    .getState(EventTimeline.FORWARDS)
+    .getStateEvents('m.room.member', mx.getUserId());
   const content = mEvent?.getContent();
   if (!content) return;
-  await mx.sendStateEvent(roomId, 'm.room.member', {
-    ...content,
-    displayname: nick,
-  }, mx.getUserId());
+  await mx.sendStateEvent(
+    roomId,
+    'm.room.member',
+    {
+      ...content,
+      displayname: nick,
+    },
+    mx.getUserId()
+  );
 }
 
 async function setMyRoomAvatar(mx, roomId, mxc) {
   const room = mx.getRoom(roomId);
-  const mEvent = room.getLiveTimeline().getState(EventTimeline.FORWARDS).getStateEvents('m.room.member', mx.getUserId());
+  const mEvent = room
+    .getLiveTimeline()
+    .getState(EventTimeline.FORWARDS)
+    .getStateEvents('m.room.member', mx.getUserId());
   const content = mEvent?.getContent();
   if (!content) return;
-  await mx.sendStateEvent(roomId, 'm.room.member', {
-    ...content,
-    avatar_url: mxc,
-  }, mx.getUserId());
+  await mx.sendStateEvent(
+    roomId,
+    'm.room.member',
+    {
+      ...content,
+      avatar_url: mxc,
+    },
+    mx.getUserId()
+  );
 }
 
 export {
   convertToDm,
   convertToRoom,
   join,
-  createDM, createRoom,
-  ignore, unignore,
+  createDM,
+  createRoom,
+  ignore,
+  unignore,
   setPowerLevel,
-  setMyRoomNick, setMyRoomAvatar,
+  setMyRoomNick,
+  setMyRoomAvatar,
 };
