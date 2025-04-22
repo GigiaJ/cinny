@@ -11,13 +11,12 @@ import { logger } from 'matrix-js-sdk/lib/logger';
 import { WidgetApiToWidgetAction, ITransport, WidgetApiAction } from 'matrix-widget-api';
 
 interface MediaStatePayload {
-  audioEnabled?: boolean;
-  videoEnabled?: boolean;
+  audio_enabled?: boolean;
+  video_enabled?: boolean;
 }
 
 const WIDGET_MEDIA_STATE_UPDATE_ACTION = 'io.element.device_mute';
 const WIDGET_HANGUP_ACTION = 'io.element.hangup';
-
 const SET_MEDIA_STATE_ACTION = 'io.element.device_mute';
 
 interface CallContextState {
@@ -143,14 +142,14 @@ export function CallProvider({ children }: CallProviderProps) {
         `CallContext: Received media state update from widget in room ${activeCallRoomId}:`,
         ev.detail
       );
-      const { audioEnabled, videoEnabled } = ev.detail;
-      if (typeof audioEnabled === 'boolean' && audioEnabled !== isAudioEnabled) {
-        logger.debug(`CallContext: Updating audio enabled state from widget: ${audioEnabled}`);
-        setIsAudioEnabledState(audioEnabled);
+      const { audio_enabled, video_enabled } = ev.detail;
+      if (typeof audio_enabled === 'boolean' && audio_enabled !== isAudioEnabled) {
+        logger.debug(`CallContext: Updating audio enabled state from widget: ${audio_enabled}`);
+        setIsAudioEnabledState(audio_enabled);
       }
-      if (typeof videoEnabled === 'boolean' && videoEnabled !== isVideoEnabled) {
-        logger.debug(`CallContext: Updating video enabled state from widget: ${videoEnabled}`);
-        setIsVideoEnabledState(videoEnabled);
+      if (typeof video_enabled === 'boolean' && video_enabled !== isVideoEnabled) {
+        logger.debug(`CallContext: Updating video enabled state from widget: ${video_enabled}`);
+        setIsVideoEnabledState(video_enabled);
       }
     };
 
@@ -209,8 +208,8 @@ export function CallProvider({ children }: CallProviderProps) {
     setIsAudioEnabledState(newState);
     try {
       await sendWidgetAction(SET_MEDIA_STATE_ACTION, {
-        audioEnabled: newState,
-        videoEnabled: isVideoEnabled,
+        audio_enabled: newState,
+        video_enabled: isVideoEnabled,
       });
       logger.debug(`CallContext: Successfully sent audio toggle action.`);
     } catch (error) {
@@ -226,8 +225,8 @@ export function CallProvider({ children }: CallProviderProps) {
     setIsVideoEnabledState(newState);
     try {
       await sendWidgetAction(SET_MEDIA_STATE_ACTION, {
-        audioEnabled: isAudioEnabled,
-        videoEnabled: newState,
+        audio_enabled: isAudioEnabled,
+        video_enabled: newState,
       });
       logger.debug(`CallContext: Successfully sent video toggle action.`);
     } catch (error) {
@@ -264,10 +263,12 @@ export function CallProvider({ children }: CallProviderProps) {
       activeApiTransport,
       registerActiveTransport,
       sendWidgetAction,
+      isChatOpen,
       isAudioEnabled,
       isVideoEnabled,
       toggleAudio,
       toggleVideo,
+      toggleChat,
     ]
   );
 
