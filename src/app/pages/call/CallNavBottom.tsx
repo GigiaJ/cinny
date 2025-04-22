@@ -1,7 +1,7 @@
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useCallState } from '../client/CallProvider';
-import { Box, Text } from 'folds';
+import { Box, Icon, IconButton, Icons, Text } from 'folds';
 
 export function CallNavBottom() {
   const {
@@ -42,24 +42,36 @@ export function CallNavBottom() {
     );
   }
 
+  //Muted:{(!isAudioEnabled).toString()}
+  //Videosn't:{(!isVideoEnabled).toString()}
+  /*
+
+
+
+*/
+
   return (
-    <Box direction="Column">
-      <Box
-        direction="Row"
-        gap="500"
-        style={{
-          flexShrink: 0,
-          borderTop: `1px solid #e0e0e0`,
-        }}
-      >
+    <Box
+      direction="Column"
+      style={{
+        flexShrink: 0,
+        borderTop: `1px solid #e0e0e0`,
+        justifyContent: 'center',
+      }}
+    >
+      <Box direction="Row" style={{ justifyContent: 'center' }}>
         {/* Going to need better icons for this */}
-        <button onClick={toggleAudio}> Muted:{(!isAudioEnabled).toString()} </button>
-        <button onClick={toggleVideo}> Videosn't:{(!isVideoEnabled).toString()} </button>
+        <IconButton onClick={toggleAudio}>
+          <Icon src={!isAudioEnabled ? Icons.VolumeHigh : Icons.VolumeMute} />
+        </IconButton>
+        <IconButton onClick={toggleVideo}>
+          <Icon src={!isVideoEnabled ? Icons.Vlc : Icons.Lock}></Icon>
+        </IconButton>
+        <IconButton onClick={hangUp}>
+          <Icon src={Icons.Phone}></Icon>
+        </IconButton>
       </Box>
-      <Box>
-        <button onClick={hangUp}> Hangup </button>
-      </Box>
-      <Box>{mx.getRoom(activeCallRoomId)?.normalizedName}</Box>
+      <Box style={{ justifyContent: 'center' }}>{mx.getRoom(activeCallRoomId)?.normalizedName}</Box>
     </Box>
   );
 }
