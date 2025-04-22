@@ -195,7 +195,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
           </Box>
         </Box>
         <Box direction="Column" style={{ position: 'relative' }}>
-          {activeCallRoomId && roomId && room !== null && (
+          {false && activeCallRoomId && roomId && room !== null && (
             <PowerLevelsContainer>
               <RoomView room={room} eventId={eventId} />
             </PowerLevelsContainer>
