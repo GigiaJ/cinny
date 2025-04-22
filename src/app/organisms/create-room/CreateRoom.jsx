@@ -220,17 +220,19 @@ function CreateRoomContent({ isSpace, parentId, onRequestClose }) {
             <Text variant="b3">Selecting Admin sets 100 power level whereas Founder sets 101.</Text>
           }
         />
-        <SettingTile
-          title="Room type"
-          options={
-            <SegmentControl
-              selected={roomType}
-              segments={[{ text: 'Text' }, { text: 'Call' }]}
-              onSelect={setRoomType}
-            />
-          }
-          content={<Text variant="b3">Select the type of room.</Text>}
-        />
+        {!isSpace && (
+          <SettingTile
+            title="Room type"
+            options={
+              <SegmentControl
+                selected={roomType}
+                segments={[{ text: 'Text' }, { text: 'Call' }]}
+                onSelect={setRoomType}
+              />
+            }
+            content={<Text variant="b3">Select the type of room.</Text>}
+          />
+        )}
         <Input name="topic" minHeight={174} resizable label="Topic (optional)" />
         <div className="create-room__name-wrapper">
           <Input name="name" label={`${isSpace ? 'Space' : 'Room'} name`} required />
