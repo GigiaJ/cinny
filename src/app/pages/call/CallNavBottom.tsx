@@ -1,7 +1,12 @@
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useCallState } from '../client/CallProvider';
-import { Box, Icon, IconButton, Icons, Text } from 'folds';
+import { Box, Chip, Icon, IconButton, Icons, Text } from 'folds';
+import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
+import {
+  makeMentionCustomProps,
+  renderMatrixMention,
+} from '../../plugins/react-custom-html-parser';
 
 export function CallNavBottom() {
   const {
@@ -24,6 +29,8 @@ export function CallNavBottom() {
       .then(() => logger.info(`FixedBottomNavArea: Action '${action}' sent.`))
       .catch((err) => logger.error(`FixedBottomNavArea: Failed action '${action}':`, err));
   };
+
+  const mentionClickHandler = useMentionClickHandler(activeCallRoomId ?? mx.getUserId());
 
   if (!activeCallRoomId) {
     return (
@@ -49,7 +56,7 @@ export function CallNavBottom() {
 
 
 */
-
+  const test = `https://matrix.to/#/${activeCallRoomId}`;
   return (
     <Box
       direction="Column"
@@ -70,8 +77,20 @@ export function CallNavBottom() {
         <IconButton onClick={hangUp}>
           <Icon src={Icons.Phone}></Icon>
         </IconButton>
+        <Box grow="Yes">
+          <Chip size="600">
+            {renderMatrixMention(
+              mx,
+              undefined,
+              test,
+              makeMentionCustomProps(
+                mentionClickHandler,
+                mx.getRoom(activeCallRoomId)?.normalizedName
+              )
+            )}
+          </Chip>
+        </Box>
       </Box>
-      <Box style={{ justifyContent: 'center' }}>{mx.getRoom(activeCallRoomId)?.normalizedName}</Box>
     </Box>
   );
 }
