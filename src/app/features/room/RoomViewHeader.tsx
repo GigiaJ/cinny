@@ -361,7 +361,7 @@ export function RoomViewHeader() {
           </Box>
         )) || (
           <Box shrink="No">
-            {isDirectMessage() && (
+            {false && isDirectMessage() && (
               <TooltipProvider
                 position="Bottom"
                 align="End"
