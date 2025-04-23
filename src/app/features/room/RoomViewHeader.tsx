@@ -239,7 +239,7 @@ export function RoomViewHeader() {
     const mDirectsEvent = mx.getAccountData('m.direct');
     const { roomId } = room;
     return (
-      Object.values(mDirectsEvent?.event.content).filter((e) => {
+      Object.values(mDirectsEvent?.event?.content).filter((e) => {
         if (e.indexOf(roomId) === 0) return true;
       }).length !== 0
     );
@@ -341,7 +341,25 @@ export function RoomViewHeader() {
             )}
           </Box>
         </Box>
-        {room.isCallRoom && (
+        {(room.isCallRoom() && (
+          <Box>
+            <TooltipProvider
+              position="Bottom"
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>Chat</Text>
+                </Tooltip>
+              }
+            >
+              {(triggerRef) => (
+                <IconButton ref={triggerRef} onClick={toggleChat}>
+                  <Icon size="400" src={Icons.Message} />
+                </IconButton>
+              )}
+            </TooltipProvider>
+          </Box>
+        )) || (
           <Box shrink="No">
             {isDirectMessage() && (
               <TooltipProvider
@@ -488,25 +506,6 @@ export function RoomViewHeader() {
                 </FocusTrap>
               }
             />
-          </Box>
-        )}
-        {room.isCallRoom() && (
-          <Box>
-            <TooltipProvider
-              position="Bottom"
-              offset={4}
-              tooltip={
-                <Tooltip>
-                  <Text>Chat</Text>
-                </Tooltip>
-              }
-            >
-              {(triggerRef) => (
-                <IconButton ref={triggerRef} onClick={toggleChat}>
-                  <Icon size="400" src={Icons.Message} />
-                </IconButton>
-              )}
-            </TooltipProvider>
           </Box>
         )}
       </Box>
