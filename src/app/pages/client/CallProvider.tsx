@@ -238,7 +238,7 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const toggleChat = useCallback(async () => {
     const newState = !isChatOpen;
-    setIsChatOpenState(!newState);
+    setIsChatOpenState(newState);
   }, [isChatOpen]);
 
   const contextValue = useMemo<CallContextState>(
