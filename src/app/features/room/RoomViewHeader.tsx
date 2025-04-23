@@ -341,7 +341,7 @@ export function RoomViewHeader() {
             )}
           </Box>
         </Box>
-        {(room.isCallRoom() && (
+        {(room.isCallRoom() && !isDirectMessage() && (
           <Box>
             <TooltipProvider
               position="Bottom"
