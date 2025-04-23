@@ -21,18 +21,22 @@ import { useClientConfig } from '../../hooks/useClientConfig';
 import { RoomView } from '../../features/room/RoomView';
 import { useParams } from 'react-router-dom';
 import { PowerLevelsContainer } from './PowerLevelsContainer';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 interface PersistentCallContainerProps {
   isVisible: boolean;
 }
 
 export function PersistentCallContainer({ isVisible }: PersistentCallContainerProps) {
-  const { activeCallRoomId, setActiveCallRoomId, registerActiveTransport } = useCallState();
+  const { activeCallRoomId, isChatOpen, setActiveCallRoomId, registerActiveTransport } =
+    useCallState();
   const { eventId } = useParams();
   const mx = useMatrixClient();
   const roomId = useSelectedRoom();
   const clientConfig = useClientConfig();
   const room = mx.getRoom(roomId) ?? null;
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
 
   logger.info(room);
 
@@ -167,7 +171,14 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
 
         <Box
           direction="Column"
-          style={{ position: 'relative', height: '100%', width: '100%', overflow: 'hidden' }}
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            zIndex: 0,
+            display: isMobile && isChatOpen ? 'none' : 'flex',
+            width: isMobile && isChatOpen ? '0%' : '100%',
+            height: isMobile && isChatOpen ? '0%' : '100%',
+          }}
         >
           {activeCallRoomId && roomId && room !== null && (
             <Box direction="Column" style={{ width: '100%' }}>
@@ -176,13 +187,19 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
               </PowerLevelsContainer>
             </Box>
           )}
-          <Box grow="Yes" style={{ position: 'relative' }}>
+          <Box
+            grow="Yes"
+            style={{
+              position: 'relative',
+            }}
+          >
             <iframe
               ref={iframeRef}
               style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
+                //               display: isMobile && isChatOpen ? 'none' : 'flex',
                 width: '100%',
                 height: '100%',
                 border: 'none',
@@ -194,8 +211,9 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
             />
           </Box>
         </Box>
-        <Box direction="Column" style={{ position: 'relative' }}>
-          {false && activeCallRoomId && roomId && room !== null && (
+        <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
+          {/* Mobile should remove the iframe visibility when chat is toggled */}
+          {isChatOpen && activeCallRoomId && roomId && room !== null && (
             <PowerLevelsContainer>
               <RoomView room={room} eventId={eventId} />
             </PowerLevelsContainer>
