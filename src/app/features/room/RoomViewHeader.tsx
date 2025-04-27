@@ -237,6 +237,9 @@ export function RoomViewHeader() {
   // I assume there is a global state so I don't have to run this check every time but for now we'll stub this in
   const isDirectMessage = () => {
     const mDirectsEvent = mx.getAccountData('m.direct');
+    if (mDirectsEvent?.event?.content === undefined) {
+      return false;
+    }
     const { roomId } = room;
     return (
       Object.values(mDirectsEvent?.event?.content).filter((e) => {
