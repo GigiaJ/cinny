@@ -28,7 +28,7 @@ interface PersistentCallContainerProps {
 }
 
 export function PersistentCallContainer({ isVisible }: PersistentCallContainerProps) {
-  const { activeCallRoomId, isChatOpen, setActiveCallRoomId, registerActiveTransport } =
+  const { activeCallRoomId, isChatOpen, setActiveCallRoomId, registerActiveClientWidgetApi } =
     useCallState();
   const { eventId } = useParams();
   const mx = useMatrixClient();
@@ -57,7 +57,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
      * Might also be able to keep the iframe alive and instead navigate to a new "room" to make the transition smoother
      */
     const cleanup = () => {
-      logger.error(`PersistentCallContainer: Cleaning up for previous room: ${cleanupRoomId}`);
+      logger.error(`CallContext: Cleaning up for previous room: ${cleanupRoomId}`);
 
       if (smallWidgetRef.current) {
         // smallWidgetRef.current.stopMessaging();
@@ -68,12 +68,17 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
       }
       widgetApiRef.current = null;
       smallWidgetRef.current = null;
+      //hangUp();
       if (iframeRef.current) iframeRef.current.src = 'about:blank';
     };
 
     if (activeCallRoomId && mx?.getUserId()) {
       if (cleanupRoomId !== activeCallRoomId) {
-        const newUrl = getWidgetUrl(mx, roomId, clientConfig.elementCallUrl ?? '');
+        const newUrl = getWidgetUrl(mx, roomId, clientConfig.elementCallUrl ?? '', {
+          skipLobby: 'true',
+          returnToLobby: 'true',
+          perParticipentE2EE: 'true',
+        });
 
         if (iframeRef.current && iframeRef.current.src !== newUrl.toString()) {
           logger.info(
@@ -116,7 +121,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         try {
           const widgetApiInstance = smallWidget.startMessaging(iframeElement);
           widgetApiRef.current = widgetApiInstance;
-          registerActiveTransport(activeCallRoomId, widgetApiRef.current.transport);
+          registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
           widgetApiInstance.once('ready', () => {
             logger.info(`PersistentCallContainer: Widget for ${activeCallRoomId} is ready.`);
           });
@@ -135,7 +140,6 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         cleanup();
       }
     }
-
     return cleanup;
   }, [activeCallRoomId, mx, setActiveCallRoomId]);
 
@@ -212,7 +216,6 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
           </Box>
         </Box>
         <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
-          {/* Mobile should remove the iframe visibility when chat is toggled */}
           {isChatOpen && activeCallRoomId && roomId && room !== null && (
             <PowerLevelsContainer>
               <RoomView room={room} eventId={eventId} />
