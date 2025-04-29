@@ -8,23 +8,28 @@ import React, {
   useEffect,
 } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
-import { WidgetApiToWidgetAction, ITransport, WidgetApiAction } from 'matrix-widget-api';
+import { WidgetApiToWidgetAction, WidgetApiAction, ClientWidgetApi } from 'matrix-widget-api';
 
 interface MediaStatePayload {
-  audio_enabled?: boolean;
-  video_enabled?: boolean;
+  data?: {
+    audio_enabled?: boolean;
+    video_enabled?: boolean;
+  };
 }
 
 const WIDGET_MEDIA_STATE_UPDATE_ACTION = 'io.element.device_mute';
-const WIDGET_HANGUP_ACTION = 'io.element.hangup';
+const WIDGET_HANGUP_ACTION = 'im.vector.hangup';
 const SET_MEDIA_STATE_ACTION = 'io.element.device_mute';
 
 interface CallContextState {
   activeCallRoomId: string | null;
   setActiveCallRoomId: (roomId: string | null) => void;
   hangUp: () => void;
-  activeApiTransport: ITransport | null;
-  registerActiveTransport: (roomId: string | null, transport: ITransport | null) => void;
+  activeClientWidgetApi: ClientWidgetApi | null;
+  registerActiveClientWidgetApi: (
+    roomId: string | null,
+    clientWidgetApi: ClientWidgetApi | null
+  ) => void;
   sendWidgetAction: <T = unknown>(
     action: WidgetApiToWidgetAction | string,
     data: T
@@ -49,8 +54,10 @@ const DEFAULT_CHAT_OPENED = false;
 
 export function CallProvider({ children }: CallProviderProps) {
   const [activeCallRoomId, setActiveCallRoomIdState] = useState<string | null>(null);
-  const [activeApiTransport, setActiveApiTransportState] = useState<ITransport | null>(null);
-  const [transportRoomId, setTransportRoomId] = useState<string | null>(null);
+  const [activeClientWidgetApi, setActiveClientWidgetApiState] = useState<ClientWidgetApi | null>(
+    null
+  );
+  const [clientWidgetApiRoomId, setClientWidgetApiRoomId] = useState<string | null>(null);
 
   const [isAudioEnabled, setIsAudioEnabledState] = useState<boolean>(DEFAULT_AUDIO_ENABLED);
   const [isVideoEnabled, setIsVideoEnabledState] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
@@ -74,61 +81,70 @@ export function CallProvider({ children }: CallProviderProps) {
         resetMediaState();
       }
 
-      if (roomId === null || roomId !== transportRoomId) {
+      if (roomId === null || roomId !== clientWidgetApiRoomId) {
         logger.warn(
-          `CallContext: Clearing active transport because active room changed to ${roomId} or was cleared.`
+          `CallContext: Clearing active clientWidgetApi because active room changed to ${roomId} or was cleared.`
         );
-        setActiveApiTransportState(null);
-        setTransportRoomId(null);
+        setActiveClientWidgetApiState(null);
+        setClientWidgetApiRoomId(null);
       }
     },
-    [transportRoomId, resetMediaState, activeCallRoomId]
+    [clientWidgetApiRoomId, resetMediaState, activeCallRoomId]
   );
 
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
+    activeClientWidgetApi?.transport.send(`action:${WIDGET_HANGUP_ACTION}`, {});
     setActiveCallRoomIdState(null);
-    logger.debug(`CallContext: Clearing active transport due to hangup.`);
-    setActiveApiTransportState(null);
-    setTransportRoomId(null);
+    logger.debug(`CallContext: Clearing active clientWidgetApi due to hangup.`);
+    setActiveClientWidgetApiState(null);
+    setClientWidgetApiRoomId(null);
     resetMediaState();
   }, [resetMediaState]);
 
-  const setActiveTransport = useCallback((transport: ITransport | null, roomId: string | null) => {
-    setActiveApiTransportState(transport);
-    setTransportRoomId(roomId);
-  }, []);
+  const setActiveClientWidgetApi = useCallback(
+    (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
+      setActiveClientWidgetApiState(clientWidgetApi);
+      setClientWidgetApiRoomId(roomId);
+    },
+    []
+  );
 
-  const registerActiveTransport = useCallback(
-    (roomId: string | null, transport: ITransport | null) => {
-      if (activeApiTransport && activeApiTransport !== transport) {
-        logger.debug(`CallContext: Cleaning up listeners for previous transport instance.`);
+  const registerActiveClientWidgetApi = useCallback(
+    (roomId: string | null, clientWidgetApi: ClientWidgetApi | null) => {
+      if (activeClientWidgetApi && activeClientWidgetApi !== clientWidgetApi) {
+        logger.debug(`CallContext: Cleaning up listeners for previous clientWidgetApi instance.`);
       }
 
-      if (roomId && transport) {
-        logger.debug(`CallContext: Registering active transport for room ${roomId}.`);
-        setActiveTransport(transport, roomId);
-      } else if (roomId === transportRoomId || roomId === null) {
-        logger.debug(`CallContext: Clearing active transport for room ${transportRoomId}.`);
-        setActiveTransport(null, null);
+      if (roomId && clientWidgetApi) {
+        logger.debug(`CallContext: Registering active clientWidgetApi for room ${roomId}.`);
+        setActiveClientWidgetApi(clientWidgetApi, roomId);
+      } else if (roomId === clientWidgetApiRoomId || roomId === null) {
+        logger.debug(
+          `CallContext: Clearing active clientWidgetApi for room ${clientWidgetApiRoomId}.`
+        );
+        setActiveClientWidgetApi(null, null);
         resetMediaState();
       } else {
         logger.debug(
-          `CallContext: Ignoring transport registration/clear request for room ${roomId}, as current transport belongs to ${transportRoomId}.`
+          `CallContext: Ignoring clientWidgetApi registration/clear request for room ${roomId}, as current clientWidgetApi belongs to ${clientWidgetApiRoomId}.`
         );
       }
     },
-    [activeApiTransport, transportRoomId, setActiveTransport, resetMediaState]
+    [activeClientWidgetApi, clientWidgetApiRoomId, setActiveClientWidgetApi, resetMediaState]
   );
 
   useEffect(() => {
-    if (!activeApiTransport || !activeCallRoomId || transportRoomId !== activeCallRoomId) {
+    if (!activeClientWidgetApi || !activeCallRoomId || clientWidgetApiRoomId !== activeCallRoomId) {
       return;
     }
 
-    const transport = activeApiTransport;
+    const clientWidgetApi = activeClientWidgetApi;
 
     const handleHangup = (ev: CustomEvent) => {
+      ev.preventDefault();
+
+      clientWidgetApi.transport.reply(ev.detail, {});
       logger.warn(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
         ev
@@ -142,7 +158,7 @@ export function CallProvider({ children }: CallProviderProps) {
         `CallContext: Received media state update from widget in room ${activeCallRoomId}:`,
         ev.detail
       );
-      const { audio_enabled, video_enabled } = ev.detail;
+      const { audio_enabled, video_enabled } = ev.detail.data;
       if (typeof audio_enabled === 'boolean' && audio_enabled !== isAudioEnabled) {
         logger.debug(`CallContext: Updating audio enabled state from widget: ${audio_enabled}`);
         setIsAudioEnabledState(audio_enabled);
@@ -153,21 +169,25 @@ export function CallProvider({ children }: CallProviderProps) {
       }
     };
 
-    logger.debug(`CallContext: Setting up listeners for transport in room ${activeCallRoomId}`);
-    transport.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup); // Use standard hangup action name
-    transport.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+    logger.debug(
+      `CallContext: Setting up listeners for clientWidgetApi in room ${activeCallRoomId}`
+    );
+    clientWidgetApi.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup); // Use standard hangup action name
+    clientWidgetApi.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
 
     return () => {
-      logger.debug(`CallContext: Cleaning up listeners for transport in room ${activeCallRoomId}`);
-      if (transport) {
-        transport.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
-        transport.off(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+      logger.debug(
+        `CallContext: Cleaning up listeners for clientWidgetApi in room ${activeCallRoomId}`
+      );
+      if (clientWidgetApi) {
+        clientWidgetApi.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
+        clientWidgetApi.off(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
       }
     };
   }, [
-    activeApiTransport,
+    activeClientWidgetApi,
     activeCallRoomId,
-    transportRoomId,
+    clientWidgetApiRoomId,
     hangUp,
     isChatOpen,
     isAudioEnabled,
@@ -176,30 +196,30 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const sendWidgetAction = useCallback(
     async <T = unknown,>(action: WidgetApiToWidgetAction | string, data: T): Promise<void> => {
-      if (!activeApiTransport) {
+      if (!activeClientWidgetApi) {
         logger.warn(
-          `CallContext: Cannot send action '${action}', no active API transport registered.`
+          `CallContext: Cannot send action '${action}', no active API clientWidgetApi registered.`
         );
-        return Promise.reject(new Error('No active call transport'));
+        return Promise.reject(new Error('No active call clientWidgetApi'));
       }
-      if (!transportRoomId || transportRoomId !== activeCallRoomId) {
-        logger.warn(
-          `CallContext: Cannot send action '${action}', transport room (${transportRoomId}) does not match active call room (${activeCallRoomId}). Stale transport?`
+      if (!clientWidgetApiRoomId || clientWidgetApiRoomId !== activeCallRoomId) {
+        logger.debug(
+          `CallContext: Cannot send action '${action}', clientWidgetApi room (${clientWidgetApiRoomId}) does not match active call room (${activeCallRoomId}). Stale clientWidgetApi?`
         );
-        return Promise.reject(new Error('Mismatched active call transport'));
+        return Promise.reject(new Error('Mismatched active call clientWidgetApi'));
       }
       try {
         logger.debug(
-          `CallContext: Sending action '${action}' via active transport (room: ${transportRoomId}) with data:`,
+          `CallContext: Sending action '${action}' via active clientWidgetApi (room: ${clientWidgetApiRoomId}) with data:`,
           data
         );
-        await activeApiTransport.send<T>(action as WidgetApiAction, data);
+        await activeClientWidgetApi.transport.send(action as WidgetApiAction, data);
       } catch (error) {
         logger.error(`CallContext: Error sending action '${action}':`, error);
         throw error;
       }
     },
-    [activeApiTransport, activeCallRoomId, transportRoomId]
+    [activeClientWidgetApi, activeCallRoomId, clientWidgetApiRoomId]
   );
 
   const toggleAudio = useCallback(async () => {
@@ -246,8 +266,8 @@ export function CallProvider({ children }: CallProviderProps) {
       activeCallRoomId,
       setActiveCallRoomId,
       hangUp,
-      activeApiTransport,
-      registerActiveTransport,
+      activeClientWidgetApi,
+      registerActiveClientWidgetApi,
       sendWidgetAction,
       isChatOpen,
       isAudioEnabled,
@@ -260,8 +280,8 @@ export function CallProvider({ children }: CallProviderProps) {
       activeCallRoomId,
       setActiveCallRoomId,
       hangUp,
-      activeApiTransport,
-      registerActiveTransport,
+      activeClientWidgetApi,
+      registerActiveClientWidgetApi,
       sendWidgetAction,
       isChatOpen,
       isAudioEnabled,
