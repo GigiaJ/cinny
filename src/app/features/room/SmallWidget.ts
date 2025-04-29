@@ -36,7 +36,12 @@ import { SmallWidgetDriver } from './SmallWidgetDriver';
  * @param roomId - The ID of the room.
  * @returns The generated URL object.
  */
-export const getWidgetUrl = (mx: MatrixClient, roomId: string, elementCallUrl: string): URL => {
+export const getWidgetUrl = (
+  mx: MatrixClient,
+  roomId: string,
+  elementCallUrl: string,
+  setParams: any
+): URL => {
   const baseUrl = window.location.origin;
   const url =
     new URL(`${elementCallUrl}/room`) ?? new URL('./dist/element-call/dist/index.html', baseUrl);
@@ -48,10 +53,10 @@ export const getWidgetUrl = (mx: MatrixClient, roomId: string, elementCallUrl: s
     widgetId: `element-call-${roomId}`,
     appPrompt: 'false',
     preload: 'false',
-    skipLobby: 'true',
+    skipLobby: setParams.skipLobby ?? 'true',
     //intent: 'join_existing',
-    returnToLobby: 'true',
-    perParticipantE2EE: 'true',
+    returnToLobby: setParams.returnToLobby ?? 'true',
+    perParticipantE2EE: setParams.perParticipantE2EE ?? 'true',
     hideHeader: 'true',
     userId: mx.getUserId()!,
     deviceId: mx.getDeviceId()!,
