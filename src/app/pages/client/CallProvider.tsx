@@ -9,6 +9,8 @@ import React, {
 } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { WidgetApiToWidgetAction, WidgetApiAction, ClientWidgetApi } from 'matrix-widget-api';
+import { useParams } from 'react-router-dom';
+import { useMatrixClient } from '../../hooks/useMatrixClient';
 
 interface MediaStatePayload {
   data?: {
@@ -19,7 +21,8 @@ interface MediaStatePayload {
 
 const WIDGET_MEDIA_STATE_UPDATE_ACTION = 'io.element.device_mute';
 const WIDGET_HANGUP_ACTION = 'im.vector.hangup';
-const SET_MEDIA_STATE_ACTION = 'io.element.device_mute';
+const WIDGET_ON_SCREEN_ACTION = 'set_always_on_screen';
+const WIDGET_JOIN_ACTION = 'io.element.join';
 
 interface CallContextState {
   activeCallRoomId: string | null;
@@ -37,6 +40,7 @@ interface CallContextState {
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
   isChatOpen: boolean;
+  isCallActive: boolean;
   toggleAudio: () => Promise<void>;
   toggleVideo: () => Promise<void>;
   toggleChat: () => Promise<void>;
@@ -51,6 +55,7 @@ interface CallProviderProps {
 const DEFAULT_AUDIO_ENABLED = true;
 const DEFAULT_VIDEO_ENABLED = false;
 const DEFAULT_CHAT_OPENED = false;
+const DEFAULT_CALL_ACTIVE = false;
 
 export function CallProvider({ children }: CallProviderProps) {
   const [activeCallRoomId, setActiveCallRoomIdState] = useState<string | null>(null);
@@ -62,6 +67,11 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isAudioEnabled, setIsAudioEnabledState] = useState<boolean>(DEFAULT_AUDIO_ENABLED);
   const [isVideoEnabled, setIsVideoEnabledState] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
   const [isChatOpen, setIsChatOpenState] = useState<boolean>(DEFAULT_CHAT_OPENED);
+  const [isCallActive, setIsCallActive] = useState<boolean>(DEFAULT_CALL_ACTIVE);
+
+  const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
+  const mx = useMatrixClient();
+  const room = mx.getRoom(viewedRoomId);
 
   const resetMediaState = useCallback(() => {
     logger.debug('CallContext: Resetting media state to defaults.');
@@ -94,7 +104,7 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
-    activeClientWidgetApi?.transport.send(`action:${WIDGET_HANGUP_ACTION}`, {});
+    // activeClientWidgetApi?.transport.send(`action:${WIDGET_HANGUP_ACTION}`, {});
     setActiveCallRoomIdState(null);
     logger.debug(`CallContext: Clearing active clientWidgetApi due to hangup.`);
     setActiveClientWidgetApiState(null);
@@ -149,7 +159,8 @@ export function CallProvider({ children }: CallProviderProps) {
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
         ev
       );
-      hangUp();
+      setIsCallActive(false);
+      // hangUp();
     };
 
     const handleMediaStateUpdate = (ev: CustomEvent<MediaStatePayload>) => {
@@ -169,11 +180,23 @@ export function CallProvider({ children }: CallProviderProps) {
       }
     };
 
+    const handleOnScreenStateUpdate = (ev: CustomEvent) => {
+      ev.preventDefault();
+      activeClientWidgetApi.transport.reply(ev.detail, {});
+    };
+
+    const handleJoin = (ev: CustomEvent) => {
+      ev.preventDefault();
+      setIsCallActive(true);
+    };
+
     logger.debug(
       `CallContext: Setting up listeners for clientWidgetApi in room ${activeCallRoomId}`
     );
-    clientWidgetApi.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup); // Use standard hangup action name
+    clientWidgetApi.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
     clientWidgetApi.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+    clientWidgetApi.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
+    clientWidgetApi.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
 
     return () => {
       logger.debug(
@@ -192,6 +215,7 @@ export function CallProvider({ children }: CallProviderProps) {
     isChatOpen,
     isAudioEnabled,
     isVideoEnabled,
+    isCallActive,
   ]);
 
   const sendWidgetAction = useCallback(
@@ -227,7 +251,7 @@ export function CallProvider({ children }: CallProviderProps) {
     logger.debug(`CallContext: Toggling audio. New state: enabled=${newState}`);
     setIsAudioEnabledState(newState);
     try {
-      await sendWidgetAction(SET_MEDIA_STATE_ACTION, {
+      await sendWidgetAction(WIDGET_MEDIA_STATE_UPDATE_ACTION, {
         audio_enabled: newState,
         video_enabled: isVideoEnabled,
       });
@@ -244,7 +268,7 @@ export function CallProvider({ children }: CallProviderProps) {
     logger.debug(`CallContext: Toggling video. New state: enabled=${newState}`);
     setIsVideoEnabledState(newState);
     try {
-      await sendWidgetAction(SET_MEDIA_STATE_ACTION, {
+      await sendWidgetAction(WIDGET_MEDIA_STATE_UPDATE_ACTION, {
         audio_enabled: isAudioEnabled,
         video_enabled: newState,
       });
