@@ -16,13 +16,15 @@ import {
   RectCords,
   Badge,
   Spinner,
+  Tooltip,
+  TooltipProvider,
 } from 'folds';
 import { useFocusWithin, useHover } from 'react-aria';
 import FocusTrap from 'focus-trap-react';
 import { NavItem, NavItemContent, NavItemOptions, NavLink } from '../../components/nav';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
-import { getDirectRoomAvatarUrl, getRoomAvatarUrl } from '../../utils/room';
+import { getDirectRoomAvatarUrl, getRoomAvatarUrl, isSpace } from '../../utils/room';
 import { nameInitials } from '../../utils/common';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomUnread } from '../../state/hooks/unread';
@@ -49,6 +51,7 @@ import {
   RoomNotificationMode,
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
+import { useCallState } from '../../pages/client/CallProvider';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -217,6 +220,7 @@ export function RoomNavItem({
   const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
+  const { isChatOpen, toggleChat } = useCallState();
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
@@ -273,6 +277,7 @@ export function RoomNavItem({
                   filled={selected}
                   size="100"
                   joinRule={room.getJoinRule()}
+                  call={room.isCallRoom()}
                 />
               )}
             </Avatar>
@@ -325,6 +330,33 @@ export function RoomNavItem({
               </FocusTrap>
             }
           >
+            {room.isCallRoom() && (
+              <TooltipProvider
+                position="Bottom"
+                offset={4}
+                tooltip={
+                  <Tooltip>
+                    <Text>Open chat</Text>
+                  </Tooltip>
+                }
+              >
+                {(triggerRef) => (
+                  <IconButton
+                    ref={triggerRef}
+                    onClick={isChatOpen !== true ? toggleChat : undefined}
+                    aria-pressed={!!menuAnchor}
+                    variant="Background"
+                    fill="None"
+                    size="300"
+                    radii="300"
+                  >
+                    <NavLink to={linkPath}>
+                      <Icon size="50" src={Icons.Message} />
+                    </NavLink>
+                  </IconButton>
+                )}
+              </TooltipProvider>
+            )}
             <IconButton
               onClick={handleOpenMenu}
               aria-pressed={!!menuAnchor}
