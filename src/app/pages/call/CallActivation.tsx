@@ -7,7 +7,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 
 export function CallActivationEffect() {
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
-  const { activeCallRoomId, setActiveCallRoomId } = useCallState();
+  const { activeCallRoomId, isCallActive, setActiveCallRoomId } = useCallState();
   const mx = useMatrixClient();
   const room = mx.getRoom(viewedRoomId);
 
@@ -20,7 +20,7 @@ export function CallActivationEffect() {
     const isViewingCallRoom = room?.isCallRoom?.() ?? false;
 
     if (isViewingCallRoom) {
-      if (viewedRoomId !== activeCallRoomId) {
+      if (viewedRoomId !== activeCallRoomId && !isCallActive) {
         logger.info(`CallActivationEffect: Auto-activating call for viewed room: ${viewedRoomId}`);
         setActiveCallRoomId(viewedRoomId);
       } else {
@@ -29,7 +29,7 @@ export function CallActivationEffect() {
         );
       }
     }
-  }, [viewedRoomId, activeCallRoomId, setActiveCallRoomId, mx, room]);
+  }, [viewedRoomId, activeCallRoomId, setActiveCallRoomId, isCallActive, mx, room]);
 
   return null;
 }
