@@ -1,36 +1,15 @@
 import { logger } from 'matrix-js-sdk/lib/logger';
+import { NavLink, useParams } from 'react-router-dom';
+import { Box, Chip, Icon, IconButton, Icons, Text, Tooltip, TooltipProvider } from 'folds';
+import React from 'react';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useCallState } from '../client/CallProvider';
-import { Box, Chip, Icon, IconButton, Icons, Text } from 'folds';
-import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
-import {
-  makeMentionCustomProps,
-  renderMatrixMention,
-} from '../../plugins/react-custom-html-parser';
 
 export function CallNavBottom() {
-  const {
-    sendWidgetAction,
-    activeCallRoomId,
-    isAudioEnabled,
-    isVideoEnabled,
-    toggleAudio,
-    toggleVideo,
-    hangUp,
-  } = useCallState();
+  const { activeCallRoomId, isAudioEnabled, isVideoEnabled, toggleAudio, toggleVideo, hangUp } =
+    useCallState();
   const mx = useMatrixClient();
-  const userName = mx.getUser(mx.getUserId() ?? '')?.displayName ?? mx.getUserId() ?? 'User';
-
-  const handleSendMessageClick = () => {
-    const action = 'my.custom.action';
-    const data = { message: `Hello from ${userName}!` };
-    logger.debug(`FixedBottomNavArea: Sending action '${action}'`);
-    sendWidgetAction(action, data)
-      .then(() => logger.info(`FixedBottomNavArea: Action '${action}' sent.`))
-      .catch((err) => logger.error(`FixedBottomNavArea: Failed action '${action}':`, err));
-  };
-
-  const mentionClickHandler = useMentionClickHandler(activeCallRoomId ?? mx.getUserId());
+  const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
 
   if (!activeCallRoomId) {
     return (
@@ -49,14 +28,6 @@ export function CallNavBottom() {
     );
   }
 
-  //Muted:{(!isAudioEnabled).toString()}
-  //Videosn't:{(!isVideoEnabled).toString()}
-  /*
-
-
-
-*/
-  const test = `https://matrix.to/#/${activeCallRoomId}`;
   return (
     <Box
       direction="Column"
@@ -68,27 +39,77 @@ export function CallNavBottom() {
     >
       <Box direction="Row" style={{ justifyContent: 'center' }}>
         {/* Going to need better icons for this */}
-        <IconButton onClick={toggleAudio}>
-          <Icon src={!isAudioEnabled ? Icons.VolumeHigh : Icons.VolumeMute} />
-        </IconButton>
-        <IconButton onClick={toggleVideo}>
-          <Icon src={!isVideoEnabled ? Icons.Vlc : Icons.Lock}></Icon>
-        </IconButton>
-        <IconButton onClick={hangUp}>
-          <Icon src={Icons.Phone}></Icon>
-        </IconButton>
+        <TooltipProvider
+          position="Top"
+          offset={4}
+          tooltip={
+            <Tooltip>
+              <Text>{!isAudioEnabled ? 'Unmute' : 'Mute'}</Text>
+            </Tooltip>
+          }
+        >
+          {(triggerRef) => (
+            <IconButton ref={triggerRef} onClick={toggleAudio}>
+              <Icon src={!isAudioEnabled ? Icons.VolumeHigh : Icons.VolumeMute} />
+            </IconButton>
+          )}
+        </TooltipProvider>
+        <TooltipProvider
+          position="Top"
+          offset={4}
+          tooltip={
+            <Tooltip>
+              <Text>{!isVideoEnabled ? 'Video on' : 'Video off'}</Text>
+            </Tooltip>
+          }
+        >
+          {(triggerRef) => (
+            <IconButton ref={triggerRef} onClick={toggleVideo}>
+              <Icon src={!isVideoEnabled ? Icons.Vlc : Icons.Lock} />
+            </IconButton>
+          )}
+        </TooltipProvider>
+
+        <TooltipProvider
+          position="Top"
+          offset={4}
+          tooltip={
+            <Tooltip>
+              <Text>Hang up</Text>
+            </Tooltip>
+          }
+        >
+          {(triggerRef) => (
+            <IconButton ref={triggerRef} onClick={hangUp}>
+              <Icon src={Icons.Phone} />
+            </IconButton>
+          )}
+        </TooltipProvider>
+
         <Box grow="Yes">
-          <Chip size="600">
-            {renderMatrixMention(
-              mx,
-              undefined,
-              test,
-              makeMentionCustomProps(
-                mentionClickHandler,
-                mx.getRoom(activeCallRoomId)?.normalizedName
+          <TooltipProvider
+            position="Top"
+            offset={4}
+            tooltip={
+              <Tooltip>
+                <Text>Go to room</Text>
+              </Tooltip>
+            }
+          >
+            {(triggerRef) =>
+              viewedRoomId !== (activeCallRoomId ?? '') ? (
+                <NavLink ref={triggerRef} to={activeCallRoomId}>
+                  <Chip radii="Inherit" size="500" fill="Soft">
+                    {mx.getRoom(activeCallRoomId)?.normalizedName}
+                  </Chip>
+                </NavLink>
+              ) : (
+                <Chip ref={triggerRef} radii="Inherit" size="500" fill="Soft">
+                  {mx.getRoom(activeCallRoomId)?.normalizedName}
+                </Chip>
               )
-            )}
-          </Chip>
+            }
+          </TooltipProvider>
         </Box>
       </Box>
     </Box>
