@@ -49,7 +49,7 @@ export const getWidgetUrl = (
   logger.error(url);
 
   const params = new URLSearchParams({
-    //embed: 'true',
+    embed: 'true',
     widgetId: `element-call-${roomId}`,
     appPrompt: 'false',
     preload: 'false',
