@@ -1,4 +1,4 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
+import React, { MouseEventHandler, forwardRef, useState, MouseEvent } from 'react';
 import { Room } from 'matrix-js-sdk';
 import {
   Avatar,
@@ -196,6 +196,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     );
   }
 );
+RoomNavItemMenu.displayName = 'RoomNavItemMenu';
 
 type RoomNavItemProps = {
   room: Room;
@@ -220,7 +221,7 @@ export function RoomNavItem({
   const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
-  const { isChatOpen, toggleChat } = useCallState();
+  const { isChatOpen, toggleChat, hangUp } = useCallState();
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
@@ -239,6 +240,25 @@ export function RoomNavItem({
     setMenuAnchor(evt.currentTarget.getBoundingClientRect());
   };
 
+  const handleNavItemClick: MouseEventHandler<HTMLElement> = (evt) => {
+    const target = evt.target as HTMLElement;
+    const chatButton = (evt.currentTarget as HTMLElement).querySelector(
+      '[data-testid="chat-button"]'
+    );
+    if (chatButton && chatButton.contains(target)) {
+      return;
+    }
+
+    if (room.isCallRoom()) {
+      hangUp();
+    }
+  };
+
+  const handleChatButtonClick = (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation();
+    if (!isChatOpen) toggleChat();
+  };
+
   const optionsVisible = hover || !!menuAnchor;
 
   return (
@@ -252,7 +272,8 @@ export function RoomNavItem({
       {...hoverProps}
       {...focusWithinProps}
     >
-      <NavLink to={linkPath}>
+      <NavLink to={linkPath} onClick={handleNavItemClick}>
+        {' '}
         <NavItemContent>
           <Box as="span" grow="Yes" alignItems="Center" gap="200">
             <Avatar size="200" radii="400">
@@ -343,8 +364,9 @@ export function RoomNavItem({
                 {(triggerRef) => (
                   <IconButton
                     ref={triggerRef}
-                    onClick={isChatOpen !== true ? toggleChat : undefined}
-                    aria-pressed={!!menuAnchor}
+                    data-testid="chat-button"
+                    onClick={handleChatButtonClick}
+                    aria-pressed={isChatOpen}
                     variant="Background"
                     fill="None"
                     size="300"
