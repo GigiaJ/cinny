@@ -3,6 +3,7 @@ import { Box } from 'folds';
 import { useParams } from 'react-router-dom';
 import { useCallState } from './CallProvider';
 import { PersistentCallContainer } from '../call/PersistentCallContainer';
+import { useMatrixClient } from '../../hooks/useMatrixClient';
 
 type ClientLayoutProps = {
   nav: ReactNode;
@@ -11,10 +12,9 @@ type ClientLayoutProps = {
 export function ClientLayout({ nav, children }: ClientLayoutProps) {
   const { activeCallRoomId } = useCallState();
   const { roomIdOrAlias: viewedRoomId } = useParams();
-  const isViewingActiveCall = useMemo(
-    () => activeCallRoomId !== null && activeCallRoomId === viewedRoomId,
-    [activeCallRoomId, viewedRoomId]
-  );
+  const mx = useMatrixClient();
+  const isCall = mx.getRoom(viewedRoomId)?.isCallRoom();
+
   return (
     <Box grow="Yes" direction="Row" style={{ height: '100vh', width: '100vw', overflow: 'hidden' }}>
       <Box shrink="No" className="nav-container-styles">
@@ -25,7 +25,7 @@ export function ClientLayout({ nav, children }: ClientLayoutProps) {
           <Box
             grow="Yes"
             style={{
-              display: isViewingActiveCall ? 'none' : 'flex',
+              display: isCall ? 'none' : 'flex',
               flexDirection: 'column',
               width: '100%',
               height: '100%',
@@ -34,7 +34,7 @@ export function ClientLayout({ nav, children }: ClientLayoutProps) {
           >
             {children}
           </Box>
-          <PersistentCallContainer isVisible={isViewingActiveCall} />
+          <PersistentCallContainer isVisible={isCall} viewedRoomId={viewedRoomId} />
         </Box>
       </Box>{' '}
     </Box>
