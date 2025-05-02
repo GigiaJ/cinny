@@ -77,7 +77,7 @@ export function CallProvider({ children }: CallProviderProps) {
     logger.debug('CallContext: Resetting media state to defaults.');
     setIsAudioEnabledState(DEFAULT_AUDIO_ENABLED);
     setIsVideoEnabledState(DEFAULT_VIDEO_ENABLED);
-    setIsChatOpenState(DEFAULT_CHAT_OPENED);
+    //setIsChatOpenState(DEFAULT_CHAT_OPENED);
   }, []);
 
   const setActiveCallRoomId = useCallback(
@@ -104,13 +104,14 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
-    // activeClientWidgetApi?.transport.send(`action:${WIDGET_HANGUP_ACTION}`, {});
-    setActiveCallRoomIdState(null);
-    logger.debug(`CallContext: Clearing active clientWidgetApi due to hangup.`);
-    setActiveClientWidgetApiState(null);
-    setClientWidgetApiRoomId(null);
-    resetMediaState();
-  }, [resetMediaState]);
+    activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
+    setIsCallActive(false);
+    //setActiveCallRoomId(null);
+    //setActiveCallRoomIdState(null);
+    //logger.debug(`CallContext: Clearing active clientWidgetApi due to hangup.`);
+    //setActiveClientWidgetApiState(null);
+    //setClientWidgetApiRoomId(null);
+  }, [activeClientWidgetApi?.transport]);
 
   const setActiveClientWidgetApi = useCallback(
     (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
@@ -145,7 +146,12 @@ export function CallProvider({ children }: CallProviderProps) {
   );
 
   useEffect(() => {
-    if (!activeClientWidgetApi || !activeCallRoomId || clientWidgetApiRoomId !== activeCallRoomId) {
+    if (
+      !activeClientWidgetApi ||
+      !activeCallRoomId ||
+      clientWidgetApiRoomId !== activeCallRoomId ||
+      isCallActive
+    ) {
       return;
     }
 
@@ -160,7 +166,7 @@ export function CallProvider({ children }: CallProviderProps) {
         ev
       );
       setIsCallActive(false);
-      // hangUp();
+      //hangUp();
     };
 
     const handleMediaStateUpdate = (ev: CustomEvent<MediaStatePayload>) => {
@@ -203,8 +209,8 @@ export function CallProvider({ children }: CallProviderProps) {
         `CallContext: Cleaning up listeners for clientWidgetApi in room ${activeCallRoomId}`
       );
       if (clientWidgetApi) {
-        clientWidgetApi.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
-        clientWidgetApi.off(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+        //clientWidgetApi.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
+        //clientWidgetApi.off(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
       }
     };
   }, [
