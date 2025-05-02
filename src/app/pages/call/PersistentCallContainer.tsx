@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { ClientWidgetApi, IWidgetApiRequest } from 'matrix-widget-api';
 import { Box } from 'folds';
@@ -25,11 +25,17 @@ import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 interface PersistentCallContainerProps {
   isVisible: boolean;
+  viewedRoomId: string;
 }
 
-export function PersistentCallContainer({ isVisible }: PersistentCallContainerProps) {
-  const { activeCallRoomId, isChatOpen, setActiveCallRoomId, registerActiveClientWidgetApi } =
-    useCallState();
+export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentCallContainerProps) {
+  const {
+    activeCallRoomId,
+    isChatOpen,
+    isCallActive,
+    setActiveCallRoomId,
+    registerActiveClientWidgetApi,
+  } = useCallState();
   const { eventId } = useParams();
   const mx = useMatrixClient();
   const roomId = useSelectedRoom();
@@ -37,6 +43,10 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   const room = mx.getRoom(roomId) ?? null;
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
+  const isViewingActiveCall = useMemo(
+    () => activeCallRoomId !== null && activeCallRoomId === viewedRoomId,
+    [activeCallRoomId, viewedRoomId]
+  );
 
   logger.info(room);
 
@@ -44,7 +54,11 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
   const widgetApiRef = useRef<ClientWidgetApi | null>(null);
   const smallWidgetRef = useRef<SmallWidget | null>(null);
 
-  useEffect(() => {
+  const backupIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const backupWidgetApiRef = useRef<ClientWidgetApi | null>(null);
+  const backupSmallWidgetRef = useRef<SmallWidget | null>(null);
+
+  const setupWidget = (widgetApiRef, smallWidgetRef, iframeRef, skipLobby) => {
     const cleanupRoomId = smallWidgetRef.current?.roomId;
     logger.debug(`PersistentCallContainer effect running. activeCallRoomId: ${activeCallRoomId}`);
 
@@ -57,7 +71,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
      * Might also be able to keep the iframe alive and instead navigate to a new "room" to make the transition smoother
      */
     const cleanup = () => {
-      logger.error(`CallContext: Cleaning up for previous room: ${cleanupRoomId}`);
+      //logger.error(`CallContext: Cleaning up for previous room: ${cleanupRoomId}`);
 
       if (smallWidgetRef.current) {
         // smallWidgetRef.current.stopMessaging();
@@ -66,20 +80,18 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
       if (widgetApiRef.current) {
         // widgetApiRef.current.stop?.();
       }
-      widgetApiRef.current = null;
-      smallWidgetRef.current = null;
-      //hangUp();
-      if (iframeRef.current) iframeRef.current.src = 'about:blank';
+      //widgetApiRef.current = null;
+      //smallWidgetRef.current = null;
+      //if (iframeRef.current) iframeRef.current.src = 'about:blank';
     };
 
     if (activeCallRoomId && mx?.getUserId()) {
-      if (cleanupRoomId !== activeCallRoomId) {
+      if (cleanupRoomId !== activeCallRoomId && !isCallActive) {
         const newUrl = getWidgetUrl(mx, roomId, clientConfig.elementCallUrl ?? '', {
-          skipLobby: 'true',
+          skipLobby,
           returnToLobby: 'true',
           perParticipentE2EE: 'true',
         });
-
         if (iframeRef.current && iframeRef.current.src !== newUrl.toString()) {
           logger.info(
             `PersistentCallContainer: Updating iframe src for ${activeCallRoomId} to ${newUrl.toString()}`
@@ -102,7 +114,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         const userId = mx.getUserId() ?? '';
         const app = createVirtualWidget(
           mx,
-          `element-call-${activeCallRoomId}`,
+          `element-call-${activeCallRoomId}-${Date.now()}`,
           userId,
           'Element Call',
           'm.call',
@@ -121,7 +133,7 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
         try {
           const widgetApiInstance = smallWidget.startMessaging(iframeElement);
           widgetApiRef.current = widgetApiInstance;
-          registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
+          if (skipLobby) registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
           widgetApiInstance.once('ready', () => {
             logger.info(`PersistentCallContainer: Widget for ${activeCallRoomId} is ready.`);
           });
@@ -133,15 +145,22 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
           cleanup();
         }
       } else {
+        /*
         if (iframeRef.current && iframeRef.current.src !== 'about:blank') {
           logger.info('PersistentCallContainer: No active call, setting src to about:blank');
           iframeRef.current.src = 'about:blank';
         }
+          */
         cleanup();
       }
     }
     return cleanup;
-  }, [activeCallRoomId, mx, setActiveCallRoomId]);
+  };
+
+  useEffect(() => {
+    setupWidget(widgetApiRef, smallWidgetRef, iframeRef, true);
+    setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, false);
+  });
 
   const containerStyle: React.CSSProperties = {
     width: '100%',
@@ -203,10 +222,27 @@ export function PersistentCallContainer({ isVisible }: PersistentCallContainerPr
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                //               display: isMobile && isChatOpen ? 'none' : 'flex',
+                display: isViewingActiveCall ? 'flex' : 'none',
                 width: '100%',
                 height: '100%',
                 border: 'none',
+              }}
+              title={`Persistent Element Call`}
+              sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
+              allow="microphone; camera; display-capture; autoplay; clipboard-write;"
+              src="about:blank"
+            />
+            <iframe
+              ref={backupIframeRef}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                border: 'none',
+
+                display: isViewingActiveCall ? 'none' : 'flex',
               }}
               title={`Persistent Element Call`}
               sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
