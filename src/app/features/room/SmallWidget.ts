@@ -46,15 +46,12 @@ export const getWidgetUrl = (
   const url =
     new URL(`${elementCallUrl}/room`) ?? new URL('./dist/element-call/dist/index.html', baseUrl);
 
-  logger.error(url);
-
   const params = new URLSearchParams({
     embed: 'true',
-    widgetId: `element-call-${roomId}`,
+    widgetId: `element-call-${roomId}-${Date.now()}`,
     appPrompt: 'false',
     preload: 'false',
     skipLobby: setParams.skipLobby ?? 'true',
-    //intent: 'join_existing',
     returnToLobby: setParams.returnToLobby ?? 'true',
     perParticipantE2EE: setParams.perParticipantE2EE ?? 'true',
     hideHeader: 'true',
@@ -66,7 +63,7 @@ export const getWidgetUrl = (
   });
 
   const replacedParams = params.toString().replace(/%24/g, '$');
-  url.hash = `#?${replacedParams}`;
+  url.search = `?${replacedParams}`;
 
   logger.info('Generated Element Call Widget URL:', url.toString());
   return url;
