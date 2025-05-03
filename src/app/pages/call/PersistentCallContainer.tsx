@@ -33,6 +33,7 @@ export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentC
     activeCallRoomId,
     isChatOpen,
     isCallActive,
+    isPrimaryIframe,
     setActiveCallRoomId,
     registerActiveClientWidgetApi,
   } = useCallState();
@@ -222,7 +223,7 @@ export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentC
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                display: isViewingActiveCall ? 'flex' : 'none',
+                display: isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
                 width: '100%',
                 height: '100%',
                 border: 'none',
@@ -242,7 +243,7 @@ export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentC
                 height: '100%',
                 border: 'none',
 
-                display: isViewingActiveCall ? 'none' : 'flex',
+                display: !isPrimaryIframe || isViewingActiveCall ? 'none' : 'flex',
               }}
               title={`Persistent Element Call`}
               sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
