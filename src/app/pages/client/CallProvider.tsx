@@ -41,9 +41,11 @@ interface CallContextState {
   isVideoEnabled: boolean;
   isChatOpen: boolean;
   isCallActive: boolean;
+  isPrimaryIframe: boolean;
   toggleAudio: () => Promise<void>;
   toggleVideo: () => Promise<void>;
   toggleChat: () => Promise<void>;
+  toggleIframe: () => Promise<void>;
 }
 
 const CallContext = createContext<CallContextState | undefined>(undefined);
@@ -56,6 +58,7 @@ const DEFAULT_AUDIO_ENABLED = true;
 const DEFAULT_VIDEO_ENABLED = false;
 const DEFAULT_CHAT_OPENED = false;
 const DEFAULT_CALL_ACTIVE = false;
+const DEFAULT_PRIMARY_IFRAME = false;
 
 export function CallProvider({ children }: CallProviderProps) {
   const [activeCallRoomId, setActiveCallRoomIdState] = useState<string | null>(null);
@@ -68,6 +71,7 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isVideoEnabled, setIsVideoEnabledState] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
   const [isChatOpen, setIsChatOpenState] = useState<boolean>(DEFAULT_CHAT_OPENED);
   const [isCallActive, setIsCallActive] = useState<boolean>(DEFAULT_CALL_ACTIVE);
+  const [isPrimaryIframe, setIsPrimaryIframe] = useState<boolean>(DEFAULT_PRIMARY_IFRAME);
 
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
   const mx = useMatrixClient();
@@ -165,6 +169,7 @@ export function CallProvider({ children }: CallProviderProps) {
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
         ev
       );
+      setIsPrimaryIframe(true);
       setIsCallActive(false);
       //hangUp();
     };
@@ -193,6 +198,11 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
+      if (isCallActive) {
+        setIsPrimaryIframe(false);
+      } else {
+        setIsPrimaryIframe(true);
+      }
       setIsCallActive(true);
     };
 
@@ -291,6 +301,11 @@ export function CallProvider({ children }: CallProviderProps) {
     setIsChatOpenState(newState);
   }, [isChatOpen]);
 
+  const toggleIframe = useCallback(async () => {
+    const newState = !isPrimaryIframe;
+    setIsPrimaryIframe(newState);
+  }, [isPrimaryIframe]);
+
   const contextValue = useMemo<CallContextState>(
     () => ({
       activeCallRoomId,
@@ -303,9 +318,11 @@ export function CallProvider({ children }: CallProviderProps) {
       isAudioEnabled,
       isVideoEnabled,
       isCallActive,
+      isPrimaryIframe,
       toggleAudio,
       toggleVideo,
       toggleChat,
+      toggleIframe,
     }),
     [
       activeCallRoomId,
@@ -318,9 +335,11 @@ export function CallProvider({ children }: CallProviderProps) {
       isAudioEnabled,
       isVideoEnabled,
       isCallActive,
+      isPrimaryIframe,
       toggleAudio,
       toggleVideo,
       toggleChat,
+      toggleIframe,
     ]
   );
 
