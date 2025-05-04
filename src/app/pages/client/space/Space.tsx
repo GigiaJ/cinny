@@ -80,6 +80,7 @@ import {
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
 import { useCallState } from '../CallProvider';
 import { CallNavBottom } from '../../call/CallNavBottom';
+import { getStateEvents } from '../../../utils/room';
 
 /**
  * Processes the raw hierarchy from useSpaceJoinedHierarchy into a flat list
@@ -99,7 +100,7 @@ const processHierarchyForVirtualizer = (
   closedCategories: Set<string>
 ): Array<{ type: string; key: string; [key: string]: any }> => {
   const processed: Array<{ type: string; key: string; [key: string]: any }> = [];
-  let currentCategoryRooms = { text: [], voice: [] };
+  let currentCategoryRooms = { text: [], voice: [], users: [] };
   let currentParentId: string = spaceRoomId;
 
   const addCollectedRoomsToProcessed = (parentId: string) => {
@@ -130,12 +131,19 @@ const processHierarchyForVirtualizer = (
         key: `${parentId}-voice-header`,
       });
       if (!isCallClosed) {
-        currentCategoryRooms.voice.forEach((room) =>
-          processed.push({ type: 'room', room, key: room.roomId })
-        );
+        currentCategoryRooms.voice.forEach((room) => {
+          processed.push({ type: 'room', room, key: room.roomId });
+
+          currentCategoryRooms.users.forEach((entry) => {
+            if (entry.room.roomId === room.roomId) {
+              processed.push(entry);
+            }
+          });
+        });
       }
     }
-    currentCategoryRooms = { text: [], voice: [] };
+
+    currentCategoryRooms = { text: [], voice: [], users: [] };
   };
 
   hierarchy.forEach((item) => {
@@ -158,6 +166,19 @@ const processHierarchyForVirtualizer = (
       }
     } else if (room.isCallRoom()) {
       currentCategoryRooms.voice.push(room);
+      getStateEvents(room, 'org.matrix.msc3401.call.member').forEach(({ event }) => {
+        if (Object.entries(event?.content).length !== 0) {
+          if (event.origin_server_ts + event.content.expires > Date.now()) {
+            currentCategoryRooms.users.push({
+              type: 'user',
+              sender: event.sender,
+              key: event.event_id,
+              room,
+            });
+            logger.warn(event);
+          }
+        }
+      });
     } else if (!room.isCallRoom()) {
       currentCategoryRooms.text.push(room);
     } else {
@@ -483,10 +504,10 @@ export function Space() {
               switch (item.type) {
                 case 'category': {
                   const { room, categoryId } = item;
-                  const name = room.name;
+                  const { name } = room;
                   const paddingTop = config?.space?.S400 ?? '1rem';
                   return (
-                    <div style={{ paddingTop: paddingTop }}>
+                    <div style={{ paddingTop }}>
                       <NavCategoryHeader>
                         <RoomNavCategoryButton
                           data-category-id={categoryId}
@@ -532,6 +553,10 @@ export function Space() {
                       />
                     </Box>
                   );
+                }
+                case 'user': {
+                  const { sender } = item;
+                  return <NavItem>{sender}</NavItem>;
                 }
                 default:
                   logger.error('Unknown item type in virtualized list:', item);
