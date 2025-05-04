@@ -4,13 +4,32 @@ import { Box, Chip, Icon, IconButton, Icons, Text, Tooltip, TooltipProvider } fr
 import React from 'react';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useCallState } from '../client/CallProvider';
+import { getSpaceRoomPath } from '../pathUtils';
+import { getCanonicalAliasOrRoomId } from '../../utils/matrix';
+import { useNavToActivePathMapper } from '../../hooks/useNavToActivePathMapper';
+import { useSpace } from '../../hooks/useSpace';
+import { Room } from 'matrix-js-sdk';
+import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
+import {
+  makeMentionCustomProps,
+  renderMatrixMention,
+} from '../../plugins/react-custom-html-parser';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 
-export function CallNavBottom() {
+type CallNavStatusProps = {
+  space: Room | null;
+};
+export function CallNavStatus({ space }: CallNavStatusProps) {
   const { activeCallRoomId, isAudioEnabled, isVideoEnabled, toggleAudio, toggleVideo, hangUp } =
     useCallState();
   const mx = useMatrixClient();
+  const { navigateRoom } = useRoomNavigate();
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
-
+  const handleGoToCallRoom = () => {
+    if (activeCallRoomId) {
+      navigateRoom(activeCallRoomId);
+    }
+  };
   if (!activeCallRoomId) {
     return (
       <Box
@@ -96,19 +115,18 @@ export function CallNavBottom() {
               </Tooltip>
             }
           >
-            {(triggerRef) =>
-              viewedRoomId !== (activeCallRoomId ?? '') ? (
-                <NavLink ref={triggerRef} to={activeCallRoomId}>
-                  <Chip variant="Background" radii="Inherit" size="500" fill="Soft">
-                    Active Call: {mx.getRoom(activeCallRoomId)?.normalizedName}
-                  </Chip>
-                </NavLink>
-              ) : (
-                <Chip variant="Background" ref={triggerRef} radii="Inherit" size="500" fill="Soft">
-                  Active Call: {mx.getRoom(activeCallRoomId)?.normalizedName}
-                </Chip>
-              )
-            }
+            {(triggerRef) => (
+              <Chip
+                radii="Inherit"
+                size="500"
+                fill="Soft"
+                as="button"
+                onClick={handleGoToCallRoom}
+                ref={triggerRef}
+              >
+                {mx.getRoom(activeCallRoomId)?.normalizedName}
+              </Chip>
+            )}
           </TooltipProvider>
         </Box>
       </Box>
