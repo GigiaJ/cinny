@@ -49,7 +49,7 @@ export function CallNavBottom() {
           }
         >
           {(triggerRef) => (
-            <IconButton ref={triggerRef} onClick={toggleAudio}>
+            <IconButton variant="Background" ref={triggerRef} onClick={toggleAudio}>
               <Icon src={!isAudioEnabled ? Icons.VolumeHigh : Icons.VolumeMute} />
             </IconButton>
           )}
@@ -64,7 +64,7 @@ export function CallNavBottom() {
           }
         >
           {(triggerRef) => (
-            <IconButton ref={triggerRef} onClick={toggleVideo}>
+            <IconButton variant="Background" ref={triggerRef} onClick={toggleVideo}>
               <Icon src={!isVideoEnabled ? Icons.Vlc : Icons.Lock} />
             </IconButton>
           )}
@@ -80,7 +80,7 @@ export function CallNavBottom() {
           }
         >
           {(triggerRef) => (
-            <IconButton ref={triggerRef} onClick={hangUp}>
+            <IconButton variant="Background" ref={triggerRef} onClick={hangUp}>
               <Icon src={Icons.Phone} />
             </IconButton>
           )}
@@ -99,13 +99,13 @@ export function CallNavBottom() {
             {(triggerRef) =>
               viewedRoomId !== (activeCallRoomId ?? '') ? (
                 <NavLink ref={triggerRef} to={activeCallRoomId}>
-                  <Chip radii="Inherit" size="500" fill="Soft">
-                    {mx.getRoom(activeCallRoomId)?.normalizedName}
+                  <Chip variant="Background" radii="Inherit" size="500" fill="Soft">
+                    Active Call: {mx.getRoom(activeCallRoomId)?.normalizedName}
                   </Chip>
                 </NavLink>
               ) : (
-                <Chip ref={triggerRef} radii="Inherit" size="500" fill="Soft">
-                  {mx.getRoom(activeCallRoomId)?.normalizedName}
+                <Chip variant="Background" ref={triggerRef} radii="Inherit" size="500" fill="Soft">
+                  Active Call: {mx.getRoom(activeCallRoomId)?.normalizedName}
                 </Chip>
               )
             }
