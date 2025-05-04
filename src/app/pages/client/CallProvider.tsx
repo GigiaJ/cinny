@@ -111,7 +111,7 @@ export function CallProvider({ children }: CallProviderProps) {
     activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     setIsCallActive(false);
     //setActiveCallRoomId(null);
-    //setActiveCallRoomIdState(null);
+    setActiveCallRoomIdState(null);
     //logger.debug(`CallContext: Clearing active clientWidgetApi due to hangup.`);
     //setActiveClientWidgetApiState(null);
     //setClientWidgetApiRoomId(null);
@@ -171,6 +171,7 @@ export function CallProvider({ children }: CallProviderProps) {
       );
       setIsPrimaryIframe(true);
       setIsCallActive(false);
+      setActiveCallRoomIdState(null);
       //hangUp();
     };
 
@@ -200,6 +201,7 @@ export function CallProvider({ children }: CallProviderProps) {
       ev.preventDefault();
       if (isCallActive) {
         setIsPrimaryIframe(false);
+        setActiveCallRoomIdState(viewedRoomId);
       } else {
         setIsPrimaryIframe(true);
       }
