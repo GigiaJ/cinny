@@ -50,7 +50,7 @@ import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
-import { CallNavBottom } from '../../call/CallNavBottom';
+import { CallNavStatus } from '../../call/CallNavStatus';
 
 type DirectMenuProps = {
   requestClose: () => void;
@@ -270,7 +270,7 @@ export function Direct() {
           </Box>
         </PageNavContent>
       )}
-      <CallNavBottom />
+      <CallNavStatus />
     </PageNav>
   );
 }

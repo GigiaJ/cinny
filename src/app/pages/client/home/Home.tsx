@@ -53,7 +53,7 @@ import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
-import { CallNavBottom } from '../../call/CallNavBottom';
+import { CallNavStatus } from '../../call/CallNavStatus';
 
 type HomeMenuProps = {
   requestClose: () => void;
@@ -337,7 +337,7 @@ export function Home() {
           </Box>
         </PageNavContent>
       )}
-      <CallNavBottom />
+      <CallNavStatus />
     </PageNav>
   );
 }

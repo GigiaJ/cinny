@@ -77,7 +77,7 @@ import {
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
-import { CallNavBottom } from '../../call/CallNavBottom';
+import { CallNavStatus } from '../../call/CallNavStatus';
 import { getStateEvents } from '../../../utils/room';
 import { RoomNavUser } from '../../../features/room-nav/RoomNavUser';
 import { useStateEvents } from '../../../hooks/useStateEvents';
@@ -585,7 +585,7 @@ export function Space() {
           })}
         </NavCategory>
       </PageNavContent>
-      <CallNavBottom />
+      <CallNavStatus space={space} />
     </PageNav>
   );
 }
