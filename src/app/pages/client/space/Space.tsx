@@ -23,11 +23,10 @@ import {
   toRem,
 } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { JoinRule, Room, RoomMember } from 'matrix-js-sdk';
+import { JoinRule, Room } from 'matrix-js-sdk';
 import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import FocusTrap from 'focus-trap-react';
 import { logger } from 'matrix-js-sdk/lib/logger';
-import { WidgetApiToWidgetAction } from 'matrix-widget-api';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { mDirectAtom } from '../../../state/mDirectList';
 import {
@@ -38,7 +37,7 @@ import {
   NavLink,
 } from '../../../components/nav';
 import { getSpaceLobbyPath, getSpaceRoomPath, getSpaceSearchPath } from '../../pathUtils';
-import { getCanonicalAliasOrRoomId, getMxIdLocalPart, isRoomAlias } from '../../../utils/matrix';
+import { getCanonicalAliasOrRoomId, isRoomAlias } from '../../../utils/matrix';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
 import {
   useSpaceLobbySelected,
@@ -78,12 +77,10 @@ import {
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
-import { useCallState } from '../CallProvider';
 import { CallNavBottom } from '../../call/CallNavBottom';
-import { getMemberDisplayName, getStateEvents } from '../../../utils/room';
-import { useRoomMembers } from '../../../hooks/useRoomMembers';
-import { UserAvatar } from '../../../components/user-avatar';
-import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { getStateEvents } from '../../../utils/room';
+import { RoomNavUser } from '../../../features/room-nav/RoomNavUser';
+import { useStateEvents } from '../../../hooks/useStateEvents';
 
 /**
  * Processes the raw hierarchy from useSpaceJoinedHierarchy into a flat list
@@ -398,8 +395,6 @@ export function Space() {
 
   const [closedCategories, setClosedCategories] = useAtom(useClosedNavCategoriesAtom());
 
-  const useAuthentication = useMediaAuthentication();
-
   const getRoom = useCallback(
     (rId: string): Room | undefined => {
       if (allJoinedRooms.has(rId)) {
@@ -431,12 +426,20 @@ export function Space() {
     )
   );
 
-  const members = useRoomMembers(mx, space.roomId);
+  const callRooms = useMemo(
+    () =>
+      hierarchy
+        .map((item) => mx.getRoom(item.roomId))
+        .filter((room): room is Room => !!room && room.isCallRoom()),
+    [hierarchy, mx]
+  );
 
-  //.getMxcAvatarUrl()
+  const updateTrigger = useStateEvents(callRooms, StateEvent.GroupCallMemberPrefix);
+
   const processedHierarchy = useMemo(
     () => processHierarchyForVirtualizer(hierarchy, mx, space.roomId, closedCategories),
-    [hierarchy, mx, space.roomId, closedCategories]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hierarchy, mx, space.roomId, closedCategories, updateTrigger]
   );
 
   const virtualizer = useVirtualizer({
@@ -562,41 +565,9 @@ export function Space() {
                 }
                 case 'user': {
                   const { sender, room } = item;
-                  const member = members.find((roomMember) => roomMember.userId === sender);
-                  const avatarMxcUrl = member?.getMxcAvatarUrl();
-                  const avatarUrl = avatarMxcUrl
-                    ? mx.mxcUrlToHttp(
-                        avatarMxcUrl,
-                        32,
-                        32,
-                        'crop',
-                        undefined,
-                        false,
-                        useAuthentication
-                      )
-                    : undefined;
-                  const getName =
-                    getMemberDisplayName(room, member?.userId ?? '') ??
-                    getMxIdLocalPart(member?.userId ?? '') ??
-                    member?.userId;
-
                   return (
                     <Box>
-                      <NavItem variant="Background" radii="400">
-                        <NavItemContent>
-                          <Box as="span" grow="Yes" alignItems="Center" gap="200">
-                            <Avatar size="200">
-                              <UserAvatar
-                                userId={member?.userId ?? ''}
-                                src={avatarUrl ?? undefined}
-                                alt={getName}
-                                renderFallback={() => <Icon size="50" src={Icons.User} filled />}
-                              />
-                            </Avatar>
-                            {getName}
-                          </Box>
-                        </NavItemContent>
-                      </NavItem>
+                      <RoomNavUser room={room} space={space} sender={sender} />
                     </Box>
                   );
                 }
