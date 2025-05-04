@@ -221,7 +221,7 @@ export function RoomNavItem({
   const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
-  const { isChatOpen, toggleChat, hangUp } = useCallState();
+  const { activeCallRoomId, isChatOpen, toggleChat, hangUp } = useCallState();
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
@@ -249,7 +249,7 @@ export function RoomNavItem({
       return;
     }
 
-    if (room.isCallRoom()) {
+    if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
       hangUp();
     }
   };
