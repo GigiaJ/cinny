@@ -117,6 +117,7 @@ export function CallNavStatus({ space }: CallNavStatusProps) {
           >
             {(triggerRef) => (
               <Chip
+                variant="Background"
                 radii="Inherit"
                 size="500"
                 fill="Soft"
