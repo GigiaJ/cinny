@@ -23,7 +23,7 @@ import {
   toRem,
 } from 'folds';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { JoinRule, Room } from 'matrix-js-sdk';
+import { JoinRule, Room, RoomMember } from 'matrix-js-sdk';
 import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import FocusTrap from 'focus-trap-react';
 import { logger } from 'matrix-js-sdk/lib/logger';
@@ -38,7 +38,7 @@ import {
   NavLink,
 } from '../../../components/nav';
 import { getSpaceLobbyPath, getSpaceRoomPath, getSpaceSearchPath } from '../../pathUtils';
-import { getCanonicalAliasOrRoomId, isRoomAlias } from '../../../utils/matrix';
+import { getCanonicalAliasOrRoomId, getMxIdLocalPart, isRoomAlias } from '../../../utils/matrix';
 import { useSelectedRoom } from '../../../hooks/router/useSelectedRoom';
 import {
   useSpaceLobbySelected,
@@ -80,7 +80,10 @@ import {
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
 import { useCallState } from '../CallProvider';
 import { CallNavBottom } from '../../call/CallNavBottom';
-import { getStateEvents } from '../../../utils/room';
+import { getMemberDisplayName, getStateEvents } from '../../../utils/room';
+import { useRoomMembers } from '../../../hooks/useRoomMembers';
+import { UserAvatar } from '../../../components/user-avatar';
+import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 
 /**
  * Processes the raw hierarchy from useSpaceJoinedHierarchy into a flat list
@@ -175,7 +178,6 @@ const processHierarchyForVirtualizer = (
               key: event.event_id,
               room,
             });
-            logger.warn(event);
           }
         }
       });
@@ -390,12 +392,13 @@ export function Space() {
   const allRooms = useAtomValue(allRoomsAtom);
   const allJoinedRooms = useMemo(() => new Set(allRooms), [allRooms]);
   const notificationPreferences = useRoomsNotificationPreferencesContext();
-
   const selectedRoomId = useSelectedRoom();
   const lobbySelected = useSpaceLobbySelected(spaceIdOrAlias);
   const searchSelected = useSpaceSearchSelected(spaceIdOrAlias);
 
   const [closedCategories, setClosedCategories] = useAtom(useClosedNavCategoriesAtom());
+
+  const useAuthentication = useMediaAuthentication();
 
   const getRoom = useCallback(
     (rId: string): Room | undefined => {
@@ -428,6 +431,9 @@ export function Space() {
     )
   );
 
+  const members = useRoomMembers(mx, space.roomId);
+
+  //.getMxcAvatarUrl()
   const processedHierarchy = useMemo(
     () => processHierarchyForVirtualizer(hierarchy, mx, space.roomId, closedCategories),
     [hierarchy, mx, space.roomId, closedCategories]
@@ -555,8 +561,44 @@ export function Space() {
                   );
                 }
                 case 'user': {
-                  const { sender } = item;
-                  return <NavItem>{sender}</NavItem>;
+                  const { sender, room } = item;
+                  const member = members.find((roomMember) => roomMember.userId === sender);
+                  const avatarMxcUrl = member?.getMxcAvatarUrl();
+                  const avatarUrl = avatarMxcUrl
+                    ? mx.mxcUrlToHttp(
+                        avatarMxcUrl,
+                        32,
+                        32,
+                        'crop',
+                        undefined,
+                        false,
+                        useAuthentication
+                      )
+                    : undefined;
+                  const getName =
+                    getMemberDisplayName(room, member?.userId ?? '') ??
+                    getMxIdLocalPart(member?.userId ?? '') ??
+                    member?.userId;
+
+                  return (
+                    <Box>
+                      <NavItem variant="Background" radii="400">
+                        <NavItemContent>
+                          <Box as="span" grow="Yes" alignItems="Center" gap="200">
+                            <Avatar size="200">
+                              <UserAvatar
+                                userId={member?.userId ?? ''}
+                                src={avatarUrl ?? undefined}
+                                alt={getName}
+                                renderFallback={() => <Icon size="50" src={Icons.User} filled />}
+                              />
+                            </Avatar>
+                            {getName}
+                          </Box>
+                        </NavItemContent>
+                      </NavItem>
+                    </Box>
+                  );
                 }
                 default:
                   logger.error('Unknown item type in virtualized list:', item);
