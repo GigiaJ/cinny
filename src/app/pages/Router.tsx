@@ -125,9 +125,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                               <SidebarNav />
                             </MobileFriendlyClientNav>
                           }
-                        >
-                          <Outlet />
-                        </ClientLayout>
+                        />
                         <CallActivationEffect />
                       </CallProvider>
                       <RoomSettingsRenderer />
@@ -204,9 +202,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                     <Space />
                   </MobileFriendlyPageNav>
                 }
-              >
-                <Outlet />
-              </PageRoot>
+              ></PageRoot>
             </RouteSpaceProvider>
           }
         >
