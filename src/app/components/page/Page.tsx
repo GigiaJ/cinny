@@ -1,10 +1,10 @@
 import React, { ComponentProps, MutableRefObject, ReactNode } from 'react';
 import { Box, Header, Line, Scroll, Text, as } from 'folds';
 import classNames from 'classnames';
+import { Outlet, useOutletContext } from 'react-router-dom';
 import { ContainerColor } from '../../styles/ContainerColor.css';
 import * as css from './style.css';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { Outlet, useOutletContext } from 'react-router-dom';
 
 type PageRootProps = {
   nav: ReactNode;
@@ -13,7 +13,7 @@ type PageRootProps = {
 
 export function PageRoot({ nav, children }: PageRootProps) {
   const screenSize = useScreenSizeContext();
-  const { iframeRef } = useOutletContext();
+  const { iframeRef, backupIframeRef } = useOutletContext();
 
   return (
     <Box grow="Yes" className={ContainerColor({ variant: 'Background' })}>
@@ -21,7 +21,7 @@ export function PageRoot({ nav, children }: PageRootProps) {
       {screenSize !== ScreenSize.Mobile && (
         <Line variant="Background" size="300" direction="Vertical" />
       )}
-      <Outlet context={{ iframeRef }} />
+      <Outlet context={{ iframeRef, backupIframeRef }} />
     </Box>
   );
 }
