@@ -28,7 +28,16 @@ interface PersistentCallContainerProps {
   viewedRoomId: string;
 }
 
-export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentCallContainerProps) {
+export function PersistentCallContainer({
+  isVisible,
+  viewedRoomId,
+  iframeRef,
+  widgetApiRef,
+  smallWidgetRef,
+  backupIframeRef,
+  backupWidgetApiRef,
+  backupSmallWidgetRef,
+}: PersistentCallContainerProps) {
   const {
     activeCallRoomId,
     isChatOpen,
@@ -50,14 +59,6 @@ export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentC
   );
 
   logger.info(room);
-
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
-  const widgetApiRef = useRef<ClientWidgetApi | null>(null);
-  const smallWidgetRef = useRef<SmallWidget | null>(null);
-
-  const backupIframeRef = useRef<HTMLIFrameElement | null>(null);
-  const backupWidgetApiRef = useRef<ClientWidgetApi | null>(null);
-  const backupSmallWidgetRef = useRef<SmallWidget | null>(null);
 
   const setupWidget = (widgetApiRef, smallWidgetRef, iframeRef, skipLobby) => {
     const cleanupRoomId = smallWidgetRef.current?.roomId;
@@ -171,95 +172,58 @@ export function PersistentCallContainer({ isVisible, viewedRoomId }: PersistentC
   };
 
   return (
-    <Page style={containerStyle}>
-      <Box direction="Row" grow="Yes" style={{ height: '100%', width: '100%' }}>
-        {activeCallRoomId && roomId && room !== null && (
-          <Box
-            shrink="No"
-            style={{
-              height: '100%',
-              overflowY: 'auto',
-            }}
-          >
-            <PowerLevelsContainer>
-              <PageRoot
-                nav={
-                  <MobileFriendlyPageNav path={SPACE_PATH}>
-                    <Space />
-                  </MobileFriendlyPageNav>
-                }
-              />
-            </PowerLevelsContainer>
-          </Box>
-        )}
-
+    <Box direction="Row" grow="Yes" style={{ height: '0%', width: '0%' }}>
+      <Box
+        direction="Column"
+        style={{
+          position: 'relative',
+          zIndex: 0,
+          display: isMobile && isChatOpen ? 'none' : 'flex',
+          width: isMobile && isChatOpen ? '0%' : '100%',
+          height: isMobile && isChatOpen ? '0%' : '100%',
+        }}
+      >
         <Box
-          direction="Column"
+          grow="Yes"
           style={{
             position: 'relative',
-            overflow: 'hidden',
-            zIndex: 0,
-            display: isMobile && isChatOpen ? 'none' : 'flex',
-            width: isMobile && isChatOpen ? '0%' : '100%',
-            height: isMobile && isChatOpen ? '0%' : '100%',
           }}
         >
-          {activeCallRoomId && roomId && room !== null && (
-            <Box direction="Column" style={{ width: '100%' }}>
-              <PowerLevelsContainer>
-                <RoomViewHeader />
-              </PowerLevelsContainer>
-            </Box>
-          )}
-          <Box
-            grow="Yes"
+          <iframe
+            ref={iframeRef}
             style={{
-              position: 'relative',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              display: isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
+              width: '100%',
+              height: '100%',
+              border: 'none',
             }}
-          >
-            <iframe
-              ref={iframeRef}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                display: isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
-                width: '100%',
-                height: '100%',
-                border: 'none',
-              }}
-              title={`Persistent Element Call`}
-              sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
-              allow="microphone; camera; display-capture; autoplay; clipboard-write;"
-              src="about:blank"
-            />
-            <iframe
-              ref={backupIframeRef}
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                border: 'none',
+            title={`Persistent Element Call`}
+            sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
+            allow="microphone; camera; display-capture; autoplay; clipboard-write;"
+            src="about:blank"
+          />
+          <iframe
+            ref={backupIframeRef}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              border: 'none',
 
-                display: !isPrimaryIframe || isViewingActiveCall ? 'none' : 'flex',
-              }}
-              title={`Persistent Element Call`}
-              sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
-              allow="microphone; camera; display-capture; autoplay; clipboard-write;"
-              src="about:blank"
-            />
-          </Box>
-        </Box>
-        <Box grow="Yes" direction="Column" style={{ position: 'relative' }}>
-          {isChatOpen && activeCallRoomId && roomId && room !== null && (
-            <PowerLevelsContainer>
-              <RoomView room={room} eventId={eventId} />
-            </PowerLevelsContainer>
-          )}
+              display: !isPrimaryIframe || isViewingActiveCall ? 'none' : 'flex',
+            }}
+            title={`Persistent Element Call`}
+            sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
+            allow="microphone; camera; display-capture; autoplay; clipboard-write;"
+            src="about:blank"
+          />
         </Box>
       </Box>
-    </Page>
+    </Box>
   );
 }
