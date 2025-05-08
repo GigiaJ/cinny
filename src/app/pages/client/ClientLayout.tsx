@@ -1,9 +1,11 @@
-import React, { ReactNode, useMemo } from 'react';
+import React, { ReactNode, useMemo, useRef } from 'react';
 import { Box } from 'folds';
-import { useParams } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { useCallState } from './CallProvider';
 import { PersistentCallContainer } from '../call/PersistentCallContainer';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { ClientWidgetApi } from 'matrix-widget-api';
+import { SmallWidget } from '../../features/room/SmallWidget';
 
 type ClientLayoutProps = {
   nav: ReactNode;
@@ -11,6 +13,13 @@ type ClientLayoutProps = {
 };
 export function ClientLayout({ nav, children }: ClientLayoutProps) {
   const { activeCallRoomId } = useCallState();
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const widgetApiRef = useRef<ClientWidgetApi | null>(null);
+  const smallWidgetRef = useRef<SmallWidget | null>(null);
+
+  const backupIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const backupWidgetApiRef = useRef<ClientWidgetApi | null>(null);
+  const backupSmallWidgetRef = useRef<SmallWidget | null>(null);
   const { roomIdOrAlias: viewedRoomId } = useParams();
   const mx = useMatrixClient();
   const isCall = mx.getRoom(viewedRoomId)?.isCallRoom();
@@ -22,21 +31,38 @@ export function ClientLayout({ nav, children }: ClientLayoutProps) {
       </Box>
       <Box grow="Yes" direction="Column" style={{ position: 'relative', overflowY: 'auto' }}>
         <Box grow="Yes" style={{ position: 'relative' }}>
+          <PersistentCallContainer
+            isVisible={false}
+            viewedRoomId={viewedRoomId}
+            iframeRef={iframeRef}
+            widgetApiRef={widgetApiRef}
+            smallWidgetRef={smallWidgetRef}
+            backupIframeRef={backupIframeRef}
+            backupWidgetApiRef={backupWidgetApiRef}
+            backupSmallWidgetRef={backupSmallWidgetRef}
+          />
           <Box
             grow="Yes"
             style={{
-              display: isCall ? 'none' : 'flex',
               flexDirection: 'column',
               width: '100%',
               height: '100%',
             }}
             className="outlet-wrapper"
           >
-            {children}
+            <Outlet
+              context={{
+                iframeRef,
+                widgetApiRef,
+                smallWidgetRef,
+                backupIframeRef,
+                backupWidgetApiRef,
+                backupSmallWidgetRef,
+              }}
+            />
           </Box>
-          <PersistentCallContainer isVisible={isCall} viewedRoomId={viewedRoomId} />
         </Box>
-      </Box>{' '}
+      </Box>
     </Box>
   );
 }
