@@ -52,6 +52,7 @@ import {
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
 import { useCallState } from '../../pages/client/CallProvider';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -221,10 +222,11 @@ export function RoomNavItem({
   const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
-  const { activeCallRoomId, isChatOpen, toggleChat, hangUp } = useCallState();
+  const { activeCallRoomId, setActiveCallRoomId, isChatOpen, toggleChat, hangUp } = useCallState();
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
+  const { navigateRoom } = useRoomNavigate();
 
   const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
     evt.preventDefault();
@@ -251,6 +253,9 @@ export function RoomNavItem({
 
     if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
       hangUp();
+      setActiveCallRoomId(room.roomId);
+    } else {
+      navigateRoom(room.roomId);
     }
   };
 
@@ -272,57 +277,54 @@ export function RoomNavItem({
       {...hoverProps}
       {...focusWithinProps}
     >
-      <NavLink to={linkPath} onClick={handleNavItemClick}>
-        {' '}
-        <NavItemContent>
-          <Box as="span" grow="Yes" alignItems="Center" gap="200">
-            <Avatar size="200" radii="400">
-              {showAvatar ? (
-                <RoomAvatar
-                  roomId={room.roomId}
-                  src={
-                    direct
-                      ? getDirectRoomAvatarUrl(mx, room, 96, useAuthentication)
-                      : getRoomAvatarUrl(mx, room, 96, useAuthentication)
-                  }
-                  alt={room.name}
-                  renderFallback={() => (
-                    <Text as="span" size="H6">
-                      {nameInitials(room.name)}
-                    </Text>
-                  )}
-                />
-              ) : (
-                <RoomIcon
-                  style={{ opacity: unread ? config.opacity.P500 : config.opacity.P300 }}
-                  filled={selected}
-                  size="100"
-                  joinRule={room.getJoinRule()}
-                  call={room.isCallRoom()}
-                />
-              )}
-            </Avatar>
-            <Box as="span" grow="Yes">
-              <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
-                {room.name}
-              </Text>
-            </Box>
-            {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
-              <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
-                <TypingIndicator size="300" disableAnimation />
-              </Badge>
+      <NavItemContent onClick={handleNavItemClick}>
+        <Box as="span" grow="Yes" alignItems="Center" gap="200">
+          <Avatar size="200" radii="400">
+            {showAvatar ? (
+              <RoomAvatar
+                roomId={room.roomId}
+                src={
+                  direct
+                    ? getDirectRoomAvatarUrl(mx, room, 96, useAuthentication)
+                    : getRoomAvatarUrl(mx, room, 96, useAuthentication)
+                }
+                alt={room.name}
+                renderFallback={() => (
+                  <Text as="span" size="H6">
+                    {nameInitials(room.name)}
+                  </Text>
+                )}
+              />
+            ) : (
+              <RoomIcon
+                style={{ opacity: unread ? config.opacity.P500 : config.opacity.P300 }}
+                filled={selected}
+                size="100"
+                joinRule={room.getJoinRule()}
+                call={room.isCallRoom()}
+              />
             )}
-            {!optionsVisible && unread && (
-              <UnreadBadgeCenter>
-                <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
-              </UnreadBadgeCenter>
-            )}
-            {!optionsVisible && notificationMode !== RoomNotificationMode.Unset && (
-              <Icon size="50" src={getRoomNotificationModeIcon(notificationMode)} />
-            )}
+          </Avatar>
+          <Box as="span" grow="Yes">
+            <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+              {room.name}
+            </Text>
           </Box>
-        </NavItemContent>
-      </NavLink>
+          {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
+            <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
+              <TypingIndicator size="300" disableAnimation />
+            </Badge>
+          )}
+          {!optionsVisible && unread && (
+            <UnreadBadgeCenter>
+              <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
+            </UnreadBadgeCenter>
+          )}
+          {!optionsVisible && notificationMode !== RoomNotificationMode.Unset && (
+            <Icon size="50" src={getRoomNotificationModeIcon(notificationMode)} />
+          )}
+        </Box>
+      </NavItemContent>
       {optionsVisible && (
         <NavItemOptions>
           <PopOut
