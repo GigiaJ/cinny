@@ -78,7 +78,7 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
       iframeElement.style.height = `${hostRect.height}px`;
       iframeElement.style.border = 'none';
       iframeElement.style.zIndex = '1000';
-      iframeElement.style.display = 'block';
+      iframeElement.style.display = room.isCallRoom() ? 'block' : 'none';
       iframeElement.style.visibility = 'visible';
       iframeElement.style.pointerEvents = 'auto';
     }
@@ -139,6 +139,7 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
           height: '100%',
           position: 'relative',
           pointerEvents: 'none',
+          display: isCallViewVisible ? 'flex' : 'none',
         }}
       />
     </Box>
