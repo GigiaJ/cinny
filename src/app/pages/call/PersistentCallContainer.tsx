@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { createContext, ReactNode, useEffect, useMemo, useRef } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
-import { ClientWidgetApi, IWidgetApiRequest } from 'matrix-widget-api';
+import { ClientWidgetApi } from 'matrix-widget-api';
 import { Box } from 'folds';
+import { Outlet, useParams } from 'react-router-dom';
 import { useCallState } from '../client/CallProvider';
 import {
   createVirtualWidget,
@@ -10,49 +11,38 @@ import {
   getWidgetUrl,
 } from '../../features/room/SmallWidget';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { RoomViewHeader } from '../../features/room/RoomViewHeader';
-import { Page, PageRoot } from '../../components/page';
-import { RouteSpaceProvider, Space, SpaceRouteRoomProvider } from '../client/space';
-import { MobileFriendlyPageNav } from '../MobileFriendly';
-import { SPACE_PATH } from '../paths';
-import { PowerLevelsContextProvider, usePowerLevels } from '../../hooks/usePowerLevels';
 import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
 import { useClientConfig } from '../../hooks/useClientConfig';
-import { RoomView } from '../../features/room/RoomView';
-import { useParams } from 'react-router-dom';
-import { PowerLevelsContainer } from './PowerLevelsContainer';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 interface PersistentCallContainerProps {
-  isVisible: boolean;
-  viewedRoomId: string;
+  children: ReactNode;
 }
 
-export function PersistentCallContainer({
-  isVisible,
-  viewedRoomId,
-  iframeRef,
-  widgetApiRef,
-  smallWidgetRef,
-  backupIframeRef,
-  backupWidgetApiRef,
-  backupSmallWidgetRef,
-}: PersistentCallContainerProps) {
+export const RefContext = createContext(null);
+
+export function PersistentCallContainer({ children }: PersistentCallContainerProps) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const widgetApiRef = useRef<ClientWidgetApi | null>(null);
+  const smallWidgetRef = useRef<SmallWidget | null>(null);
+
+  const backupIframeRef = useRef<HTMLIFrameElement | null>(null);
+  const backupWidgetApiRef = useRef<ClientWidgetApi | null>(null);
+  const backupSmallWidgetRef = useRef<SmallWidget | null>(null);
   const {
     activeCallRoomId,
     isChatOpen,
     isCallActive,
     isPrimaryIframe,
-    setActiveCallRoomId,
     registerActiveClientWidgetApi,
   } = useCallState();
-  const { eventId } = useParams();
   const mx = useMatrixClient();
   const roomId = useSelectedRoom();
   const clientConfig = useClientConfig();
   const room = mx.getRoom(roomId) ?? null;
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
+  const { roomIdOrAlias: viewedRoomId } = useParams();
   const isViewingActiveCall = useMemo(
     () => activeCallRoomId !== null && activeCallRoomId === viewedRoomId,
     [activeCallRoomId, viewedRoomId]
@@ -164,66 +154,62 @@ export function PersistentCallContainer({
     setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, false);
   });
 
-  const containerStyle: React.CSSProperties = {
-    width: '100%',
-    height: '100%',
-    display: isVisible ? 'flex' : 'none',
-    flexDirection: 'row',
-  };
-
   return (
-    <Box direction="Row" grow="Yes" style={{ height: '0%', width: '0%' }}>
-      <Box
-        direction="Column"
-        style={{
-          position: 'relative',
-          zIndex: 0,
-          display: isMobile && isChatOpen ? 'none' : 'flex',
-          width: isMobile && isChatOpen ? '0%' : '100%',
-          height: isMobile && isChatOpen ? '0%' : '100%',
-        }}
-      >
+    <RefContext.Provider value={{ iframeRef, backupIframeRef }}>
+      <Box grow="No">
         <Box
-          grow="Yes"
+          direction="Column"
           style={{
             position: 'relative',
+            zIndex: 0,
+            display: isMobile && isChatOpen ? 'none' : 'flex',
+            width: isMobile && isChatOpen ? '0%' : '100%',
+            height: isMobile && isChatOpen ? '0%' : '100%',
           }}
         >
-          <iframe
-            ref={iframeRef}
+          <Box
+            grow="Yes"
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              display: isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
-              width: '100%',
-              height: '100%',
-              border: 'none',
+              position: 'relative',
             }}
-            title={`Persistent Element Call`}
-            sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
-            allow="microphone; camera; display-capture; autoplay; clipboard-write;"
-            src="about:blank"
-          />
-          <iframe
-            ref={backupIframeRef}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              width: '100%',
-              height: '100%',
-              border: 'none',
+          >
+            <iframe
+              ref={iframeRef}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                display: isPrimaryIframe || isViewingActiveCall ? 'none' : 'none',
+                width: '100%',
+                height: '100%',
+                border: 'none',
+              }}
+              title={`Persistent Element Call`}
+              sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
+              allow="microphone; camera; display-capture; autoplay; clipboard-write;"
+              src="about:blank"
+            />
+            <iframe
+              ref={backupIframeRef}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                border: 'none',
 
-              display: !isPrimaryIframe || isViewingActiveCall ? 'none' : 'flex',
-            }}
-            title={`Persistent Element Call`}
-            sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
-            allow="microphone; camera; display-capture; autoplay; clipboard-write;"
-            src="about:blank"
-          />
+                display: !isPrimaryIframe || isViewingActiveCall ? 'none' : 'flex',
+              }}
+              title={`Persistent Element Call`}
+              sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
+              allow="microphone; camera; display-capture; autoplay; clipboard-write;"
+              src="about:blank"
+            />
+          </Box>
         </Box>
       </Box>
-    </Box>
+      {children}
+    </RefContext.Provider>
   );
 }
