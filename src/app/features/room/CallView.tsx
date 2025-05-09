@@ -1,9 +1,10 @@
 import { Room } from 'matrix-js-sdk';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Box } from 'folds';
 import { RoomViewHeader } from './RoomViewHeader';
+import { useCallState } from '../../pages/client/CallProvider';
 
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -28,23 +29,30 @@ type OriginalStyles = {
   border?: string;
 };
 
+interface CallViewOutletContext {
+  iframeRef: React.RefObject<HTMLIFrameElement | null>;
+  backupIframeRef: React.RefObject<HTMLIFrameElement | null>;
+}
+
 export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
-  const { iframeRef } = useOutletContext<{
-    iframeRef: React.RefObject<HTMLIFrameElement | null>;
-  }>();
+  const { iframeRef, backupIframeRef } = useOutletContext<CallViewOutletContext>();
   const iframeHostRef = useRef<HTMLDivElement>(null);
 
   const originalIframeStylesRef = useRef<OriginalStyles | null>(null);
+  const { activeCallRoomId, isPrimaryIframe } = useCallState();
+  const isViewingActiveCall = useMemo(
+    () => activeCallRoomId !== null && activeCallRoomId === room.roomId,
+    [activeCallRoomId]
+  );
 
-  const shouldDisplayCallIFrame =
-    room && typeof room.isCallRoom === 'function' && room.isCallRoom();
+  const activeIframeDisplayRef =
+    !isPrimaryIframe || isViewingActiveCall ? iframeRef : backupIframeRef;
 
   const applyFixedPositioningToIframe = useCallback(() => {
-    const iframeElement = iframeRef?.current;
+    const iframeElement = activeIframeDisplayRef?.current;
     const hostElement = iframeHostRef?.current;
 
     if (iframeElement && hostElement) {
-      // Save original styles only ONCE per "portaling" session
       if (!originalIframeStylesRef.current) {
         const computed = window.getComputedStyle(iframeElement);
         originalIframeStylesRef.current = {
@@ -63,29 +71,27 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
 
       const hostRect = hostElement.getBoundingClientRect();
 
-      // Apply fixed positioning relative to the viewport, but aligned with the host
       iframeElement.style.position = 'fixed';
       iframeElement.style.top = `${hostRect.top}px`;
       iframeElement.style.left = `${hostRect.left}px`;
       iframeElement.style.width = `${hostRect.width}px`;
       iframeElement.style.height = `${hostRect.height}px`;
       iframeElement.style.border = 'none';
-      iframeElement.style.zIndex = '1000'; // Ensure it's on top
+      iframeElement.style.zIndex = '1000';
       iframeElement.style.display = 'block';
       iframeElement.style.visibility = 'visible';
       iframeElement.style.pointerEvents = 'auto';
     }
-  }, [iframeRef, iframeHostRef]);
+  }, [activeIframeDisplayRef, iframeHostRef]);
 
   const debouncedApplyFixedPositioning = useCallback(debounce(applyFixedPositioningToIframe, 50), [
     applyFixedPositioningToIframe,
   ]);
-
   useEffect(() => {
-    const iframeElement = iframeRef?.current;
+    const iframeElement = activeIframeDisplayRef?.current;
     const hostElement = iframeHostRef?.current;
 
-    if (shouldDisplayCallIFrame && iframeElement && hostElement) {
+    if (isPrimaryIframe || (isViewingActiveCall && iframeElement && hostElement)) {
       applyFixedPositioningToIframe();
 
       const resizeObserver = new ResizeObserver(debouncedApplyFixedPositioning);
@@ -99,32 +105,30 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
         if (iframeElement && originalIframeStylesRef.current) {
           const originalStyles = originalIframeStylesRef.current;
           (Object.keys(originalStyles) as Array<keyof OriginalStyles>).forEach((key) => {
-            iframeElement.style[key] = originalStyles[key] || '';
+            if (key in iframeElement.style) {
+              iframeElement.style[key as any] = originalStyles[key] || '';
+            }
           });
         }
         originalIframeStylesRef.current = null;
       };
     }
-    if (iframeElement && originalIframeStylesRef.current) {
-      const originalStyles = originalIframeStylesRef.current;
-      (Object.keys(originalStyles) as Array<keyof OriginalStyles>).forEach((key) => {
-        iframeElement.style[key] = originalStyles[key] || '';
-      });
-      originalIframeStylesRef.current = null;
-    }
   }, [
-    shouldDisplayCallIFrame,
-    iframeRef,
+    activeIframeDisplayRef,
     applyFixedPositioningToIframe,
     debouncedApplyFixedPositioning,
+    isPrimaryIframe,
+    isViewingActiveCall,
   ]);
+
+  const isCallViewVisible = room.isCallRoom();
 
   return (
     <Box
       direction="Column"
       style={{
         width: '60%',
-        display: room.isCallRoom() ? 'flex' : 'none',
+        display: isCallViewVisible ? 'flex' : 'none',
       }}
     >
       <RoomViewHeader />
