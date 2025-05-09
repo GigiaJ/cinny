@@ -9,9 +9,8 @@ import { SmallWidget } from '../../features/room/SmallWidget';
 
 type ClientLayoutProps = {
   nav: ReactNode;
-  children: ReactNode;
 };
-export function ClientLayout({ nav, children }: ClientLayoutProps) {
+export function ClientLayout({ nav }: ClientLayoutProps) {
   const { activeCallRoomId } = useCallState();
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const widgetApiRef = useRef<ClientWidgetApi | null>(null);
@@ -53,11 +52,7 @@ export function ClientLayout({ nav, children }: ClientLayoutProps) {
             <Outlet
               context={{
                 iframeRef,
-                widgetApiRef,
-                smallWidgetRef,
                 backupIframeRef,
-                backupWidgetApiRef,
-                backupSmallWidgetRef,
               }}
             />
           </Box>
