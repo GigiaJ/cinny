@@ -179,7 +179,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                display: isPrimaryIframe || isViewingActiveCall ? 'none' : 'none',
+                display: isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
                 width: '100%',
                 height: '100%',
                 border: 'none',
@@ -198,8 +198,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
                 width: '100%',
                 height: '100%',
                 border: 'none',
-
-                display: !isPrimaryIframe || isViewingActiveCall ? 'none' : 'flex',
+                display: !isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
               }}
               title={`Persistent Element Call`}
               sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
