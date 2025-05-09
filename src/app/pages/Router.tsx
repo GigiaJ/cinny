@@ -63,6 +63,7 @@ import { ClientRoomsNotificationPreferences } from './client/ClientRoomsNotifica
 import { SpaceSettingsRenderer } from '../features/space-settings';
 import { CallProvider } from './client/CallProvider';
 import { CallActivationEffect } from './call/CallActivation';
+import { PersistentCallContainer } from './call/PersistentCallContainer';
 
 export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize) => {
   const { hashRouter } = clientConfig;
@@ -125,7 +126,11 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                               <SidebarNav />
                             </MobileFriendlyClientNav>
                           }
-                        />
+                        >
+                          <PersistentCallContainer>
+                            <Outlet />
+                          </PersistentCallContainer>
+                        </ClientLayout>
                         <CallActivationEffect />
                       </CallProvider>
                       <RoomSettingsRenderer />
@@ -202,7 +207,9 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
                     <Space />
                   </MobileFriendlyPageNav>
                 }
-              ></PageRoot>
+              >
+                <Outlet />
+              </PageRoot>
             </RouteSpaceProvider>
           }
         >
