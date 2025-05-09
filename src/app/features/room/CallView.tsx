@@ -1,10 +1,10 @@
 import { Room } from 'matrix-js-sdk';
-import React, { useMemo } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { Box } from 'folds';
 import { RoomViewHeader } from './RoomViewHeader';
 import { useCallState } from '../../pages/client/CallProvider';
+import { RefContext } from '../../pages/call/PersistentCallContainer';
 
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -35,7 +35,7 @@ interface CallViewOutletContext {
 }
 
 export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
-  const { iframeRef, backupIframeRef } = useOutletContext<CallViewOutletContext>();
+  const { iframeRef, backupIframeRef } = useContext(RefContext);
   const iframeHostRef = useRef<HTMLDivElement>(null);
 
   const originalIframeStylesRef = useRef<OriginalStyles | null>(null);
