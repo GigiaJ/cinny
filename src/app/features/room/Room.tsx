@@ -14,6 +14,7 @@ import { markAsRead } from '../../../client/action/notifications';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomMembers } from '../../hooks/useRoomMembers';
 import { CallView } from './CallView';
+import { useCallState } from '../../pages/client/CallProvider';
 
 export function Room() {
   const { eventId } = useParams();
@@ -22,6 +23,7 @@ export function Room() {
 
   const [isDrawer] = useSetting(settingsAtom, 'isPeopleDrawer');
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+  const { isChatOpen } = useCallState();
   const screenSize = useScreenSizeContext();
   const powerLevels = usePowerLevels(room);
   const members = useRoomMembers(mx, room?.roomId);
@@ -50,26 +52,27 @@ export function Room() {
         }}
       >
         <CallView room={room} eventId={eventId} />
-
-        <Box
-          grow="Yes"
-          style={{
-            width: room.isCallRoom() ? '50%' : '100%',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-          }}
-        >
-          <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fff' }}>
-            <RoomView room={room} eventId={eventId} />
+        {(!room.isCallRoom() || isChatOpen) && (
+          <Box
+            grow="Yes"
+            style={{
+              width: room.isCallRoom() ? (isChatOpen ? '40%' : '0%') : '100%',
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+          >
+            <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fff' }}>
+              <RoomView room={room} eventId={eventId} />
+            </Box>
+            {screenSize === ScreenSize.Desktop && isDrawer && (
+              <>
+                <Line variant="Background" direction="Vertical" size="300" />
+                <MembersDrawer key={room.roomId} room={room} members={members} />
+              </>
+            )}
           </Box>
-          {screenSize === ScreenSize.Desktop && isDrawer && (
-            <>
-              <Line variant="Background" direction="Vertical" size="300" />
-              <MembersDrawer key={room.roomId} room={room} members={members} />
-            </>
-          )}
-        </Box>
+        )}
       </Box>
     </PowerLevelsContextProvider>
   );
