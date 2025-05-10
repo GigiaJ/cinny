@@ -5,6 +5,7 @@ import { Box } from 'folds';
 import { RoomViewHeader } from './RoomViewHeader';
 import { useCallState } from '../../pages/client/CallProvider';
 import { RefContext } from '../../pages/call/PersistentCallContainer';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -39,11 +40,14 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
   const iframeHostRef = useRef<HTMLDivElement>(null);
 
   const originalIframeStylesRef = useRef<OriginalStyles | null>(null);
-  const { activeCallRoomId, isPrimaryIframe } = useCallState();
+  const { activeCallRoomId, isPrimaryIframe, isChatOpen } = useCallState();
   const isViewingActiveCall = useMemo(
     () => activeCallRoomId !== null && activeCallRoomId === room.roomId,
     [activeCallRoomId]
   );
+
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
 
   const activeIframeDisplayRef =
     !isPrimaryIframe || isViewingActiveCall ? iframeRef : backupIframeRef;
@@ -127,8 +131,8 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
     <Box
       direction="Column"
       style={{
-        width: '60%',
-        display: isCallViewVisible ? 'flex' : 'none',
+        width: isChatOpen ? (isMobile ? '50%' : '100%') : '100%',
+        display: isCallViewVisible ? (isMobile && isChatOpen ? 'none' : 'flex') : 'none',
       }}
     >
       <RoomViewHeader />
