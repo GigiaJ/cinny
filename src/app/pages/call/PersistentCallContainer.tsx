@@ -262,7 +262,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
                   width: '100%',
                   height: '100%',
                   border: 'none',
-                  display: !isPrimaryIframe && isViewingActiveCall ? 'flex' : 'none',
+                  display: !isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
                 }}
                 title={`Persistent Element Call`}
                 sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
