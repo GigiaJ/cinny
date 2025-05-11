@@ -132,8 +132,9 @@ export function CallProvider({ children }: CallProviderProps) {
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
     activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
-    setIsCallActive(false);
-  }, [activeClientWidgetApi]);
+    //setActiveCallRoomIdState(null);
+    //setIsCallActive(false);
+  }, [activeClientWidgetApi?.transport]);
 
   const setActiveClientWidgetApi = useCallback(
     (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
@@ -182,11 +183,11 @@ export function CallProvider({ children }: CallProviderProps) {
       }
 
       if (roomId && clientWidgetApi) {
-        logger.error(`CallContext: Registering active clientWidgetApi for room ${roomId}.`);
+        logger.error(`CallContext: Registering viewed clientWidgetApi for room ${roomId}.`);
         setViewedClientWidgetApi(clientWidgetApi, roomId);
       } else if (roomId === viewedClientWidgetApiRoomId || roomId === null) {
         logger.error(
-          `CallContext: Clearing active clientWidgetApi for room ${viewedClientWidgetApiRoomId}.`
+          `CallContext: Clearing viewed clientWidgetApi for room ${viewedClientWidgetApiRoomId}.`
         );
         setViewedClientWidgetApi(null, null);
         //resetMediaState();
@@ -200,19 +201,13 @@ export function CallProvider({ children }: CallProviderProps) {
   );
 
   useEffect(() => {
-    if (
-      !activeClientWidgetApi ||
-      !viewedClientWidgetApi ||
-      !activeCallRoomId ||
-      !viewedCallRoomId ||
-      isCallActive
-    ) {
+    if (!activeCallRoomId || !viewedCallRoomId) {
       return;
     }
     //logger.error(viewedClientWidgetApi);
     const handleHangup = (ev: CustomEvent) => {
       ev.preventDefault();
-      hangUp();
+      //hangUp();
       // if (!isPrimaryIframe) {
       activeClientWidgetApi?.transport.reply(ev.detail, {});
       // } else {
@@ -223,7 +218,7 @@ export function CallProvider({ children }: CallProviderProps) {
         ev
       );
       //setIsPrimaryIframe(!isPrimaryIframe);
-      setIsCallActive(false);
+      //setIsCallActive(false);
       //setActiveCallRoomIdState(null);
     };
 
@@ -255,16 +250,53 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
-      if (isCallActive && activeClientWidgetApi) {
-        activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
-          setActiveCallRoomIdState(viewedCallRoomId);
-          setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
-          //setIsPrimaryIframe(!isPrimaryIframe);
-          //setViewedClientWidgetApi(null, null);
-          setIsCallActive(true);
-          activeClientWidgetApi?.transport.reply(ev.detail, {});
-        });
+
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error('PRE Swap');
+      logger.error(isCallActive.toString());
+      logger.error(activeClientWidgetApi);
+      logger.error(viewedClientWidgetApi);
+
+      activeClientWidgetApi?.transport.reply(ev.detail, {});
+      if (isCallActive && activeClientWidgetApi && viewedClientWidgetApi) {
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        logger.error('Primary Swap');
+        activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {});
+
+        setActiveCallRoomIdState(viewedCallRoomId);
+        setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+        setIsPrimaryIframe(!isPrimaryIframe);
+        //setViewedCallRoomId(null);
+        //setViewedClientWidgetApi(null, null);
+        //setViewedClientWidgetApi(null, null);
+      } else {
+        //setActiveCallRoomIdState(viewedCallRoomId);
       }
+      setIsCallActive(true);
     };
 
     logger.debug(
