@@ -264,6 +264,7 @@ export function RoomNavItem({
       logger.error(room?.normalizedName);
       setActiveCallRoomId(room.roomId);
       setViewedCallRoomId(room.roomId);
+      navigateRoom(room.roomId);
     } else {
       navigateRoom(room.roomId);
     }
