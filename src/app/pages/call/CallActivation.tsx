@@ -22,7 +22,7 @@ export function CallActivationEffect() {
     if (isViewingCallRoom) {
       if (viewedRoomId !== activeCallRoomId && !isCallActive) {
         logger.info(`CallActivationEffect: Auto-activating call for viewed room: ${viewedRoomId}`);
-        setActiveCallRoomId(viewedRoomId);
+        //setActiveCallRoomId(viewedRoomId);
       } else {
         logger.debug(
           `CallActivationEffect: Viewed room ${viewedRoomId} is already the active call.`
