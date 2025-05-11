@@ -53,6 +53,7 @@ import {
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
 import { useCallState } from '../../pages/client/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { logger } from 'matrix-js-sdk/lib/logger';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -222,7 +223,14 @@ export function RoomNavItem({
   const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
-  const { activeCallRoomId, setActiveCallRoomId, isChatOpen, toggleChat, hangUp } = useCallState();
+  const {
+    activeCallRoomId,
+    setActiveCallRoomId,
+    setViewedCallRoomId,
+    isChatOpen,
+    toggleChat,
+    hangUp,
+  } = useCallState();
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
@@ -253,7 +261,9 @@ export function RoomNavItem({
 
     if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
       hangUp();
+      logger.error(room?.normalizedName);
       setActiveCallRoomId(room.roomId);
+      setViewedCallRoomId(room.roomId);
     } else {
       navigateRoom(room.roomId);
     }
@@ -262,6 +272,7 @@ export function RoomNavItem({
   const handleChatButtonClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     if (!isChatOpen) toggleChat();
+    setViewedCallRoomId(room.roomId);
   };
 
   const optionsVisible = hover || !!menuAnchor;
