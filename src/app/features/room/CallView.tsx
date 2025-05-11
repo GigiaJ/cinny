@@ -50,7 +50,8 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
 
-  const activeIframeDisplayRef = isPrimaryIframe ? primaryIframeRef : backupIframeRef;
+  const activeIframeDisplayRef =
+    isViewingActiveCall && isPrimaryIframe ? primaryIframeRef : backupIframeRef;
 
   const applyFixedPositioningToIframe = useCallback(() => {
     const iframeElement = activeIframeDisplayRef?.current;
@@ -97,7 +98,7 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
     const iframeElement = activeIframeDisplayRef?.current;
     const hostElement = iframeHostRef?.current;
 
-    if (!isPrimaryIframe || (isViewingActiveCall && iframeElement && hostElement)) {
+    if (room.isCallRoom() || (isViewingActiveCall && iframeElement && hostElement)) {
       applyFixedPositioningToIframe();
 
       const resizeObserver = new ResizeObserver(debouncedApplyFixedPositioning);
