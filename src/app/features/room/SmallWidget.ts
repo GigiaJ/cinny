@@ -86,6 +86,8 @@ export class SmallWidget extends EventEmitter {
 
   private roomId?: string;
 
+  public url?: string;
+
   private type: string; // Type of the widget (e.g., 'm.call')
 
   private readUpToMap: { [roomId: string]: string } = {}; // room ID to event ID
@@ -98,6 +100,7 @@ export class SmallWidget extends EventEmitter {
     super();
     this.client = iapp.client;
     this.roomId = iapp.roomId;
+    this.url = iapp.url;
     this.type = iapp.type;
     this.mockWidget = new CinnyWidget(iapp);
   }
