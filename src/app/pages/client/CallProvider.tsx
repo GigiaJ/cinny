@@ -27,9 +27,15 @@ const WIDGET_JOIN_ACTION = 'io.element.join';
 interface CallContextState {
   activeCallRoomId: string | null;
   setActiveCallRoomId: (roomId: string | null) => void;
+  viewedCallRoomId: string | null;
+  setViewedCallRoomId: (roomId: string | null) => void;
   hangUp: () => void;
   activeClientWidgetApi: ClientWidgetApi | null;
   registerActiveClientWidgetApi: (
+    roomId: string | null,
+    clientWidgetApi: ClientWidgetApi | null
+  ) => void;
+  registerViewedClientWidgetApi: (
     roomId: string | null,
     clientWidgetApi: ClientWidgetApi | null
   ) => void;
@@ -58,14 +64,23 @@ const DEFAULT_AUDIO_ENABLED = true;
 const DEFAULT_VIDEO_ENABLED = false;
 const DEFAULT_CHAT_OPENED = false;
 const DEFAULT_CALL_ACTIVE = false;
-const DEFAULT_PRIMARY_IFRAME = false;
+const DEFAULT_PRIMARY_IFRAME = true;
 
 export function CallProvider({ children }: CallProviderProps) {
   const [activeCallRoomId, setActiveCallRoomIdState] = useState<string | null>(null);
+  const [viewedCallRoomId, setViewedCallRoomIdState] = useState<string | null>(null);
   const [activeClientWidgetApi, setActiveClientWidgetApiState] = useState<ClientWidgetApi | null>(
     null
   );
-  const [clientWidgetApiRoomId, setClientWidgetApiRoomId] = useState<string | null>(null);
+  const [activeClientWidgetApiRoomId, setActiveClientWidgetApiRoomId] = useState<string | null>(
+    null
+  );
+  const [viewedClientWidgetApi, setViewedClientWidgetApiState] = useState<ClientWidgetApi | null>(
+    null
+  );
+  const [viewedClientWidgetApiRoomId, setViewedClientWidgetApiRoomId] = useState<string | null>(
+    null
+  );
 
   const [isAudioEnabled, setIsAudioEnabledState] = useState<boolean>(DEFAULT_AUDIO_ENABLED);
   const [isVideoEnabled, setIsVideoEnabledState] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
@@ -95,32 +110,35 @@ export function CallProvider({ children }: CallProviderProps) {
         resetMediaState();
       }
 
-      if (roomId === null || roomId !== clientWidgetApiRoomId) {
+      if (roomId === null || roomId !== activeClientWidgetApiRoomId) {
         logger.warn(
           `CallContext: Clearing active clientWidgetApi because active room changed to ${roomId} or was cleared.`
         );
-        setActiveClientWidgetApiState(null);
-        setClientWidgetApiRoomId(null);
+        //setActiveClientWidgetApiState(null);
+        //setActiveClientWidgetApiRoomId(null);
       }
     },
-    [clientWidgetApiRoomId, resetMediaState, activeCallRoomId]
+    [activeClientWidgetApiRoomId, resetMediaState, activeCallRoomId]
+  );
+
+  const setViewedCallRoomId = useCallback(
+    (roomId: string | null) => {
+      logger.warn(`CallContext: Setting activeCallRoomId to ${roomId}`);
+      setViewedCallRoomIdState(roomId);
+    },
+    [setViewedCallRoomIdState]
   );
 
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
     activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     setIsCallActive(false);
-    //setActiveCallRoomId(null);
-    setActiveCallRoomIdState(null);
-    //logger.debug(`CallContext: Clearing active clientWidgetApi due to hangup.`);
-    //setActiveClientWidgetApiState(null);
-    //setClientWidgetApiRoomId(null);
-  }, [activeClientWidgetApi?.transport]);
+  }, [activeClientWidgetApi]);
 
   const setActiveClientWidgetApi = useCallback(
     (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
       setActiveClientWidgetApiState(clientWidgetApi);
-      setClientWidgetApiRoomId(roomId);
+      setActiveClientWidgetApiRoomId(roomId);
     },
     []
   );
@@ -134,45 +152,79 @@ export function CallProvider({ children }: CallProviderProps) {
       if (roomId && clientWidgetApi) {
         logger.debug(`CallContext: Registering active clientWidgetApi for room ${roomId}.`);
         setActiveClientWidgetApi(clientWidgetApi, roomId);
-      } else if (roomId === clientWidgetApiRoomId || roomId === null) {
+      } else if (roomId === activeClientWidgetApiRoomId || roomId === null) {
         logger.debug(
-          `CallContext: Clearing active clientWidgetApi for room ${clientWidgetApiRoomId}.`
+          `CallContext: Clearing active clientWidgetApi for room ${activeClientWidgetApiRoomId}.`
         );
         setActiveClientWidgetApi(null, null);
         resetMediaState();
       } else {
         logger.debug(
-          `CallContext: Ignoring clientWidgetApi registration/clear request for room ${roomId}, as current clientWidgetApi belongs to ${clientWidgetApiRoomId}.`
+          `CallContext: Ignoring clientWidgetApi registration/clear request for room ${roomId}, as current clientWidgetApi belongs to ${activeClientWidgetApiRoomId}.`
         );
       }
     },
-    [activeClientWidgetApi, clientWidgetApiRoomId, setActiveClientWidgetApi, resetMediaState]
+    [activeClientWidgetApi, activeClientWidgetApiRoomId, setActiveClientWidgetApi, resetMediaState]
+  );
+
+  const setViewedClientWidgetApi = useCallback(
+    (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
+      setViewedClientWidgetApiState(clientWidgetApi);
+      //setViewedClientWidgetApiRoomId(roomId);
+    },
+    []
+  );
+
+  const registerViewedClientWidgetApi = useCallback(
+    (roomId: string | null, clientWidgetApi: ClientWidgetApi | null) => {
+      if (viewedClientWidgetApi && viewedClientWidgetApi !== clientWidgetApi) {
+        logger.error(`CallContext: Cleaning up listeners for previous clientWidgetApi instance.`);
+      }
+
+      if (roomId && clientWidgetApi) {
+        logger.error(`CallContext: Registering active clientWidgetApi for room ${roomId}.`);
+        setViewedClientWidgetApi(clientWidgetApi, roomId);
+      } else if (roomId === viewedClientWidgetApiRoomId || roomId === null) {
+        logger.error(
+          `CallContext: Clearing active clientWidgetApi for room ${viewedClientWidgetApiRoomId}.`
+        );
+        setViewedClientWidgetApi(null, null);
+        //resetMediaState();
+      } else {
+        logger.debug(
+          `CallContext: Ignoring clientWidgetApi registration/clear request for room ${roomId}, as current clientWidgetApi belongs to ${viewedClientWidgetApiRoomId}.`
+        );
+      }
+    },
+    [viewedClientWidgetApi, viewedClientWidgetApiRoomId, setViewedClientWidgetApi]
   );
 
   useEffect(() => {
     if (
       !activeClientWidgetApi ||
+      !viewedClientWidgetApi ||
       !activeCallRoomId ||
-      clientWidgetApiRoomId !== activeCallRoomId ||
+      !viewedCallRoomId ||
       isCallActive
     ) {
       return;
     }
-
-    const clientWidgetApi = activeClientWidgetApi;
-
+    //logger.error(viewedClientWidgetApi);
     const handleHangup = (ev: CustomEvent) => {
       ev.preventDefault();
-
-      clientWidgetApi.transport.reply(ev.detail, {});
+      hangUp();
+      // if (!isPrimaryIframe) {
+      activeClientWidgetApi?.transport.reply(ev.detail, {});
+      // } else {
+      viewedClientWidgetApi?.transport.reply(ev.detail, {});
+      // }
       logger.warn(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
         ev
       );
-      setIsPrimaryIframe(true);
+      //setIsPrimaryIframe(!isPrimaryIframe);
       setIsCallActive(false);
-      setActiveCallRoomIdState(null);
-      //hangUp();
+      //setActiveCallRoomIdState(null);
     };
 
     const handleMediaStateUpdate = (ev: CustomEvent<MediaStatePayload>) => {
@@ -194,46 +246,54 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleOnScreenStateUpdate = (ev: CustomEvent) => {
       ev.preventDefault();
-      activeClientWidgetApi.transport.reply(ev.detail, {});
+      if (isPrimaryIframe) {
+        activeClientWidgetApi?.transport.reply(ev.detail, {});
+      } else {
+        viewedClientWidgetApi?.transport.reply(ev.detail, {});
+      }
     };
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
-      if (isCallActive) {
-        setIsPrimaryIframe(false);
-        setActiveCallRoomIdState(viewedRoomId);
-      } else {
-        setIsPrimaryIframe(true);
+      if (isCallActive && activeClientWidgetApi) {
+        activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
+          setActiveCallRoomIdState(viewedCallRoomId);
+          setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+          //setIsPrimaryIframe(!isPrimaryIframe);
+          //setViewedClientWidgetApi(null, null);
+          setIsCallActive(true);
+          activeClientWidgetApi?.transport.reply(ev.detail, {});
+        });
       }
-      setIsCallActive(true);
     };
 
     logger.debug(
       `CallContext: Setting up listeners for clientWidgetApi in room ${activeCallRoomId}`
     );
-    clientWidgetApi.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
-    clientWidgetApi.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
-    clientWidgetApi.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
-    clientWidgetApi.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
+    activeClientWidgetApi?.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
+    activeClientWidgetApi?.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+    activeClientWidgetApi?.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
+    activeClientWidgetApi?.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
 
-    return () => {
-      logger.debug(
-        `CallContext: Cleaning up listeners for clientWidgetApi in room ${activeCallRoomId}`
-      );
-      if (clientWidgetApi) {
-        //clientWidgetApi.off(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
-        //clientWidgetApi.off(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
-      }
-    };
+    viewedClientWidgetApi?.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
+    viewedClientWidgetApi?.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+    viewedClientWidgetApi?.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
+    viewedClientWidgetApi?.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
   }, [
     activeClientWidgetApi,
     activeCallRoomId,
-    clientWidgetApiRoomId,
+    activeClientWidgetApiRoomId,
     hangUp,
     isChatOpen,
     isAudioEnabled,
     isVideoEnabled,
     isCallActive,
+    viewedRoomId,
+    viewedClientWidgetApi,
+    isPrimaryIframe,
+    viewedCallRoomId,
+    setViewedClientWidgetApi,
+    setActiveClientWidgetApi,
   ]);
 
   const sendWidgetAction = useCallback(
@@ -244,15 +304,15 @@ export function CallProvider({ children }: CallProviderProps) {
         );
         return Promise.reject(new Error('No active call clientWidgetApi'));
       }
-      if (!clientWidgetApiRoomId || clientWidgetApiRoomId !== activeCallRoomId) {
+      if (!activeClientWidgetApiRoomId || activeClientWidgetApiRoomId !== activeCallRoomId) {
         logger.debug(
-          `CallContext: Cannot send action '${action}', clientWidgetApi room (${clientWidgetApiRoomId}) does not match active call room (${activeCallRoomId}). Stale clientWidgetApi?`
+          `CallContext: Cannot send action '${action}', clientWidgetApi room (${activeClientWidgetApiRoomId}) does not match active call room (${activeCallRoomId}). Stale clientWidgetApi?`
         );
         return Promise.reject(new Error('Mismatched active call clientWidgetApi'));
       }
       try {
         logger.debug(
-          `CallContext: Sending action '${action}' via active clientWidgetApi (room: ${clientWidgetApiRoomId}) with data:`,
+          `CallContext: Sending action '${action}' via active clientWidgetApi (room: ${activeClientWidgetApiRoomId}) with data:`,
           data
         );
         await activeClientWidgetApi.transport.send(action as WidgetApiAction, data);
@@ -261,7 +321,7 @@ export function CallProvider({ children }: CallProviderProps) {
         throw error;
       }
     },
-    [activeClientWidgetApi, activeCallRoomId, clientWidgetApiRoomId]
+    [activeClientWidgetApi, activeCallRoomId, activeClientWidgetApiRoomId]
   );
 
   const toggleAudio = useCallback(async () => {
@@ -312,9 +372,12 @@ export function CallProvider({ children }: CallProviderProps) {
     () => ({
       activeCallRoomId,
       setActiveCallRoomId,
+      viewedCallRoomId,
+      setViewedCallRoomId,
       hangUp,
       activeClientWidgetApi,
       registerActiveClientWidgetApi,
+      registerViewedClientWidgetApi,
       sendWidgetAction,
       isChatOpen,
       isAudioEnabled,
@@ -329,9 +392,12 @@ export function CallProvider({ children }: CallProviderProps) {
     [
       activeCallRoomId,
       setActiveCallRoomId,
+      viewedCallRoomId,
+      setViewedCallRoomId,
       hangUp,
       activeClientWidgetApi,
       registerActiveClientWidgetApi,
+      registerViewedClientWidgetApi,
       sendWidgetAction,
       isChatOpen,
       isAudioEnabled,
