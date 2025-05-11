@@ -55,8 +55,9 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
   const setupWidget = useCallback(
     (widgetApiRef, smallWidgetRef, iframeRef, skipLobby) => {
       const cleanupRoomId = smallWidgetRef.current?.roomId;
-      logger.debug(`PersistentCallContainer effect running. activeCallRoomId: ${activeCallRoomId}`);
-
+      logger.error(`PersistentCallContainer effect running. activeCallRoomId: ${activeCallRoomId}`);
+      logger.error(`PersistentCallContainer effect running. viewedCallRoomId: ${viewedCallRoomId}`);
+      logger.error(`PersistentCallContainer effect running. isCallActive: ${isCallActive}`);
       /**
        * TODO:
        * Need proper shutdown handling. Events from the previous widget can still come through it seems. Might need
@@ -82,12 +83,20 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
 
       if (mx?.getUserId()) {
         if (
-          (isCallActive && activeCallRoomId !== viewedCallRoomId) ||
-          //          &&  backupIframeRef.current && primaryIframeRef.current.src
-          (cleanupRoomId !== activeCallRoomId && !isCallActive)
+          (activeCallRoomId !== viewedCallRoomId && isCallActive) ||
+          //          &&
+          (activeCallRoomId && cleanupRoomId !== activeCallRoomId && !isCallActive)
         ) {
-          //logger.error('PersistentCallContainer Re-render');
+          logger.error('PersistentCallContainer Re-render');
           const roomIdToSet = skipLobby ? activeCallRoomId : viewedCallRoomId;
+
+          if (
+            roomIdToSet &&
+            (roomIdToSet === primarySmallWidgetRef?.current?.roomId ||
+              roomIdToSet === backupSmallWidgetRef?.current?.roomId)
+          )
+            return;
+
           const newUrl = getWidgetUrl(mx, roomIdToSet, clientConfig.elementCallUrl ?? '', {
             skipLobby: skipLobby.toString(),
             returnToLobby: 'true',
@@ -105,7 +114,17 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
             );
             iframeRef.current.src = newUrl.toString();
           }
+          if (
+            newUrl.toString() === primarySmallWidgetRef?.current?.url ||
+            newUrl.toString() === backupSmallWidgetRef?.current?.url
+          )
+            return;
 
+          logger.error(
+            `New: ${roomIdToSet}
+            \n Primary: ${primarySmallWidgetRef?.current?.roomId}
+            \n Backup: ${backupSmallWidgetRef?.current?.roomId}`
+          );
           const iframeElement = iframeRef.current;
           if (!iframeElement) {
             logger.error('PersistentCallContainer: iframeRef is null, cannot setup API.');
@@ -120,7 +139,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
             'Element Call',
             'm.call',
             newUrl,
-            true,
+            false,
             getWidgetData(mx, roomIdToSet, {}, { skipLobby: true }),
             roomIdToSet
           );
