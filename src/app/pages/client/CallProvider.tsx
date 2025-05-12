@@ -96,7 +96,6 @@ export function CallProvider({ children }: CallProviderProps) {
     logger.debug('CallContext: Resetting media state to defaults.');
     setIsAudioEnabledState(DEFAULT_AUDIO_ENABLED);
     setIsVideoEnabledState(DEFAULT_VIDEO_ENABLED);
-    //setIsChatOpenState(DEFAULT_CHAT_OPENED);
   }, []);
 
   const setActiveCallRoomId = useCallback(
@@ -114,8 +113,6 @@ export function CallProvider({ children }: CallProviderProps) {
         logger.warn(
           `CallContext: Clearing active clientWidgetApi because active room changed to ${roomId} or was cleared.`
         );
-        //setActiveClientWidgetApiState(null);
-        //setActiveClientWidgetApiRoomId(null);
       }
     },
     [activeClientWidgetApiRoomId, resetMediaState, activeCallRoomId]
@@ -132,8 +129,8 @@ export function CallProvider({ children }: CallProviderProps) {
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
     activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
-    //setActiveCallRoomIdState(null);
-    //setIsCallActive(false);
+    setActiveCallRoomIdState(null);
+    setIsCallActive(false);
   }, [activeClientWidgetApi?.transport]);
 
   const setActiveClientWidgetApi = useCallback(
@@ -171,7 +168,7 @@ export function CallProvider({ children }: CallProviderProps) {
   const setViewedClientWidgetApi = useCallback(
     (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
       setViewedClientWidgetApiState(clientWidgetApi);
-      //setViewedClientWidgetApiRoomId(roomId);
+      setViewedClientWidgetApiRoomId(roomId);
     },
     []
   );
@@ -204,22 +201,15 @@ export function CallProvider({ children }: CallProviderProps) {
     if (!activeCallRoomId || !viewedCallRoomId) {
       return;
     }
-    //logger.error(viewedClientWidgetApi);
     const handleHangup = (ev: CustomEvent) => {
       ev.preventDefault();
-      //hangUp();
-      // if (!isPrimaryIframe) {
       activeClientWidgetApi?.transport.reply(ev.detail, {});
-      // } else {
       viewedClientWidgetApi?.transport.reply(ev.detail, {});
-      // }
       logger.warn(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
         ev
       );
-      //setIsPrimaryIframe(!isPrimaryIframe);
-      //setIsCallActive(false);
-      //setActiveCallRoomIdState(null);
+      setIsCallActive(false);
     };
 
     const handleMediaStateUpdate = (ev: CustomEvent<MediaStatePayload>) => {
@@ -250,51 +240,16 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
-
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
-      logger.error('PRE Swap');
       logger.error(isCallActive.toString());
       logger.error(activeClientWidgetApi);
       logger.error(viewedClientWidgetApi);
 
       activeClientWidgetApi?.transport.reply(ev.detail, {});
       if (isCallActive && activeClientWidgetApi && viewedClientWidgetApi) {
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
-        logger.error('Primary Swap');
         activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {});
-
         setActiveCallRoomIdState(viewedCallRoomId);
         setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
         setIsPrimaryIframe(!isPrimaryIframe);
-        //setViewedCallRoomId(null);
-        //setViewedClientWidgetApi(null, null);
-        //setViewedClientWidgetApi(null, null);
-      } else {
-        //setActiveCallRoomIdState(viewedCallRoomId);
       }
       setIsCallActive(true);
     };
