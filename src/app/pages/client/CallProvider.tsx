@@ -240,18 +240,21 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
+
       logger.error(isCallActive.toString());
       logger.error(activeClientWidgetApi);
       logger.error(viewedClientWidgetApi);
 
       activeClientWidgetApi?.transport.reply(ev.detail, {});
       if (isCallActive && activeClientWidgetApi && viewedClientWidgetApi) {
-        activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {});
-        setActiveCallRoomIdState(viewedCallRoomId);
-        setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
-        setIsPrimaryIframe(!isPrimaryIframe);
+        activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
+          setActiveCallRoomIdState(viewedCallRoomId);
+          setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+          setIsPrimaryIframe(!isPrimaryIframe);
+        });
+      } else {
+        setIsCallActive(true);
       }
-      setIsCallActive(true);
     };
 
     logger.debug(
