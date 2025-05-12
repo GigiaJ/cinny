@@ -65,13 +65,13 @@ export function Room() {
             <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fff' }}>
               <RoomView room={room} eventId={eventId} />
             </Box>
-            {screenSize === ScreenSize.Desktop && isDrawer && (
-              <>
-                <Line variant="Background" direction="Vertical" size="300" />
-                <MembersDrawer key={room.roomId} room={room} members={members} />
-              </>
-            )}
           </Box>
+        )}
+        {screenSize === ScreenSize.Desktop && isDrawer && (
+          <>
+            <Line variant="Background" direction="Vertical" size="300" />
+            <MembersDrawer key={room.roomId} room={room} members={members} />
+          </>
         )}
       </Box>
     </PowerLevelsContextProvider>
