@@ -21,6 +21,7 @@ import {
 } from 'folds';
 import { useFocusWithin, useHover } from 'react-aria';
 import FocusTrap from 'focus-trap-react';
+import { useParams } from 'react-router-dom';
 import { NavItem, NavItemContent, NavItemOptions, NavLink } from '../../components/nav';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
@@ -53,7 +54,6 @@ import {
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
 import { useCallState } from '../../pages/client/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
-import { logger } from 'matrix-js-sdk/lib/logger';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -235,6 +235,7 @@ export function RoomNavItem({
     (receipt) => receipt.userId !== mx.getUserId()
   );
   const { navigateRoom } = useRoomNavigate();
+  const { roomIdOrAlias: viewedRoomId } = useParams();
 
   const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
     evt.preventDefault();
@@ -261,10 +262,11 @@ export function RoomNavItem({
 
     if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
       hangUp();
-      logger.error(room?.normalizedName);
       setActiveCallRoomId(room.roomId);
       setViewedCallRoomId(room.roomId);
-      navigateRoom(room.roomId);
+      if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
+        navigateRoom(room.roomId);
+      }
     } else {
       navigateRoom(room.roomId);
     }
