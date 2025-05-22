@@ -20,7 +20,7 @@ type CallNavStatusProps = {
   space: Room | null;
 };
 export function CallNavStatus({ space }: CallNavStatusProps) {
-  const { activeCallRoomId, isAudioEnabled, isVideoEnabled, toggleAudio, toggleVideo, hangUp } =
+  const { activeCallRoomId, isAudioEnabled, isVideoEnabled, isCallActive, toggleAudio, toggleVideo, hangUp } =
     useCallState();
   const mx = useMatrixClient();
   const { navigateRoom } = useRoomNavigate();
@@ -30,7 +30,7 @@ export function CallNavStatus({ space }: CallNavStatusProps) {
       navigateRoom(activeCallRoomId);
     }
   };
-  if (!activeCallRoomId) {
+  if (!isCallActive) {
     return (
       <Box
         direction="Column"
