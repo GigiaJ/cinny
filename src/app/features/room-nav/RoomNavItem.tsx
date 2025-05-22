@@ -54,6 +54,7 @@ import {
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
 import { useCallState } from '../../pages/client/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -236,6 +237,8 @@ export function RoomNavItem({
   );
   const { navigateRoom } = useRoomNavigate();
   const { roomIdOrAlias: viewedRoomId } = useParams();
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
 
   const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
     evt.preventDefault();
@@ -259,21 +262,26 @@ export function RoomNavItem({
     if (chatButton && chatButton.contains(target)) {
       return;
     }
-
-    if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
-      hangUp();
-      setActiveCallRoomId(room.roomId);
-      setViewedCallRoomId(room.roomId);
-      if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
+    if (!isMobile) {
+      if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
+        hangUp();
+        setActiveCallRoomId(room.roomId);
+        if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
+          navigateRoom(room.roomId);
+        }
+      } else {
         navigateRoom(room.roomId);
       }
     } else {
+      evt.stopPropagation();
+      if (isChatOpen) toggleChat();
+      setViewedCallRoomId(room.roomId);
       navigateRoom(room.roomId);
     }
   };
 
-  const handleChatButtonClick = (e: MouseEvent<HTMLButtonElement>) => {
-    e.stopPropagation();
+  const handleChatButtonClick = (evt: MouseEvent<HTMLButtonElement>) => {
+    evt.stopPropagation();
     if (!isChatOpen) toggleChat();
     setViewedCallRoomId(room.roomId);
   };
