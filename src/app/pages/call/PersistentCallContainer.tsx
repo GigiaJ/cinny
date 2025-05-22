@@ -54,10 +54,6 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
 
   const setupWidget = useCallback(
     (widgetApiRef, smallWidgetRef, iframeRef, skipLobby) => {
-      const cleanupRoomId = smallWidgetRef.current?.roomId;
-      logger.error(`PersistentCallContainer effect running. activeCallRoomId: ${activeCallRoomId}`);
-      logger.error(`PersistentCallContainer effect running. viewedCallRoomId: ${viewedCallRoomId}`);
-      logger.error(`PersistentCallContainer effect running. isCallActive: ${isCallActive}`);
       /**
        * TODO:
        * Need proper shutdown handling. Events from the previous widget can still come through it seems. Might need
@@ -84,12 +80,10 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
       if (mx?.getUserId()) {
         if (
           (activeCallRoomId !== viewedCallRoomId && isCallActive) ||
-          //          &&
-          (activeCallRoomId && cleanupRoomId !== activeCallRoomId && !isCallActive)
+          (activeCallRoomId && !isCallActive) ||
+          (!activeCallRoomId && viewedCallRoomId && !isCallActive)
         ) {
-          logger.error('PersistentCallContainer Re-render');
           const roomIdToSet = skipLobby ? activeCallRoomId : viewedCallRoomId;
-
           if (
             roomIdToSet &&
             (roomIdToSet === primarySmallWidgetRef?.current?.roomId ||
