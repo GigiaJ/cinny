@@ -10,7 +10,6 @@ import React, {
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { WidgetApiToWidgetAction, WidgetApiAction, ClientWidgetApi } from 'matrix-widget-api';
 import { useParams } from 'react-router-dom';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
 
 interface MediaStatePayload {
   data?: {
@@ -89,8 +88,6 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isPrimaryIframe, setIsPrimaryIframe] = useState<boolean>(DEFAULT_PRIMARY_IFRAME);
 
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
-  const mx = useMatrixClient();
-  const room = mx.getRoom(viewedRoomId);
 
   const resetMediaState = useCallback(() => {
     logger.debug('CallContext: Resetting media state to defaults.');
