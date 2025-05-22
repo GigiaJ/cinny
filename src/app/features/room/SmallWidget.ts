@@ -40,6 +40,7 @@ export const getWidgetUrl = (
   mx: MatrixClient,
   roomId: string,
   elementCallUrl: string,
+  widgetId: string,
   setParams: any
 ): URL => {
   const baseUrl = window.location.origin;
@@ -48,7 +49,7 @@ export const getWidgetUrl = (
 
   const params = new URLSearchParams({
     embed: 'true',
-    widgetId: `element-call-${roomId}`,
+    widgetId,
     appPrompt: 'false',
     preload: 'false',
     skipLobby: setParams.skipLobby ?? 'true',
