@@ -48,7 +48,7 @@ export const getWidgetUrl = (
 
   const params = new URLSearchParams({
     embed: 'true',
-    widgetId: `element-call-${roomId}-${Date.now()}`,
+    widgetId: `element-call-${roomId}`,
     appPrompt: 'false',
     preload: 'false',
     skipLobby: setParams.skipLobby ?? 'true',
@@ -84,7 +84,7 @@ export class SmallWidget extends EventEmitter {
 
   private mockWidget: CinnyWidget;
 
-  private roomId?: string;
+  public roomId?: string;
 
   public url?: string;
 
@@ -147,7 +147,6 @@ export class SmallWidget extends EventEmitter {
       const { type } = ev.detail.data;
 
       ev.preventDefault();
-
       if (room === null) {
         return this.messaging?.transport.reply(ev.detail, { events });
       }
