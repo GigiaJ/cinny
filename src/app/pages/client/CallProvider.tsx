@@ -129,9 +129,10 @@ export function CallProvider({ children }: CallProviderProps) {
   const hangUp = useCallback(() => {
     logger.debug(`CallContext: Hang up called.`);
     activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
+    viewedClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     setActiveCallRoomIdState(null);
     setIsCallActive(false);
-  }, [activeClientWidgetApi?.transport]);
+  }, [activeClientWidgetApi?.transport, viewedClientWidgetApi?.transport]);
 
   const setActiveClientWidgetApi = useCallback(
     (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
@@ -198,18 +199,22 @@ export function CallProvider({ children }: CallProviderProps) {
   );
 
   useEffect(() => {
-    if (!activeCallRoomId || !viewedCallRoomId) {
+    if (!activeCallRoomId && !viewedCallRoomId) {
       return;
     }
     const handleHangup = (ev: CustomEvent) => {
       ev.preventDefault();
-      activeClientWidgetApi?.transport.reply(ev.detail, {});
-      viewedClientWidgetApi?.transport.reply(ev.detail, {});
+      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
+        activeClientWidgetApi?.transport.reply(ev.detail, {});
+        setIsCallActive(false);
+      } else if (ev.detail.widgetId === viewedClientWidgetApi?.widget.id) {
+        viewedClientWidgetApi?.transport.reply(ev.detail, {});
+        setIsCallActive(false);
+      }
       logger.warn(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
         ev
       );
-      setIsCallActive(false);
     };
 
     const handleMediaStateUpdate = (ev: CustomEvent<MediaStatePayload>) => {
@@ -241,16 +246,20 @@ export function CallProvider({ children }: CallProviderProps) {
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
 
-      logger.error(isCallActive.toString());
-      logger.error(activeClientWidgetApi);
-      logger.error(viewedClientWidgetApi);
-
       activeClientWidgetApi?.transport.reply(ev.detail, {});
+      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
+        setIsCallActive(true);
+        return;
+      }
+
       if (isCallActive && activeClientWidgetApi && viewedClientWidgetApi) {
+        activeClientWidgetApi?.removeAllListeners();
         activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
-          setActiveCallRoomIdState(viewedCallRoomId);
           setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+          setActiveCallRoomIdState(viewedCallRoomId);
+          setViewedClientWidgetApi(null, null);
           setIsPrimaryIframe(!isPrimaryIframe);
+          setIsCallActive(true);
         });
       } else {
         setIsCallActive(true);
