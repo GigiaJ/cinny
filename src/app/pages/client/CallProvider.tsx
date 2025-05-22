@@ -146,21 +146,15 @@ export function CallProvider({ children }: CallProviderProps) {
     (roomId: string | null, clientWidgetApi: ClientWidgetApi | null) => {
       if (activeClientWidgetApi && activeClientWidgetApi !== clientWidgetApi) {
         logger.debug(`CallContext: Cleaning up listeners for previous clientWidgetApi instance.`);
+        activeClientWidgetApi.removeAllListeners();
       }
 
       if (roomId && clientWidgetApi) {
         logger.debug(`CallContext: Registering active clientWidgetApi for room ${roomId}.`);
         setActiveClientWidgetApi(clientWidgetApi, roomId);
       } else if (roomId === activeClientWidgetApiRoomId || roomId === null) {
-        logger.debug(
-          `CallContext: Clearing active clientWidgetApi for room ${activeClientWidgetApiRoomId}.`
-        );
         setActiveClientWidgetApi(null, null);
         resetMediaState();
-      } else {
-        logger.debug(
-          `CallContext: Ignoring clientWidgetApi registration/clear request for room ${roomId}, as current clientWidgetApi belongs to ${activeClientWidgetApiRoomId}.`
-        );
       }
     },
     [activeClientWidgetApi, activeClientWidgetApiRoomId, setActiveClientWidgetApi, resetMediaState]
@@ -177,22 +171,19 @@ export function CallProvider({ children }: CallProviderProps) {
   const registerViewedClientWidgetApi = useCallback(
     (roomId: string | null, clientWidgetApi: ClientWidgetApi | null) => {
       if (viewedClientWidgetApi && viewedClientWidgetApi !== clientWidgetApi) {
-        logger.error(`CallContext: Cleaning up listeners for previous clientWidgetApi instance.`);
+        logger.debug(`CallContext: Cleaning up listeners for previous clientWidgetApi instance.`);
+        viewedClientWidgetApi.removeAllListeners();
+        viewedClientWidgetApi.stop();
       }
 
       if (roomId && clientWidgetApi) {
-        logger.error(`CallContext: Registering viewed clientWidgetApi for room ${roomId}.`);
+        logger.debug(`CallContext: Registering viewed clientWidgetApi for room ${roomId}.`);
         setViewedClientWidgetApi(clientWidgetApi, roomId);
       } else if (roomId === viewedClientWidgetApiRoomId || roomId === null) {
-        logger.error(
+        logger.debug(
           `CallContext: Clearing viewed clientWidgetApi for room ${viewedClientWidgetApiRoomId}.`
         );
         setViewedClientWidgetApi(null, null);
-        //resetMediaState();
-      } else {
-        logger.debug(
-          `CallContext: Ignoring clientWidgetApi registration/clear request for room ${roomId}, as current clientWidgetApi belongs to ${viewedClientWidgetApiRoomId}.`
-        );
       }
     },
     [viewedClientWidgetApi, viewedClientWidgetApiRoomId, setViewedClientWidgetApi]
@@ -223,7 +214,10 @@ export function CallProvider({ children }: CallProviderProps) {
         `CallContext: Received media state update from widget in room ${activeCallRoomId}:`,
         ev.detail
       );
-      const { audio_enabled, video_enabled } = ev.detail.data;
+
+      /* eslint-disable camelcase */
+      const { audio_enabled, video_enabled } = ev.detail.data ?? {};
+
       if (typeof audio_enabled === 'boolean' && audio_enabled !== isAudioEnabled) {
         logger.debug(`CallContext: Updating audio enabled state from widget: ${audio_enabled}`);
         setIsAudioEnabledState(audio_enabled);
@@ -232,6 +226,7 @@ export function CallProvider({ children }: CallProviderProps) {
         logger.debug(`CallContext: Updating video enabled state from widget: ${video_enabled}`);
         setIsVideoEnabledState(video_enabled);
       }
+      /* eslint-enable camelcase */
     };
 
     const handleOnScreenStateUpdate = (ev: CustomEvent) => {
