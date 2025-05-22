@@ -49,34 +49,8 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
     [activeCallRoomId, viewedRoomId]
   );
 
-  //  logger.error('RANDOM LOG RANDOM LOG RANDOM LOG\n\n\n\n\n\n');
-  //  logger.error(room?.normalizedName);
-
   const setupWidget = useCallback(
     (widgetApiRef, smallWidgetRef, iframeRef, skipLobby) => {
-      /**
-       * TODO:
-       * Need proper shutdown handling. Events from the previous widget can still come through it seems. Might need
-       * to queue the events and then allow the join to actually occur. This will *work* for now as it does handle switching technically.
-       * Need to look closer at it.
-       *
-       * Might also be able to keep the iframe alive and instead navigate to a new "room" to make the transition smoother
-       */
-      const cleanup = () => {
-        // logger.error(`CallContext: Cleaning up for previous room: ${cleanupRoomId}`);
-
-        if (smallWidgetRef.current) {
-          // smallWidgetRef.current.stopMessaging();
-        }
-        // Potentially call widgetApi.stop() or similar if the API instance has it
-        if (widgetApiRef.current) {
-          // widgetApiRef.current.stop?.();
-        }
-        // widgetApiRef.current = null;
-        // smallWidgetRef.current = null;
-        // if (iframeRef.current) iframeRef.current.src = 'about:blank';
-      };
-
       if (mx?.getUserId()) {
         if (
           (activeCallRoomId !== viewedCallRoomId && isCallActive) ||
@@ -96,63 +70,48 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
             returnToLobby: 'true',
             perParticipentE2EE: 'true',
           });
-          if (iframeRef.current && iframeRef.current.src !== newUrl.toString()) {
-            logger.info(
-              `PersistentCallContainer: Updating iframe src for ${roomIdToSet} to ${newUrl.toString()}`
-            );
-            cleanup();
-            iframeRef.current.src = newUrl.toString();
-          } else if (iframeRef.current && !iframeRef.current.src) {
-            logger.info(
-              `PersistentCallContainer: Setting initial iframe src for ${roomIdToSet} to ${newUrl.toString()}`
-            );
-            iframeRef.current.src = newUrl.toString();
-          }
+
           if (
             newUrl.toString() === primarySmallWidgetRef?.current?.url ||
             newUrl.toString() === backupSmallWidgetRef?.current?.url
           )
             return;
 
-          logger.error(
-            `New: ${roomIdToSet}
-            \n Primary: ${primarySmallWidgetRef?.current?.roomId}
-            \n Backup: ${backupSmallWidgetRef?.current?.roomId}`
-          );
+          if (iframeRef.current && iframeRef.current.src !== newUrl.toString()) {
+            iframeRef.current.src = newUrl.toString();
+          } else if (iframeRef.current && !iframeRef.current.src) {
+            iframeRef.current.src = newUrl.toString();
+          }
+
           const iframeElement = iframeRef.current;
           if (!iframeElement) {
-            logger.error('PersistentCallContainer: iframeRef is null, cannot setup API.');
-            return cleanup;
+            return;
           }
 
           const userId = mx.getUserId() ?? '';
           const app = createVirtualWidget(
             mx,
-            `element-call-${roomIdToSet}-${Date.now()}`,
+            `element-call-${roomIdToSet}`,
             userId,
             'Element Call',
             'm.call',
             newUrl,
-            false,
+            true,
             getWidgetData(mx, roomIdToSet, {}, { skipLobby: true }),
             roomIdToSet
           );
 
-          logger.error(`PersistentCallContainer: Creating new SmallWidget/API for ${roomIdToSet}`);
+          //  logger.error(`PersistentCallContainer: Creating new SmallWidget/API for ${roomIdToSet}`);
           const smallWidget = new SmallWidget(app);
           smallWidgetRef.current = smallWidget;
 
           try {
             const widgetApiInstance = smallWidget.startMessaging(iframeElement);
             widgetApiRef.current = widgetApiInstance;
-            logger.error('Pre-register');
-
-            logger.error(`This is our check: ${skipLobby}`);
             if (skipLobby) {
               registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
             } else {
               registerViewedClientWidgetApi(viewedCallRoomId, widgetApiRef.current);
-              logger.error('Post view register');
             }
 
             widgetApiInstance.once('ready', () => {
@@ -163,19 +122,9 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
               `PersistentCallContainer: Error initializing widget messaging for ${roomIdToSet}:`,
               error
             );
-            cleanup();
           }
-        } else {
-          /*
-        if (iframeRef.current && iframeRef.current.src !== 'about:blank') {
-          logger.info('PersistentCallContainer: No active call, setting src to about:blank');
-          iframeRef.current.src = 'about:blank';
-        }
-          */
-          cleanup();
         }
       }
-      return cleanup;
     },
     [
       activeCallRoomId,
@@ -189,7 +138,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
   );
 
   useEffect(() => {
-    logger.error(`This is our param: ${isPrimaryIframe}`);
+    //logger.error(`This is our param: ${isPrimaryIframe}`);
     setupWidget(primaryWidgetApiRef, primarySmallWidgetRef, primaryIframeRef, isPrimaryIframe);
     setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, !isPrimaryIframe);
   }, [
