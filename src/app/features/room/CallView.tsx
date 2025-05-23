@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 import { Room } from 'matrix-js-sdk';
 import React, { useContext, useMemo } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
@@ -49,9 +50,13 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
 
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
-
-  const activeIframeDisplayRef =
-    isViewingActiveCall && isPrimaryIframe ? primaryIframeRef : backupIframeRef;
+  const activeIframeDisplayRef = isPrimaryIframe
+    ? isViewingActiveCall
+      ? primaryIframeRef
+      : backupIframeRef
+    : isViewingActiveCall
+    ? backupIframeRef
+    : primaryIframeRef;
 
   const applyFixedPositioningToIframe = useCallback(() => {
     const iframeElement = activeIframeDisplayRef?.current;
@@ -120,13 +125,7 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
         originalIframeStylesRef.current = null;
       };
     }
-  }, [
-    activeIframeDisplayRef,
-    applyFixedPositioningToIframe,
-    debouncedApplyFixedPositioning,
-    isPrimaryIframe,
-    isViewingActiveCall,
-  ]);
+  }, [activeIframeDisplayRef, applyFixedPositioningToIframe, debouncedApplyFixedPositioning, isPrimaryIframe, isViewingActiveCall, room]);
 
   const isCallViewVisible = room.isCallRoom();
 
