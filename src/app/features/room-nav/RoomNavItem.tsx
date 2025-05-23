@@ -262,20 +262,22 @@ export function RoomNavItem({
     if (chatButton && chatButton.contains(target)) {
       return;
     }
-    if (!isMobile) {
-      if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
-        hangUp();
-        setActiveCallRoomId(room.roomId);
-        if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
-          navigateRoom(room.roomId);
+    if (room.isCallRoom()) {
+      if (!isMobile) {
+        if (activeCallRoomId !== room.roomId) {
+          hangUp();
+          setActiveCallRoomId(room.roomId);
+          if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
+            navigateRoom(room.roomId);
+          }
         }
       } else {
+        evt.stopPropagation();
+        if (isChatOpen) toggleChat();
+        setViewedCallRoomId(room.roomId);
         navigateRoom(room.roomId);
       }
     } else {
-      evt.stopPropagation();
-      if (isChatOpen) toggleChat();
-      setViewedCallRoomId(room.roomId);
       navigateRoom(room.roomId);
     }
   };
