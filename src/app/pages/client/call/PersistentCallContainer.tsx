@@ -79,7 +79,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
             {
               skipLobby: skipLobby.toString(),
               returnToLobby: 'true',
-              perParticipentE2EE: 'true',
+              perParticipantE2EE: 'true',
             }
           );
 
