@@ -243,17 +243,24 @@ export function CallProvider({ children }: CallProviderProps) {
         setIsCallActive(true);
         return;
       }
-
-      if (isCallActive && activeClientWidgetApi && viewedClientWidgetApi) {
-        activeClientWidgetApi?.removeAllListeners();
-        activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
-          setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
-          setActiveCallRoomIdState(viewedCallRoomId);
-          setViewedClientWidgetApi(null, null);
-          setIsPrimaryIframe(!isPrimaryIframe);
+      if (activeClientWidgetApi) {
+        if (isCallActive && viewedClientWidgetApi) {
+          activeClientWidgetApi?.removeAllListeners();
+          activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
+            setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+            setActiveCallRoomIdState(viewedCallRoomId);
+            setViewedClientWidgetApi(null, null);
+            setIsPrimaryIframe(!isPrimaryIframe);
+            setIsCallActive(true);
+          });
+        } else {
           setIsCallActive(true);
-        });
+        }
       } else {
+        setIsPrimaryIframe(!isPrimaryIframe);
+        setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+        setActiveCallRoomIdState(viewedCallRoomId);
+        setViewedClientWidgetApi(null, null);
         setIsCallActive(true);
       }
     };
