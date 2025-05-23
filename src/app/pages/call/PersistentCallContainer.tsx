@@ -65,11 +65,18 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           )
             return;
 
-          const newUrl = getWidgetUrl(mx, roomIdToSet, clientConfig.elementCallUrl ?? '', {
-            skipLobby: skipLobby.toString(),
-            returnToLobby: 'true',
-            perParticipentE2EE: 'true',
-          });
+          const widgetId = `element-call-${roomIdToSet}-${Date.now()}`;
+          const newUrl = getWidgetUrl(
+            mx,
+            roomIdToSet,
+            clientConfig.elementCallUrl ?? '',
+            widgetId,
+            {
+              skipLobby: skipLobby.toString(),
+              returnToLobby: 'true',
+              perParticipentE2EE: 'true',
+            }
+          );
 
           if (
             newUrl.toString() === primarySmallWidgetRef?.current?.url ||
@@ -91,7 +98,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           const userId = mx.getUserId() ?? '';
           const app = createVirtualWidget(
             mx,
-            `element-call-${roomIdToSet}`,
+            widgetId,
             userId,
             'Element Call',
             'm.call',
@@ -138,7 +145,6 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
   );
 
   useEffect(() => {
-    //logger.error(`This is our param: ${isPrimaryIframe}`);
     setupWidget(primaryWidgetApiRef, primarySmallWidgetRef, primaryIframeRef, isPrimaryIframe);
     setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, !isPrimaryIframe);
   }, [
