@@ -65,7 +65,7 @@ import {
   getRoomNotificationModeIcon,
   useRoomsNotificationPreferencesContext,
 } from '../../hooks/useRoomsNotificationPreferences';
-import { useCallState } from '../../pages/client/CallProvider';
+import { useCallState } from '../../pages/client/call/CallProvider';
 
 type RoomMenuProps = {
   room: Room;

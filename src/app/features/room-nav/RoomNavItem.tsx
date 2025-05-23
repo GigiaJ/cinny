@@ -52,7 +52,7 @@ import {
   RoomNotificationMode,
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
-import { useCallState } from '../../pages/client/CallProvider';
+import { useCallState } from '../../pages/client/call/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
