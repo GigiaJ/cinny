@@ -44,8 +44,9 @@ export const getWidgetUrl = (
   setParams: any
 ): URL => {
   const baseUrl = window.location.origin;
-  const url =
-    new URL(`${elementCallUrl}/room`) ?? new URL('./dist/element-call/dist/index.html', baseUrl);
+  const url = elementCallUrl
+    ? new URL(`${elementCallUrl}/room`)
+    : new URL('/public/element-call/index.html#', baseUrl);
 
   const params = new URLSearchParams({
     embed: 'true',
