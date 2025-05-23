@@ -1,9 +1,8 @@
 /* eslint-disable no-nested-ternary */
 import { Room } from 'matrix-js-sdk';
-import React, { useContext, useMemo } from 'react';
-import { useCallback, useEffect, useRef } from 'react';
+import React, { useContext, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Box } from 'folds';
-import { RoomViewHeader } from './RoomViewHeader';
+import { RoomViewHeader } from '../room/RoomViewHeader';
 import { useCallState } from '../../pages/client/call/CallProvider';
 import {
   PrimaryRefContext,
@@ -33,11 +32,6 @@ type OriginalStyles = {
   pointerEvents?: string;
   border?: string;
 };
-
-interface CallViewOutletContext {
-  primaryIframeRef: React.RefObject<HTMLIFrameElement | null>;
-  backupIframeRef: React.RefObject<HTMLIFrameElement | null>;
-}
 
 export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
   const primaryIframeRef = useContext(PrimaryRefContext);

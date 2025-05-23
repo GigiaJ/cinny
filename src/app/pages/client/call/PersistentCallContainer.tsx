@@ -9,7 +9,7 @@ import {
   SmallWidget,
   getWidgetData,
   getWidgetUrl,
-} from '../../../features/room/SmallWidget';
+} from '../../../features/call/SmallWidget';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useClientConfig } from '../../../hooks/useClientConfig';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
@@ -127,7 +127,6 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           widgetApiInstance.once('ready', () => {
             logger.info(`PersistentCallContainer: Widget for ${roomIdToSet} is ready.`);
           });
-        
         }
       }
     },
