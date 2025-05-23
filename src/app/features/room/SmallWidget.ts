@@ -214,17 +214,6 @@ export class SmallWidget extends EventEmitter {
     this.feedEvent(ev);
   };
 
-  /*
-  private onStateUpdate = (ev: MatrixEvent): void => {
-    if (this.messaging === null) return;
-    const raw = ev.getEffectiveEvent();
-    logger.error(raw);
-    this.messaging.feedEvent(raw as IRoomEvent).catch((e) => {
-      logger.error('Error sending state update to widget: ', e);
-    });
-  };
-  */
-
   private onToDeviceEvent = async (ev: MatrixEvent): Promise<void> => {
     await this.client.decryptEventIfNeeded(ev);
     if (ev.isDecryptionFailure()) return;

@@ -572,7 +572,6 @@ export function Space() {
                   );
                 }
                 default:
-                  logger.error('Unknown item type in virtualized list:', item);
                   return null;
               }
             };

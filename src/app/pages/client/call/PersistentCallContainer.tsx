@@ -116,24 +116,18 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           const smallWidget = new SmallWidget(app);
           smallWidgetRef.current = smallWidget;
 
-          try {
-            const widgetApiInstance = smallWidget.startMessaging(iframeElement);
-            widgetApiRef.current = widgetApiInstance;
-            if (skipLobby) {
-              registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
-            } else {
-              registerViewedClientWidgetApi(viewedCallRoomId, widgetApiRef.current);
-            }
-
-            widgetApiInstance.once('ready', () => {
-              logger.info(`PersistentCallContainer: Widget for ${roomIdToSet} is ready.`);
-            });
-          } catch (error) {
-            logger.error(
-              `PersistentCallContainer: Error initializing widget messaging for ${roomIdToSet}:`,
-              error
-            );
+          const widgetApiInstance = smallWidget.startMessaging(iframeElement);
+          widgetApiRef.current = widgetApiInstance;
+          if (skipLobby) {
+            registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
+          } else {
+            registerViewedClientWidgetApi(viewedCallRoomId, widgetApiRef.current);
           }
+
+          widgetApiInstance.once('ready', () => {
+            logger.info(`PersistentCallContainer: Widget for ${roomIdToSet} is ready.`);
+          });
+        
         }
       }
     },

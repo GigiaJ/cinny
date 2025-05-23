@@ -301,16 +301,11 @@ export function CallProvider({ children }: CallProviderProps) {
         );
         return Promise.reject(new Error('Mismatched active call clientWidgetApi'));
       }
-      try {
-        logger.debug(
-          `CallContext: Sending action '${action}' via active clientWidgetApi (room: ${activeClientWidgetApiRoomId}) with data:`,
-          data
-        );
-        await activeClientWidgetApi.transport.send(action as WidgetApiAction, data);
-      } catch (error) {
-        logger.error(`CallContext: Error sending action '${action}':`, error);
-        throw error;
-      }
+      logger.debug(
+        `CallContext: Sending action '${action}' via active clientWidgetApi (room: ${activeClientWidgetApiRoomId}) with data:`,
+        data
+      );
+      await activeClientWidgetApi.transport.send(action as WidgetApiAction, data);
     },
     [activeClientWidgetApi, activeCallRoomId, activeClientWidgetApiRoomId]
   );
@@ -326,7 +321,6 @@ export function CallProvider({ children }: CallProviderProps) {
       });
       logger.debug(`CallContext: Successfully sent audio toggle action.`);
     } catch (error) {
-      logger.error(`CallContext: Failed to send audio toggle action. Reverting state.`, error);
       setIsAudioEnabledState(!newState);
       throw error;
     }
@@ -343,7 +337,6 @@ export function CallProvider({ children }: CallProviderProps) {
       });
       logger.debug(`CallContext: Successfully sent video toggle action.`);
     } catch (error) {
-      logger.error(`CallContext: Failed to send video toggle action. Reverting state.`, error);
       setIsVideoEnabledState(!newState);
       throw error;
     }
