@@ -142,7 +142,8 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
   );
 
   useEffect(() => {
-    setupWidget(primaryWidgetApiRef, primarySmallWidgetRef, primaryIframeRef, isPrimaryIframe);
+    if ((activeCallRoomId && !viewedCallRoomId) || activeCallRoomId)
+      setupWidget(primaryWidgetApiRef, primarySmallWidgetRef, primaryIframeRef, isPrimaryIframe);
     setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, !isPrimaryIframe);
   }, [
     setupWidget,

@@ -266,6 +266,7 @@ export function RoomNavItem({
       if (room.isCallRoom() && activeCallRoomId !== room.roomId) {
         hangUp();
         setActiveCallRoomId(room.roomId);
+        setViewedCallRoomId(room.roomId);
         if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
           navigateRoom(room.roomId);
         }
