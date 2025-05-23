@@ -3,17 +3,16 @@ import { logger } from 'matrix-js-sdk/lib/logger';
 import { ClientWidgetApi } from 'matrix-widget-api';
 import { Box } from 'folds';
 import { useParams } from 'react-router-dom';
-import { useCallState } from '../client/CallProvider';
+import { useCallState } from './CallProvider';
 import {
   createVirtualWidget,
   SmallWidget,
   getWidgetData,
   getWidgetUrl,
-} from '../../features/room/SmallWidget';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useSelectedRoom } from '../../hooks/router/useSelectedRoom';
-import { useClientConfig } from '../../hooks/useClientConfig';
-import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+} from '../../../features/room/SmallWidget';
+import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useClientConfig } from '../../../hooks/useClientConfig';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 
 interface PersistentCallContainerProps {
   children: ReactNode;
@@ -48,16 +47,22 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
     () => activeCallRoomId !== null && activeCallRoomId === viewedRoomId,
     [activeCallRoomId, viewedRoomId]
   );
+  /* eslint-disable no-param-reassign */
 
   const setupWidget = useCallback(
-    (widgetApiRef, smallWidgetRef, iframeRef, skipLobby) => {
+    (
+      widgetApiRef: { current: ClientWidgetApi },
+      smallWidgetRef: { current: SmallWidget },
+      iframeRef: { current: { src: string } },
+      skipLobby: { toString: () => any }
+    ) => {
       if (mx?.getUserId()) {
         if (
           (activeCallRoomId !== viewedCallRoomId && isCallActive) ||
           (activeCallRoomId && !isCallActive) ||
           (!activeCallRoomId && viewedCallRoomId && !isCallActive)
         ) {
-          const roomIdToSet = skipLobby ? activeCallRoomId : viewedCallRoomId;
+          const roomIdToSet = (skipLobby ? activeCallRoomId : viewedCallRoomId) ?? '';
           if (
             roomIdToSet &&
             (roomIdToSet === primarySmallWidgetRef?.current?.roomId ||
@@ -108,7 +113,6 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
             roomIdToSet
           );
 
-          //  logger.error(`PersistentCallContainer: Creating new SmallWidget/API for ${roomIdToSet}`);
           const smallWidget = new SmallWidget(app);
           smallWidgetRef.current = smallWidget;
 
@@ -197,7 +201,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
                   height: '100%',
                   border: 'none',
                 }}
-                title={`Persistent Element Call`}
+                title="Persistent Element Call"
                 sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
                 allow="microphone; camera; display-capture; autoplay; clipboard-write;"
                 src="about:blank"
@@ -213,7 +217,7 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
                   border: 'none',
                   display: !isPrimaryIframe || isViewingActiveCall ? 'flex' : 'none',
                 }}
-                title={`Persistent Element Call`}
+                title="Persistent Element Call"
                 sandbox="allow-forms allow-scripts allow-same-origin allow-popups allow-modals allow-downloads"
                 allow="microphone; camera; display-capture; autoplay; clipboard-write;"
                 src="about:blank"
