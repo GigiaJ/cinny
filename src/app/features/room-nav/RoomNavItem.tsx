@@ -270,6 +270,8 @@ export function RoomNavItem({
           if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
             navigateRoom(room.roomId);
           }
+        } else {
+          navigateRoom(room.roomId);
         }
       } else {
         evt.stopPropagation();
