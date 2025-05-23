@@ -58,7 +58,7 @@ export const getWidgetUrl = (
     hideHeader: 'true',
     userId: mx.getUserId()!,
     deviceId: mx.getDeviceId()!,
-    roomId: roomId,
+    roomId,
     baseUrl: mx.baseUrl!,
     parentUrl: window.location.origin,
   });
