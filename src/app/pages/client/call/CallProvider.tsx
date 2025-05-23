@@ -237,6 +237,13 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
+      const setViewedAsActive = () => {
+        setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
+        setActiveCallRoomIdState(viewedCallRoomId);
+        setViewedClientWidgetApi(null, null);
+        setIsPrimaryIframe(!isPrimaryIframe);
+        setIsCallActive(true);
+      };
 
       activeClientWidgetApi?.transport.reply(ev.detail, {});
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
@@ -247,21 +254,13 @@ export function CallProvider({ children }: CallProviderProps) {
         if (isCallActive && viewedClientWidgetApi) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
-            setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
-            setActiveCallRoomIdState(viewedCallRoomId);
-            setViewedClientWidgetApi(null, null);
-            setIsPrimaryIframe(!isPrimaryIframe);
-            setIsCallActive(true);
+            setViewedAsActive();
           });
         } else {
           setIsCallActive(true);
         }
       } else {
-        setIsPrimaryIframe(!isPrimaryIframe);
-        setActiveClientWidgetApi(viewedClientWidgetApi, viewedCallRoomId);
-        setActiveCallRoomIdState(viewedCallRoomId);
-        setViewedClientWidgetApi(null, null);
-        setIsCallActive(true);
+        setViewedAsActive();
       }
     };
 
