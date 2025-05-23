@@ -9,8 +9,7 @@
     "xmr.se"
   ],
   "allowCustomHomeservers": true,
-
-  "elementCallUrl": "https://elementcall.example.com",
+  "elementCallUrl": null,
 
   "featuredCommunities": {
     "openAsDefault": false,
