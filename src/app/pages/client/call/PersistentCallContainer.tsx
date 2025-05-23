@@ -144,7 +144,8 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
   useEffect(() => {
     if ((activeCallRoomId && !viewedCallRoomId) || activeCallRoomId)
       setupWidget(primaryWidgetApiRef, primarySmallWidgetRef, primaryIframeRef, isPrimaryIframe);
-    setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, !isPrimaryIframe);
+    if ((!activeCallRoomId && viewedCallRoomId) || viewedCallRoomId)
+      setupWidget(backupWidgetApiRef, backupSmallWidgetRef, backupIframeRef, !isPrimaryIframe);
   }, [
     setupWidget,
     primaryWidgetApiRef,
