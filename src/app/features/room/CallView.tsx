@@ -4,8 +4,11 @@ import React, { useContext, useMemo } from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { Box } from 'folds';
 import { RoomViewHeader } from './RoomViewHeader';
-import { useCallState } from '../../pages/client/CallProvider';
-import { PrimaryRefContext, BackupRefContext } from '../../pages/call/PersistentCallContainer';
+import { useCallState } from '../../pages/client/call/CallProvider';
+import {
+  PrimaryRefContext,
+  BackupRefContext,
+} from '../../pages/client/call/PersistentCallContainer';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 
 function debounce<F extends (...args: any[]) => any>(func: F, waitFor: number) {
@@ -125,7 +128,14 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
         originalIframeStylesRef.current = null;
       };
     }
-  }, [activeIframeDisplayRef, applyFixedPositioningToIframe, debouncedApplyFixedPositioning, isPrimaryIframe, isViewingActiveCall, room]);
+  }, [
+    activeIframeDisplayRef,
+    applyFixedPositioningToIframe,
+    debouncedApplyFixedPositioning,
+    isPrimaryIframe,
+    isViewingActiveCall,
+    room,
+  ]);
 
   const isCallViewVisible = room.isCallRoom();
 
