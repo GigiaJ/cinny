@@ -123,14 +123,6 @@ export function CallProvider({ children }: CallProviderProps) {
     [setViewedCallRoomIdState]
   );
 
-  const hangUp = useCallback(() => {
-    logger.debug(`CallContext: Hang up called.`);
-    activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
-    viewedClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
-    setActiveCallRoomIdState(null);
-    setIsCallActive(false);
-  }, [activeClientWidgetApi?.transport, viewedClientWidgetApi?.transport]);
-
   const setActiveClientWidgetApi = useCallback(
     (clientWidgetApi: ClientWidgetApi | null, roomId: string | null) => {
       setActiveClientWidgetApiState(clientWidgetApi);
@@ -185,6 +177,14 @@ export function CallProvider({ children }: CallProviderProps) {
     },
     [viewedClientWidgetApi, viewedClientWidgetApiRoomId, setViewedClientWidgetApi]
   );
+
+  const hangUp = useCallback(() => {
+    logger.debug(`CallContext: Hang up called.`);
+    activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
+    setActiveClientWidgetApi(null, null);
+    setViewedCallRoomId(activeCallRoomId);
+    setIsCallActive(false);
+  }, [activeCallRoomId, activeClientWidgetApi?.transport, setActiveClientWidgetApi, setViewedCallRoomId]);
 
   useEffect(() => {
     if (!activeCallRoomId && !viewedCallRoomId) {
