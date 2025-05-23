@@ -53,7 +53,7 @@ import {
   getRoomNotificationMode,
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
-import { CallNavStatus } from '../../call/CallNavStatus';
+import { CallNavStatus } from '../../../features/room-nav/RoomCallNavStatus';
 
 type HomeMenuProps = {
   requestClose: () => void;

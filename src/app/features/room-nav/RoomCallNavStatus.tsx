@@ -1,30 +1,25 @@
-import { logger } from 'matrix-js-sdk/lib/logger';
-import { NavLink, useParams } from 'react-router-dom';
 import { Box, Chip, Icon, IconButton, Icons, Text, Tooltip, TooltipProvider } from 'folds';
 import React from 'react';
-import { useMatrixClient } from '../../hooks/useMatrixClient';
-import { useCallState } from '../client/CallProvider';
-import { getSpaceRoomPath } from '../pathUtils';
-import { getCanonicalAliasOrRoomId } from '../../utils/matrix';
-import { useNavToActivePathMapper } from '../../hooks/useNavToActivePathMapper';
-import { useSpace } from '../../hooks/useSpace';
 import { Room } from 'matrix-js-sdk';
-import { useMentionClickHandler } from '../../hooks/useMentionClickHandler';
-import {
-  makeMentionCustomProps,
-  renderMatrixMention,
-} from '../../plugins/react-custom-html-parser';
+import { useMatrixClient } from '../../hooks/useMatrixClient';
+import { useCallState } from '../../pages/client/call/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 
 type CallNavStatusProps = {
   space: Room | null;
 };
 export function CallNavStatus({ space }: CallNavStatusProps) {
-  const { activeCallRoomId, isAudioEnabled, isVideoEnabled, isCallActive, toggleAudio, toggleVideo, hangUp } =
-    useCallState();
+  const {
+    activeCallRoomId,
+    isAudioEnabled,
+    isVideoEnabled,
+    isCallActive,
+    toggleAudio,
+    toggleVideo,
+    hangUp,
+  } = useCallState();
   const mx = useMatrixClient();
   const { navigateRoom } = useRoomNavigate();
-  const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
   const handleGoToCallRoom = () => {
     if (activeCallRoomId) {
       navigateRoom(activeCallRoomId);

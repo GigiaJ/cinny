@@ -77,7 +77,7 @@ import {
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
-import { CallNavStatus } from '../../call/CallNavStatus';
+import { CallNavStatus } from '../../../features/room-nav/RoomCallNavStatus';
 import { getStateEvents } from '../../../utils/room';
 import { RoomNavUser } from '../../../features/room-nav/RoomNavUser';
 import { useStateEvents } from '../../../hooks/useStateEvents';
