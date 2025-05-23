@@ -4,6 +4,7 @@ import { JoinRule, MatrixError, RestrictedAllowType } from 'matrix-js-sdk';
 import { RoomJoinRulesEventContent } from 'matrix-js-sdk/lib/types';
 import { IPowerLevels, powerLevelAPI } from '../../../hooks/usePowerLevels';
 import {
+  ExtendedJoinRules,
   JoinRulesSwitcher,
   useRoomJoinRuleIcon,
   useRoomJoinRuleLabel,
@@ -32,6 +33,7 @@ export function RoomJoinRules({ powerLevels }: RoomJoinRulesProps) {
   const mx = useMatrixClient();
   const room = useRoom();
   const roomVersion = parseInt(room.getVersion(), 10);
+  const allowKnockRestricted = roomVersion >= 10;
   const allowRestricted = roomVersion >= 8;
   const allowKnock = roomVersion >= 7;
   const space = useSpaceOptionally();
@@ -47,18 +49,21 @@ export function RoomJoinRules({ powerLevels }: RoomJoinRulesProps) {
   const content = joinRuleEvent?.getContent<RoomJoinRulesEventContent>();
   const rule: JoinRule = content?.join_rule ?? JoinRule.Invite;
 
-  const joinRules: Array<JoinRule> = useMemo(() => {
-    const r: JoinRule[] = [JoinRule.Invite];
+  const joinRules: Array<ExtendedJoinRules> = useMemo(() => {
+    const r: ExtendedJoinRules[] = [JoinRule.Invite];
     if (allowKnock) {
       r.push(JoinRule.Knock);
     }
     if (allowRestricted && space) {
       r.push(JoinRule.Restricted);
     }
+    if (allowKnockRestricted && space) {
+      r.push('knock_restricted');
+    }
     r.push(JoinRule.Public);
 
     return r;
-  }, [allowRestricted, allowKnock, space]);
+  }, [allowKnockRestricted, allowRestricted, allowKnock, space]);
 
   const icons = useRoomJoinRuleIcon();
   const spaceIcons = useSpaceJoinRuleIcon();
@@ -66,9 +71,9 @@ export function RoomJoinRules({ powerLevels }: RoomJoinRulesProps) {
 
   const [submitState, submit] = useAsyncCallback(
     useCallback(
-      async (joinRule: JoinRule) => {
+      async (joinRule: ExtendedJoinRules) => {
         const allow: RestrictedRoomAllowContent[] = [];
-        if (joinRule === JoinRule.Restricted) {
+        if (joinRule === JoinRule.Restricted || joinRule === 'knock_restricted') {
           const parents = getStateEvents(room, StateEvent.SpaceParent).map((event) =>
             event.getStateKey()
           );
@@ -82,7 +87,7 @@ export function RoomJoinRules({ powerLevels }: RoomJoinRulesProps) {
         }
 
         const c: RoomJoinRulesEventContent = {
-          join_rule: joinRule,
+          join_rule: joinRule as JoinRule,
         };
         if (allow.length > 0) c.allow = allow;
         await mx.sendStateEvent(room.roomId, StateEvent.RoomJoinRules as any, c);

@@ -24,7 +24,7 @@ export const TextViewerContent = forwardRef<HTMLPreElement, TextViewerContentPro
     >
       <ErrorBoundary fallback={<code>{text}</code>}>
         <Suspense fallback={<code>{text}</code>}>
-          <ReactPrism>{(codeRef) => <code ref={codeRef}>{text}</code>}</ReactPrism>
+          <ReactPrism key={text}>{(codeRef) => <code ref={codeRef}>{text}</code>}</ReactPrism>
         </Suspense>
       </ErrorBoundary>
     </Text>

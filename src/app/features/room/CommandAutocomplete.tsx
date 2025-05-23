@@ -1,6 +1,6 @@
 import React, { KeyboardEvent as ReactKeyboardEvent, useCallback, useEffect, useMemo } from 'react';
 import { Editor } from 'slate';
-import { Box, MenuItem, Text } from 'folds';
+import { Box, config, MenuItem, Text } from 'folds';
 import { Room } from 'matrix-js-sdk';
 import { Command, useCommands } from '../../hooks/useCommands';
 import {
@@ -75,9 +75,6 @@ export function CommandAutocomplete({
       headerContent={
         <Box grow="Yes" direction="Row" gap="200" justifyContent="SpaceBetween">
           <Text size="L400">Commands</Text>
-          <Text size="T200" priority="300" truncate>
-            Begin your message with command
-          </Text>
         </Box>
       }
       requestClose={requestClose}
@@ -87,17 +84,22 @@ export function CommandAutocomplete({
           key={commandName}
           as="button"
           radii="300"
+          style={{ height: 'unset' }}
           onKeyDown={(evt: ReactKeyboardEvent<HTMLButtonElement>) =>
             onTabPress(evt, () => handleAutocomplete(commandName))
           }
           onClick={() => handleAutocomplete(commandName)}
         >
-          <Box grow="Yes" direction="Row" gap="200" justifyContent="SpaceBetween">
-            <Box shrink="No">
-              <Text style={{ flexGrow: 1 }} size="B400" truncate>
-                {`/${commandName}`}
-              </Text>
-            </Box>
+          <Box
+            style={{ padding: `${config.space.S300} 0` }}
+            grow="Yes"
+            direction="Column"
+            gap="100"
+            justifyContent="SpaceBetween"
+          >
+            <Text style={{ flexGrow: 1 }} size="B400" truncate>
+              {`/${commandName}`}
+            </Text>
             <Text truncate priority="300" size="T200">
               {commands[commandName].description}
             </Text>

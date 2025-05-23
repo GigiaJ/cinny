@@ -1,11 +1,6 @@
 import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
-import { logger } from 'matrix-js-sdk/lib/logger';
 
 import { cryptoCallbacks } from './state/secretStorageKeys';
-
-if (import.meta.env.PROD) {
-  logger.disableAll();
-}
 
 type Session = {
   baseUrl: string;
@@ -38,7 +33,6 @@ export const initClient = async (session: Session): Promise<MatrixClient> => {
   await indexedDBStore.startup();
   await mx.initRustCrypto();
 
-  mx.setGlobalErrorOnUnknownDevices(false);
   mx.setMaxListeners(50);
 
   return mx;

@@ -31,6 +31,7 @@ import {
   mxcUrlToHttp,
 } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
+import { validBlurHash } from '../../../utils/blurHash';
 
 type RenderVideoProps = {
   title: string;
@@ -68,7 +69,7 @@ export const VideoContent = as<'div', VideoContentProps>(
   ) => {
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
-    const blurHash = info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME];
+    const blurHash = validBlurHash(info.thumbnail_info?.[MATRIX_BLUR_HASH_PROPERTY_NAME]);
 
     const [load, setLoad] = useState(false);
     const [error, setError] = useState(false);

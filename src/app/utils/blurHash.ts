@@ -1,4 +1,4 @@
-import { encode } from 'blurhash';
+import { encode, isBlurhashValid } from 'blurhash';
 
 export const encodeBlurHash = (
   img: HTMLImageElement | HTMLVideoElement,
@@ -16,4 +16,14 @@ export const encodeBlurHash = (
   context.drawImage(img, 0, 0, canvas.width, canvas.height);
   const data = context.getImageData(0, 0, canvas.width, canvas.height);
   return encode(data.data, data.width, data.height, 4, 4);
+};
+
+export const validBlurHash = (hash?: string): string | undefined => {
+  if (typeof hash === 'string') {
+    const validity = isBlurhashValid(hash);
+
+    return validity.result ? hash : undefined;
+  }
+
+  return undefined;
 };

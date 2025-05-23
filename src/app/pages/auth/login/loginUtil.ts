@@ -73,7 +73,7 @@ export const login = async (
   }
 
   const mx = createClient({ baseUrl: url });
-  const [err, res] = await to<LoginResponse, MatrixError>(mx.login(data.type, data));
+  const [err, res] = await to<LoginResponse, MatrixError>(mx.loginRequest(data));
 
   if (err) {
     if (err.httpStatus === 400) {

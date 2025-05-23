@@ -125,3 +125,9 @@ export const suffixRename = (name: string, validator: (newName: string) => boole
 };
 
 export const replaceSpaceWithDash = (str: string): string => str.replace(/ /g, '-');
+
+export const splitWithSpace = (content: string): string[] => {
+  const trimmedContent = content.trim();
+  if (trimmedContent === '') return [];
+  return trimmedContent.split(' ');
+};

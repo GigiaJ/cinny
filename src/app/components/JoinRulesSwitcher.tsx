@@ -17,12 +17,16 @@ import { JoinRule } from 'matrix-js-sdk';
 import FocusTrap from 'focus-trap-react';
 import { stopPropagation } from '../utils/keyboard';
 
-type JoinRuleIcons = Record<JoinRule, IconSrc>;
+export type ExtraJoinRules = 'knock_restricted';
+export type ExtendedJoinRules = JoinRule | ExtraJoinRules;
+
+type JoinRuleIcons = Record<ExtendedJoinRules, IconSrc>;
 export const useRoomJoinRuleIcon = (): JoinRuleIcons =>
   useMemo(
     () => ({
       [JoinRule.Invite]: Icons.HashLock,
       [JoinRule.Knock]: Icons.HashLock,
+      knock_restricted: Icons.Hash,
       [JoinRule.Restricted]: Icons.Hash,
       [JoinRule.Public]: Icons.HashGlobe,
       [JoinRule.Private]: Icons.HashLock,
@@ -34,6 +38,7 @@ export const useSpaceJoinRuleIcon = (): JoinRuleIcons =>
     () => ({
       [JoinRule.Invite]: Icons.SpaceLock,
       [JoinRule.Knock]: Icons.SpaceLock,
+      knock_restricted: Icons.Space,
       [JoinRule.Restricted]: Icons.Space,
       [JoinRule.Public]: Icons.SpaceGlobe,
       [JoinRule.Private]: Icons.SpaceLock,
@@ -41,12 +46,13 @@ export const useSpaceJoinRuleIcon = (): JoinRuleIcons =>
     []
   );
 
-type JoinRuleLabels = Record<JoinRule, string>;
+type JoinRuleLabels = Record<ExtendedJoinRules, string>;
 export const useRoomJoinRuleLabel = (): JoinRuleLabels =>
   useMemo(
     () => ({
       [JoinRule.Invite]: 'Invite Only',
       [JoinRule.Knock]: 'Knock & Invite',
+      knock_restricted: 'Space Members or Knock',
       [JoinRule.Restricted]: 'Space Members',
       [JoinRule.Public]: 'Public',
       [JoinRule.Private]: 'Invite Only',
@@ -54,7 +60,7 @@ export const useRoomJoinRuleLabel = (): JoinRuleLabels =>
     []
   );
 
-type JoinRulesSwitcherProps<T extends JoinRule[]> = {
+type JoinRulesSwitcherProps<T extends ExtendedJoinRules[]> = {
   icons: JoinRuleIcons;
   labels: JoinRuleLabels;
   rules: T;
@@ -63,7 +69,7 @@ type JoinRulesSwitcherProps<T extends JoinRule[]> = {
   disabled?: boolean;
   changing?: boolean;
 };
-export function JoinRulesSwitcher<T extends JoinRule[]>({
+export function JoinRulesSwitcher<T extends ExtendedJoinRules[]>({
   icons,
   labels,
   rules,
@@ -79,7 +85,7 @@ export function JoinRulesSwitcher<T extends JoinRule[]>({
   };
 
   const handleChange = useCallback(
-    (selectedRule: JoinRule) => {
+    (selectedRule: ExtendedJoinRules) => {
       setCords(undefined);
       onChange(selectedRule);
     },
@@ -131,7 +137,7 @@ export function JoinRulesSwitcher<T extends JoinRule[]>({
         fill="Soft"
         radii="300"
         outlined
-        before={<Icon size="100" src={icons[value]} />}
+        before={<Icon size="100" src={icons[value] ?? icons[JoinRule.Restricted]} />}
         after={
           changing ? (
             <Spinner size="100" variant="Secondary" fill="Soft" />
@@ -142,7 +148,7 @@ export function JoinRulesSwitcher<T extends JoinRule[]>({
         onClick={handleOpenMenu}
         disabled={disabled}
       >
-        <Text size="B300">{labels[value]}</Text>
+        <Text size="B300">{labels[value] ?? 'Unsupported'}</Text>
       </Button>
     </PopOut>
   );

@@ -1,7 +1,6 @@
 import React, { FormEventHandler, useCallback } from 'react';
 import { Box, Text, Button, Spinner, color } from 'folds';
-import { decodeRecoveryKey } from 'matrix-js-sdk/lib/crypto-api';
-import { deriveKey } from 'matrix-js-sdk/lib/crypto/key_passphrase';
+import { decodeRecoveryKey, deriveRecoveryKeyFromPassphrase } from 'matrix-js-sdk/lib/crypto-api';
 import { PasswordInput } from './password-input';
 import {
   SecretStorageKeyContent,
@@ -29,11 +28,16 @@ export function SecretStorageRecoveryPassphrase({
   const [driveKeyState, submitPassphrase] = useAsyncCallback<
     Uint8Array,
     Error,
-    Parameters<typeof deriveKey>
+    Parameters<typeof deriveRecoveryKeyFromPassphrase>
   >(
     useCallback(
       async (passphrase, salt, iterations, bits) => {
-        const decodedRecoveryKey = await deriveKey(passphrase, salt, iterations, bits);
+        const decodedRecoveryKey = await deriveRecoveryKeyFromPassphrase(
+          passphrase,
+          salt,
+          iterations,
+          bits
+        );
 
         const match = await mx.secretStorage.checkKey(decodedRecoveryKey, keyContent as any);
 

@@ -1,5 +1,5 @@
 import { atom } from 'jotai';
-import { ImportRoomKeyProgressData } from 'matrix-js-sdk/lib/crypto-api';
+import { ImportRoomKeyProgressData, ImportRoomKeyStage } from 'matrix-js-sdk/lib/crypto-api';
 
 export enum BackupProgressStatus {
   Idle,
@@ -39,22 +39,16 @@ export const backupRestoreProgressAtom = atom<
 >(
   (get) => get(baseBackupRestoreProgressAtom),
   (get, set, progress) => {
-    if (progress.stage === 'fetch') {
+    if (progress.stage === ImportRoomKeyStage.Fetch) {
       set(baseBackupRestoreProgressAtom, {
         status: BackupProgressStatus.Fetching,
       });
       return;
     }
 
-    if (progress.stage === 'load_keys') {
+    if (progress.stage === ImportRoomKeyStage.LoadKeys) {
       const { total, successes, failures } = progress;
-      if (total === undefined || successes === undefined || failures === undefined) {
-        // Setting to idle as https://github.com/matrix-org/matrix-js-sdk/issues/4703
-        set(baseBackupRestoreProgressAtom, {
-          status: BackupProgressStatus.Idle,
-        });
-        return;
-      }
+
       const downloaded = successes + failures;
       if (downloaded === total) {
         set(baseBackupRestoreProgressAtom, {
