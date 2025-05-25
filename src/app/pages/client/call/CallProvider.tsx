@@ -30,7 +30,7 @@ interface CallContextState {
   setActiveCallRoomId: (roomId: string | null) => void;
   viewedCallRoomId: string | null;
   setViewedCallRoomId: (roomId: string | null) => void;
-  hangUp: () => void;
+  hangUp: (room: string) => void;
   activeClientWidgetApi: ClientWidgetApi | null;
   activeClientWidget: SmallWidget | null;
   registerActiveClientWidgetApi: (
@@ -204,7 +204,7 @@ export function CallProvider({ children }: CallProviderProps) {
   );
 
   const hangUp = useCallback(
-    (nextRoom) => {
+    (nextRoom: string) => {
       setIsCallActive(false);
       if (typeof nextRoom !== 'string') {
         if (viewedCallRoomId === activeCallRoomId) {
