@@ -65,7 +65,9 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           (!activeCallRoomId && viewedCallRoomId && !isCallActive)
         ) {
           const roomIdToSet = (skipLobby ? activeCallRoomId : viewedCallRoomId) ?? '';
-
+          if (roomIdToSet === '') {
+            return;
+          }
           const widgetId = `element-call-${roomIdToSet}-${Date.now()}`;
           const newUrl = getWidgetUrl(
             mx,
