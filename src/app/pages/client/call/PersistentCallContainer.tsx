@@ -36,7 +36,9 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
     isCallActive,
     isPrimaryIframe,
     registerActiveClientWidgetApi,
+    activeClientWidget,
     registerViewedClientWidgetApi,
+    viewedClientWidget,
   } = useCallState();
   const mx = useMatrixClient();
   const clientConfig = useClientConfig();
@@ -63,12 +65,6 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           (!activeCallRoomId && viewedCallRoomId && !isCallActive)
         ) {
           const roomIdToSet = (skipLobby ? activeCallRoomId : viewedCallRoomId) ?? '';
-          if (
-            roomIdToSet &&
-            (roomIdToSet === primarySmallWidgetRef?.current?.roomId ||
-              roomIdToSet === backupSmallWidgetRef?.current?.roomId)
-          )
-            return;
 
           const widgetId = `element-call-${roomIdToSet}-${Date.now()}`;
           const newUrl = getWidgetUrl(
@@ -84,10 +80,18 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           );
 
           if (
-            newUrl.toString() === primarySmallWidgetRef?.current?.url ||
-            newUrl.toString() === backupSmallWidgetRef?.current?.url
-          )
+            (primarySmallWidgetRef.current?.roomId || backupSmallWidgetRef.current?.roomId) &&
+            (skipLobby
+              ? activeClientWidget?.roomId &&
+                (activeClientWidget.roomId === primarySmallWidgetRef.current?.roomId ||
+                  activeClientWidget.roomId === backupSmallWidgetRef.current?.roomId)
+              : viewedClientWidget?.roomId &&
+                viewedRoomId === viewedClientWidget.roomId &&
+                (viewedClientWidget.roomId === primarySmallWidgetRef.current?.roomId ||
+                  viewedClientWidget.roomId === backupSmallWidgetRef.current?.roomId))
+          ) {
             return;
+          }
 
           if (iframeRef.current && iframeRef.current.src !== newUrl.toString()) {
             iframeRef.current.src = newUrl.toString();
@@ -119,9 +123,9 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
           const widgetApiInstance = smallWidget.startMessaging(iframeElement);
           widgetApiRef.current = widgetApiInstance;
           if (skipLobby) {
-            registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current);
+            registerActiveClientWidgetApi(activeCallRoomId, widgetApiRef.current, smallWidget);
           } else {
-            registerViewedClientWidgetApi(viewedCallRoomId, widgetApiRef.current);
+            registerViewedClientWidgetApi(viewedCallRoomId, widgetApiRef.current, smallWidget);
           }
 
           widgetApiInstance.once('ready', () => {
@@ -131,11 +135,14 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
       }
     },
     [
-      activeCallRoomId,
       mx,
+      activeCallRoomId,
       viewedCallRoomId,
       isCallActive,
       clientConfig.elementCallUrl,
+      viewedClientWidget,
+      activeClientWidget,
+      viewedRoomId,
       registerActiveClientWidgetApi,
       registerViewedClientWidgetApi,
     ]
