@@ -226,8 +226,11 @@ export function RoomNavItem({
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
   const {
     activeCallRoomId,
+    viewedCallRoomId,
     setActiveCallRoomId,
     setViewedCallRoomId,
+    registerViewedClientWidgetApi,
+    viewedClientWidgetApi,
     isChatOpen,
     toggleChat,
     hangUp,
@@ -266,10 +269,9 @@ export function RoomNavItem({
       if (!isMobile) {
         if (activeCallRoomId !== room.roomId) {
           hangUp();
+          if (viewedCallRoomId === activeCallRoomId) setViewedCallRoomId(room.roomId);
           setActiveCallRoomId(room.roomId);
-          if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
-            navigateRoom(room.roomId);
-          }
+          navigateRoom(room.roomId);
         } else {
           navigateRoom(room.roomId);
         }
