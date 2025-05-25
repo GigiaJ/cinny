@@ -226,11 +226,8 @@ export function RoomNavItem({
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
   const {
     activeCallRoomId,
-    viewedCallRoomId,
     setActiveCallRoomId,
     setViewedCallRoomId,
-    registerViewedClientWidgetApi,
-    viewedClientWidgetApi,
     isChatOpen,
     toggleChat,
     hangUp,
@@ -239,7 +236,6 @@ export function RoomNavItem({
     (receipt) => receipt.userId !== mx.getUserId()
   );
   const { navigateRoom } = useRoomNavigate();
-  const { roomIdOrAlias: viewedRoomId } = useParams();
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
 
