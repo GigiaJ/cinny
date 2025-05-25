@@ -268,10 +268,9 @@ export function RoomNavItem({
     if (room.isCallRoom()) {
       if (!isMobile) {
         if (activeCallRoomId !== room.roomId) {
-          hangUp();
-          if (viewedCallRoomId === activeCallRoomId) setViewedCallRoomId(room.roomId);
-          setActiveCallRoomId(room.roomId);
           navigateRoom(room.roomId);
+          hangUp(room.roomId);
+          setActiveCallRoomId(room.roomId);
         } else {
           navigateRoom(room.roomId);
         }
