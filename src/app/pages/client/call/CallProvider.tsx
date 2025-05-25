@@ -23,6 +23,7 @@ const WIDGET_MEDIA_STATE_UPDATE_ACTION = 'io.element.device_mute';
 const WIDGET_HANGUP_ACTION = 'im.vector.hangup';
 const WIDGET_ON_SCREEN_ACTION = 'set_always_on_screen';
 const WIDGET_JOIN_ACTION = 'io.element.join';
+const WIDGET_TILE_UPDATE = 'io.element.tile_layout';
 
 interface CallContextState {
   activeCallRoomId: string | null;
@@ -202,19 +203,35 @@ export function CallProvider({ children }: CallProviderProps) {
     [viewedClientWidgetApi, viewedClientWidgetApiRoomId, setViewedClientWidgetApi]
   );
 
-  const hangUp = useCallback(() => {
-    logger.debug(`CallContext: Hang up called.`);
-    activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
-    setActiveClientWidgetApi(null, null, null);
-    setViewedCallRoomId(activeCallRoomId);
+  const hangUp = useCallback(
+    (nextRoom) => {
+      setIsCallActive(false);
+      if (typeof nextRoom !== 'string') {
+        if (viewedCallRoomId === activeCallRoomId) {
+          setIsPrimaryIframe(!isPrimaryIframe);
+        } else {
+          setViewedCallRoomId(activeCallRoomId);
+        }
+      } else if (viewedCallRoomId !== null) {
+        setIsPrimaryIframe(!isPrimaryIframe);
+        setViewedCallRoomId(null);
+      }
+      setActiveClientWidgetApi(null, null, null);
+      setActiveCallRoomId(null);
 
-    setIsCallActive(false);
-  }, [
-    activeCallRoomId,
-    activeClientWidgetApi?.transport,
-    setActiveClientWidgetApi,
-    setViewedCallRoomId,
-  ]);
+      logger.debug(`CallContext: Hang up called.`);
+      activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
+    },
+    [
+      activeCallRoomId,
+      activeClientWidgetApi?.transport,
+      isPrimaryIframe,
+      setActiveCallRoomId,
+      setActiveClientWidgetApi,
+      setViewedCallRoomId,
+      viewedCallRoomId,
+    ]
+  );
 
   useEffect(() => {
     if (!activeCallRoomId && !viewedCallRoomId) {
@@ -224,7 +241,23 @@ export function CallProvider({ children }: CallProviderProps) {
       ev.preventDefault();
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         activeClientWidgetApi?.transport.reply(ev.detail, {});
-        setIsCallActive(false);
+
+        /*
+
+        if (viewedRoomId === activeCallRoomId) {
+          if (viewedCallRoomId !== activeCallRoomId) {
+            setViewedCallRoomId(activeCallRoomId);
+
+            setIsPrimaryIframe(!isPrimaryIframe);
+          } else {
+            setIsPrimaryIframe(!isPrimaryIframe);
+          }
+          setViewedClientWidgetApi(viewedClientWidgetApi, viewedClientWidget, viewedCallRoomId);
+        }
+*/
+        // setActiveClientWidgetApi(null, null, null);
+        // setActiveCallRoomId(null);
+        // setIsCallActive(false);
       }
       logger.debug(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
@@ -262,6 +295,15 @@ export function CallProvider({ children }: CallProviderProps) {
       }
     };
 
+    const handleOnTileLayout = (ev: CustomEvent) => {
+      ev.preventDefault();
+      if (isPrimaryIframe) {
+        activeClientWidgetApi?.transport.reply(ev.detail, {});
+      } else {
+        viewedClientWidgetApi?.transport.reply(ev.detail, {});
+      }
+    };
+
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
       const setViewedAsActive = () => {
@@ -271,12 +313,13 @@ export function CallProvider({ children }: CallProviderProps) {
         setIsCallActive(true);
       };
       activeClientWidgetApi?.transport.reply(ev.detail, {});
+
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         setIsCallActive(true);
         return;
       }
       if (activeClientWidgetApi) {
-        if (isCallActive && viewedClientWidgetApi) {
+        if (isCallActive && viewedClientWidgetApi && viewedCallRoomId) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
             setViewedAsActive();
@@ -294,11 +337,13 @@ export function CallProvider({ children }: CallProviderProps) {
     );
     activeClientWidgetApi?.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
     activeClientWidgetApi?.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+    viewedClientWidgetApi?.on(`action:${WIDGET_TILE_UPDATE}`, handleOnTileLayout);
     activeClientWidgetApi?.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
     activeClientWidgetApi?.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
 
     viewedClientWidgetApi?.on(`action:${WIDGET_JOIN_ACTION}`, handleJoin);
     viewedClientWidgetApi?.on(`action:${WIDGET_MEDIA_STATE_UPDATE_ACTION}`, handleMediaStateUpdate);
+    viewedClientWidgetApi?.on(`action:${WIDGET_TILE_UPDATE}`, handleOnTileLayout);
     viewedClientWidgetApi?.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
     viewedClientWidgetApi?.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
   }, [
