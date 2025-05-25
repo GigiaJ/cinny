@@ -19,6 +19,7 @@ import {
 import { CryptoBackend } from 'matrix-js-sdk/lib/common-crypto/CryptoBackend';
 import { AccountDataEvent } from '../../types/matrix/accountData';
 import {
+  Membership,
   MessageEvent,
   NotificationType,
   RoomToParents,
@@ -171,7 +172,7 @@ export const getNotificationType = (mx: MatrixClient, roomId: string): Notificat
   }
 
   if (!roomPushRule) {
-    const overrideRules = mx.getAccountData('m.push_rules')?.getContent<IPushRules>()
+    const overrideRules = mx.getAccountData(EventType.PushRules)?.getContent<IPushRules>()
       ?.global?.override;
     if (!overrideRules) return NotificationType.Default;
 
@@ -444,3 +445,32 @@ export const getMentionContent = (userIds: string[], room: boolean): IMentions =
 
   return mMentions;
 };
+
+export const getCommonRooms = (
+  mx: MatrixClient,
+  rooms: string[],
+  otherUserId: string
+): string[] => {
+  const commonRooms: string[] = [];
+
+  rooms.forEach((roomId) => {
+    const room = mx.getRoom(roomId);
+    if (!room || room.getMyMembership() !== Membership.Join) return;
+
+    const common = room.hasMembershipState(otherUserId, Membership.Join);
+    if (common) {
+      commonRooms.push(roomId);
+    }
+  });
+
+  return commonRooms;
+};
+
+export const bannedInRooms = (mx: MatrixClient, rooms: string[], otherUserId: string): boolean =>
+  rooms.some((roomId) => {
+    const room = mx.getRoom(roomId);
+    if (!room || room.getMyMembership() !== Membership.Join) return false;
+
+    const banned = room.hasMembershipState(otherUserId, Membership.Ban);
+    return banned;
+  });

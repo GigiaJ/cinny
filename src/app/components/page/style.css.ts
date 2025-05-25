@@ -92,6 +92,15 @@ export const PageContent = style([
   },
 ]);
 
+export const PageHeroEmpty = style([
+  DefaultReset,
+  {
+    padding: config.space.S400,
+    borderRadius: config.radii.R400,
+    minHeight: toRem(450),
+  },
+]);
+
 export const PageHeroSection = style([
   DefaultReset,
   {

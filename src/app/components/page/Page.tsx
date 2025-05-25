@@ -105,6 +105,20 @@ export const PageContent = as<'div'>(({ className, ...props }, ref) => (
   <div className={classNames(css.PageContent, className)} {...props} ref={ref} />
 ));
 
+export function PageHeroEmpty({ children }: { children: ReactNode }) {
+  return (
+    <Box
+      className={classNames(ContainerColor({ variant: 'SurfaceVariant' }), css.PageHeroEmpty)}
+      direction="Column"
+      alignItems="Center"
+      justifyContent="Center"
+      gap="200"
+    >
+      {children}
+    </Box>
+  );
+}
+
 export const PageHeroSection = as<'div', ComponentProps<typeof Box>>(
   ({ className, ...props }, ref) => (
     <Box

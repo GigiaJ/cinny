@@ -304,6 +304,14 @@ export const rateLimitedActions = async <T, R = void>(
   maxRetryCount?: number
 ) => {
   let retryCount = 0;
+
+  let actionInterval = 0;
+
+  const sleepForMs = (ms: number) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    });
+
   const performAction = async (dataItem: T) => {
     const [err] = await to<R, MatrixError>(callback(dataItem));
 
@@ -312,10 +320,9 @@ export const rateLimitedActions = async <T, R = void>(
         return;
       }
 
-      const waitMS = err.getRetryAfterMs() ?? 200;
-      await new Promise((resolve) => {
-        setTimeout(resolve, waitMS);
-      });
+      const waitMS = err.getRetryAfterMs() ?? 3000;
+      actionInterval = waitMS + 500;
+      await sleepForMs(waitMS);
       retryCount += 1;
 
       await performAction(dataItem);
@@ -327,5 +334,9 @@ export const rateLimitedActions = async <T, R = void>(
     retryCount = 0;
     // eslint-disable-next-line no-await-in-loop
     await performAction(dataItem);
+    if (actionInterval > 0) {
+      // eslint-disable-next-line no-await-in-loop
+      await sleepForMs(actionInterval);
+    }
   }
 };

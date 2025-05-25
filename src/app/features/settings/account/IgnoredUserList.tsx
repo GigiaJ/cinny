@@ -7,16 +7,17 @@ import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { isUserId } from '../../../utils/matrix';
 import { useIgnoredUsers } from '../../../hooks/useIgnoredUsers';
+import { useAlive } from '../../../hooks/useAlive';
 
 function IgnoreUserInput({ userList }: { userList: string[] }) {
   const mx = useMatrixClient();
   const [userId, setUserId] = useState<string>('');
+  const alive = useAlive();
 
   const [ignoreState, ignore] = useAsyncCallback(
     useCallback(
       async (uId: string) => {
-        mx.setIgnoredUsers([...userList, uId]);
-        setUserId('');
+        await mx.setIgnoredUsers([...userList, uId]);
       },
       [mx, userList]
     )
@@ -43,7 +44,11 @@ function IgnoreUserInput({ userList }: { userList: string[] }) {
 
     if (!isUserId(uId)) return;
 
-    ignore(uId);
+    ignore(uId).then(() => {
+      if (alive()) {
+        setUserId('');
+      }
+    });
   };
 
   return (
@@ -129,7 +134,7 @@ export function IgnoredUserList() {
   return (
     <Box direction="Column" gap="100">
       <Box alignItems="Center" justifyContent="SpaceBetween" gap="200">
-        <Text size="L400">Block Messages</Text>
+        <Text size="L400">Blocked Users</Text>
       </Box>
       <SequenceCard
         className={SequenceCardStyle}
@@ -139,13 +144,13 @@ export function IgnoredUserList() {
       >
         <SettingTile
           title="Select User"
-          description="Prevent receiving message by adding userId into blocklist."
+          description="Prevent receiving messages or invites from user by adding their userId."
         >
           <Box direction="Column" gap="300">
             <IgnoreUserInput userList={ignoredUsers} />
             {ignoredUsers.length > 0 && (
               <Box direction="Inherit" gap="100">
-                <Text size="L400">Blocklist</Text>
+                <Text size="L400">Users</Text>
                 <Box wrap="Wrap" gap="200">
                   {ignoredUsers.map((userId) => (
                     <IgnoredUserChip key={userId} userId={userId} userList={ignoredUsers} />

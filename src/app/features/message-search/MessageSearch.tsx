@@ -5,7 +5,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { SearchOrderBy } from 'matrix-js-sdk';
-import { PageHero, PageHeroSection } from '../../components/page';
+import { PageHero, PageHeroEmpty, PageHeroSection } from '../../components/page';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { _SearchPathSearchParams } from '../../pages/paths';
 import { useSetting } from '../../state/hooks/settings';
@@ -222,18 +222,7 @@ export function MessageSearch({
       </Box>
 
       {!msgSearchParams.term && status === 'pending' && (
-        <Box
-          className={ContainerColor({ variant: 'SurfaceVariant' })}
-          style={{
-            padding: config.space.S400,
-            borderRadius: config.radii.R400,
-            minHeight: toRem(450),
-          }}
-          direction="Column"
-          alignItems="Center"
-          justifyContent="Center"
-          gap="200"
-        >
+        <PageHeroEmpty>
           <PageHeroSection>
             <PageHero
               icon={<Icon size="600" src={Icons.Message} />}
@@ -241,7 +230,7 @@ export function MessageSearch({
               subTitle="Find helpful messages in your community by searching with related keywords."
             />
           </PageHeroSection>
-        </Box>
+        </PageHeroEmpty>
       )}
 
       {msgSearchParams.term && groups.length === 0 && status === 'success' && (

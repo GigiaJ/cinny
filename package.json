@@ -1,6 +1,6 @@
 {
   "name": "cinny",
-  "version": "4.7.1",
+  "version": "4.8.0",
   "description": "Yet another matrix client",
   "main": "index.js",
   "type": "module",
@@ -34,6 +34,7 @@
     "@vanilla-extract/recipes": "0.3.0",
     "@vanilla-extract/vite-plugin": "3.7.1",
     "await-to-js": "3.0.0",
+    "badwords-list": "2.0.1-4",
     "blurhash": "2.0.4",
     "browser-encrypt-attachment": "0.3.0",
     "chroma-js": "3.1.2",

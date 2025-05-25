@@ -5,7 +5,9 @@ import { SystemNotification } from './SystemNotification';
 import { AllMessagesNotifications } from './AllMessages';
 import { SpecialMessagesNotifications } from './SpecialMessages';
 import { KeywordMessagesNotifications } from './KeywordMessages';
-import { IgnoredUserList } from './IgnoredUserList';
+import { SequenceCard } from '../../../components/sequence-card';
+import { SequenceCardStyle } from '../styles.css';
+import { SettingTile } from '../../../components/setting-tile';
 
 type NotificationsProps = {
   requestClose: () => void;
@@ -35,7 +37,19 @@ export function Notifications({ requestClose }: NotificationsProps) {
               <AllMessagesNotifications />
               <SpecialMessagesNotifications />
               <KeywordMessagesNotifications />
-              <IgnoredUserList />
+              <Box direction="Column" gap="100">
+                <Text size="L400">Block Messages</Text>
+                <SequenceCard
+                  className={SequenceCardStyle}
+                  variant="SurfaceVariant"
+                  direction="Column"
+                  gap="400"
+                >
+                  <SettingTile
+                    description={'This option has been moved to "Account > Block Users" section.'}
+                  />
+                </SequenceCard>
+              </Box>
             </Box>
           </PageContent>
         </Scroll>
