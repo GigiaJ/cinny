@@ -85,10 +85,11 @@ export function PersistentCallContainer({ children }: PersistentCallContainerPro
             (primarySmallWidgetRef.current?.roomId || backupSmallWidgetRef.current?.roomId) &&
             (skipLobby
               ? activeClientWidget?.roomId &&
+                //activeCallRoomId === activeClientWidget.roomId &&
                 (activeClientWidget.roomId === primarySmallWidgetRef.current?.roomId ||
                   activeClientWidget.roomId === backupSmallWidgetRef.current?.roomId)
               : viewedClientWidget?.roomId &&
-                viewedRoomId === viewedClientWidget.roomId &&
+                viewedCallRoomId === viewedClientWidget.roomId &&
                 (viewedClientWidget.roomId === primarySmallWidgetRef.current?.roomId ||
                   viewedClientWidget.roomId === backupSmallWidgetRef.current?.roomId))
           ) {
