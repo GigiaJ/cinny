@@ -238,23 +238,7 @@ export function CallProvider({ children }: CallProviderProps) {
       ev.preventDefault();
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         activeClientWidgetApi?.transport.reply(ev.detail, {});
-
-        /*
-
-        if (viewedRoomId === activeCallRoomId) {
-          if (viewedCallRoomId !== activeCallRoomId) {
-            setViewedCallRoomId(activeCallRoomId);
-
-            setIsPrimaryIframe(!isPrimaryIframe);
-          } else {
-            setIsPrimaryIframe(!isPrimaryIframe);
-          }
-          setViewedClientWidgetApi(viewedClientWidgetApi, viewedClientWidget, viewedCallRoomId);
-        }
-*/
-        // setActiveClientWidgetApi(null, null, null);
-        // setActiveCallRoomId(null);
-        // setIsCallActive(false);
+        setIsCallActive(false);
       }
       logger.debug(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
@@ -323,6 +307,9 @@ export function CallProvider({ children }: CallProviderProps) {
             setViewedClientWidgetApi(null, null, null);
           });
         } else {
+          if (viewedClientWidgetApi && viewedCallRoomId) {
+            setViewedAsActive();
+          }
           setIsCallActive(true);
         }
       } else if (viewedCallRoomId !== viewedRoomId) {
