@@ -313,10 +313,6 @@ export function CallProvider({ children }: CallProviderProps) {
       };
       activeClientWidgetApi?.transport.reply(ev.detail, {});
 
-      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
-        setIsCallActive(true);
-        return;
-      }
       if (activeClientWidgetApi) {
         if (isCallActive && viewedClientWidgetApi && viewedCallRoomId) {
           activeClientWidgetApi?.removeAllListeners();
@@ -328,6 +324,10 @@ export function CallProvider({ children }: CallProviderProps) {
         } else {
           setIsCallActive(true);
         }
+      } else if (viewedCallRoomId !== viewedRoomId) {
+        setViewedCallRoomId(viewedRoomId);
+        setActiveCallRoomIdState(viewedCallRoomId);
+        setIsCallActive(true);
       } else {
         setViewedAsActive();
       }
@@ -347,23 +347,7 @@ export function CallProvider({ children }: CallProviderProps) {
     viewedClientWidgetApi?.on(`action:${WIDGET_TILE_UPDATE}`, handleOnTileLayout);
     viewedClientWidgetApi?.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
     viewedClientWidgetApi?.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
-  }, [
-    activeClientWidgetApi,
-    activeCallRoomId,
-    activeClientWidgetApiRoomId,
-    hangUp,
-    isChatOpen,
-    isAudioEnabled,
-    isVideoEnabled,
-    isCallActive,
-    viewedRoomId,
-    viewedClientWidgetApi,
-    isPrimaryIframe,
-    viewedCallRoomId,
-    setViewedClientWidgetApi,
-    setActiveClientWidgetApi,
-    viewedClientWidget,
-  ]);
+  }, [activeClientWidgetApi, activeCallRoomId, activeClientWidgetApiRoomId, hangUp, isChatOpen, isAudioEnabled, isVideoEnabled, isCallActive, viewedRoomId, viewedClientWidgetApi, isPrimaryIframe, viewedCallRoomId, setViewedClientWidgetApi, setActiveClientWidgetApi, viewedClientWidget, setViewedCallRoomId]);
 
   const sendWidgetAction = useCallback(
     async <T = unknown,>(action: WidgetApiToWidgetAction | string, data: T): Promise<void> => {
