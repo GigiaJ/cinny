@@ -207,15 +207,14 @@ export function CallProvider({ children }: CallProviderProps) {
     (nextRoom: string) => {
       setIsCallActive(false);
       if (typeof nextRoom !== 'string') {
-        if (viewedCallRoomId === activeCallRoomId) {
+        if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
           setIsPrimaryIframe(!isPrimaryIframe);
-        } else {
-          setViewedCallRoomId(activeCallRoomId);
         }
+        logger.error(`${activeCallRoomId} ${viewedCallRoomId}`);
+        setViewedCallRoomId(activeCallRoomId);
       } else if (viewedCallRoomId !== null) {
         setIsPrimaryIframe(!isPrimaryIframe);
-        setViewedCallRoomId(null);
-      }
+      } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
       setActiveClientWidgetApi(null, null, null);
       setActiveCallRoomId(null);
 
@@ -323,6 +322,8 @@ export function CallProvider({ children }: CallProviderProps) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
             setViewedAsActive();
+            setViewedCallRoomIdState(null);
+            setViewedClientWidgetApi(null, null, null);
           });
         } else {
           setIsCallActive(true);
