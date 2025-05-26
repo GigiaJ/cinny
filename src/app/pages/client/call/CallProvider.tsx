@@ -302,8 +302,6 @@ export function CallProvider({ children }: CallProviderProps) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
             setViewedAsActive();
-            setViewedCallRoomIdState(null);
-            setViewedClientWidgetApi(null, null, null);
           });
         } else {
           if (viewedClientWidgetApi && viewedCallRoomId) {
