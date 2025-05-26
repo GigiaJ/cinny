@@ -209,9 +209,10 @@ export function CallProvider({ children }: CallProviderProps) {
       if (typeof nextRoom !== 'string') {
         if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
           setIsPrimaryIframe(!isPrimaryIframe);
+        } else {
+          if (viewedCallRoomId !== viewedRoomId) setViewedCallRoomId(activeCallRoomId);
         }
         logger.error(`${activeCallRoomId} ${viewedCallRoomId}`);
-        setViewedCallRoomId(activeCallRoomId);
       } else if (viewedCallRoomId !== null) {
         setIsPrimaryIframe(!isPrimaryIframe);
       } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
@@ -229,6 +230,7 @@ export function CallProvider({ children }: CallProviderProps) {
       setActiveClientWidgetApi,
       setViewedCallRoomId,
       viewedCallRoomId,
+      viewedRoomId,
     ]
   );
 
@@ -312,7 +314,10 @@ export function CallProvider({ children }: CallProviderProps) {
         setIsCallActive(true);
       };
       activeClientWidgetApi?.transport.reply(ev.detail, {});
-
+      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
+        setIsCallActive(true);
+        return;
+      }
       if (activeClientWidgetApi) {
         if (isCallActive && viewedClientWidgetApi && viewedCallRoomId) {
           activeClientWidgetApi?.removeAllListeners();
@@ -325,8 +330,6 @@ export function CallProvider({ children }: CallProviderProps) {
           setIsCallActive(true);
         }
       } else if (viewedCallRoomId !== viewedRoomId) {
-        setViewedCallRoomId(viewedRoomId);
-        setActiveCallRoomIdState(viewedCallRoomId);
         setIsCallActive(true);
       } else {
         setViewedAsActive();
@@ -347,7 +350,24 @@ export function CallProvider({ children }: CallProviderProps) {
     viewedClientWidgetApi?.on(`action:${WIDGET_TILE_UPDATE}`, handleOnTileLayout);
     viewedClientWidgetApi?.on(`action:${WIDGET_ON_SCREEN_ACTION}`, handleOnScreenStateUpdate);
     viewedClientWidgetApi?.on(`action:${WIDGET_HANGUP_ACTION}`, handleHangup);
-  }, [activeClientWidgetApi, activeCallRoomId, activeClientWidgetApiRoomId, hangUp, isChatOpen, isAudioEnabled, isVideoEnabled, isCallActive, viewedRoomId, viewedClientWidgetApi, isPrimaryIframe, viewedCallRoomId, setViewedClientWidgetApi, setActiveClientWidgetApi, viewedClientWidget, setViewedCallRoomId]);
+  }, [
+    activeClientWidgetApi,
+    activeCallRoomId,
+    activeClientWidgetApiRoomId,
+    hangUp,
+    isChatOpen,
+    isAudioEnabled,
+    isVideoEnabled,
+    isCallActive,
+    viewedRoomId,
+    viewedClientWidgetApi,
+    isPrimaryIframe,
+    viewedCallRoomId,
+    setViewedClientWidgetApi,
+    setActiveClientWidgetApi,
+    viewedClientWidget,
+    setViewedCallRoomId,
+  ]);
 
   const sendWidgetAction = useCallback(
     async <T = unknown,>(action: WidgetApiToWidgetAction | string, data: T): Promise<void> => {
