@@ -204,27 +204,31 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const hangUp = useCallback(
     (nextRoom: string) => {
-      setIsCallActive(false);
-      if (typeof nextRoom !== 'string') {
-        if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
-          setIsPrimaryIframe(!isPrimaryIframe);
-        } else if (viewedCallRoomId !== viewedRoomId) setViewedCallRoomId(activeCallRoomId);
-      } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
-
+      if (isCallActive) {
+        if (typeof nextRoom !== 'string') {
+          if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
+            if (viewedClientWidget !== null) setIsPrimaryIframe(!isPrimaryIframe);
+          } else if (viewedCallRoomId !== viewedRoomId) {
+            setViewedCallRoomId(activeCallRoomId);
+          }
+        } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
+      }
       setActiveClientWidgetApi(null, null, null);
       setActiveCallRoomId(null);
-
+      setIsCallActive(false);
       logger.debug(`CallContext: Hang up called.`);
       activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     },
     [
       activeCallRoomId,
       activeClientWidgetApi?.transport,
+      isCallActive,
       isPrimaryIframe,
       setActiveCallRoomId,
       setActiveClientWidgetApi,
       setViewedCallRoomId,
       viewedCallRoomId,
+      viewedClientWidget,
       viewedRoomId,
     ]
   );
