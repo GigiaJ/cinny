@@ -236,6 +236,7 @@ export function RoomNavItem({
     (receipt) => receipt.userId !== mx.getUserId()
   );
   const { navigateRoom } = useRoomNavigate();
+  const { roomIdOrAlias: viewedRoomId } = useParams();
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
 
@@ -264,7 +265,9 @@ export function RoomNavItem({
     if (room.isCallRoom()) {
       if (!isMobile) {
         if (activeCallRoomId !== room.roomId) {
-          navigateRoom(room.roomId);
+          if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
+            navigateRoom(room.roomId);
+          }
           hangUp(room.roomId);
           setActiveCallRoomId(room.roomId);
         } else {
