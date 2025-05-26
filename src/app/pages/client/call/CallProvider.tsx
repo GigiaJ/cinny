@@ -209,9 +209,8 @@ export function CallProvider({ children }: CallProviderProps) {
         if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
           setIsPrimaryIframe(!isPrimaryIframe);
         } else if (viewedCallRoomId !== viewedRoomId) setViewedCallRoomId(activeCallRoomId);
-      } else if (viewedCallRoomId !== null) {
-        setIsPrimaryIframe(!isPrimaryIframe);
       } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
+
       setActiveClientWidgetApi(null, null, null);
       setActiveCallRoomId(null);
 
