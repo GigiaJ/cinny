@@ -153,7 +153,6 @@ export function CallProvider({ children }: CallProviderProps) {
     ) => {
       if (activeClientWidgetApi && activeClientWidgetApi !== clientWidgetApi) {
         logger.debug(`CallContext: Cleaning up listeners for previous clientWidgetApi instance.`);
-        //activeClientWidgetApi.removeAllListeners();
       }
 
       if (roomId && clientWidgetApi) {
@@ -209,10 +208,7 @@ export function CallProvider({ children }: CallProviderProps) {
       if (typeof nextRoom !== 'string') {
         if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
           setIsPrimaryIframe(!isPrimaryIframe);
-        } else {
-          if (viewedCallRoomId !== viewedRoomId) setViewedCallRoomId(activeCallRoomId);
-        }
-        logger.error(`${activeCallRoomId} ${viewedCallRoomId}`);
+        } else if (viewedCallRoomId !== viewedRoomId) setViewedCallRoomId(activeCallRoomId);
       } else if (viewedCallRoomId !== null) {
         setIsPrimaryIframe(!isPrimaryIframe);
       } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
