@@ -6,6 +6,7 @@ import React, {
   useCallback,
   ReactNode,
   useEffect,
+  useRef,
 } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { WidgetApiToWidgetAction, WidgetApiAction, ClientWidgetApi } from 'matrix-widget-api';
@@ -95,8 +96,14 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isChatOpen, setIsChatOpenState] = useState<boolean>(DEFAULT_CHAT_OPENED);
   const [isCallActive, setIsCallActive] = useState<boolean>(DEFAULT_CALL_ACTIVE);
   const [isPrimaryIframe, setIsPrimaryIframe] = useState<boolean>(DEFAULT_PRIMARY_IFRAME);
+  const [shouldFlipIframe, setShouldFlipIframe] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
 
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
+
+  const [hangupCounter, setHangupCounter] = useState(0);
+  const [lastViewedRoomDuringCall, setLastViewedRoomDuringCall] = useState<string | null>(null);
+
+  const currentHangupCounterRef = useRef(hangupCounter);
 
   const resetMediaState = useCallback(() => {
     logger.debug('CallContext: Resetting media state to defaults.');
@@ -204,18 +211,46 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const hangUp = useCallback(
     (nextRoom: string) => {
+      let nextCounter = currentHangupCounterRef.current;
       if (isCallActive) {
         if (typeof nextRoom !== 'string') {
-          if (activeCallRoomId && viewedCallRoomId === activeCallRoomId) {
-            if (viewedClientWidget !== null) setIsPrimaryIframe(!isPrimaryIframe);
-          } else if (viewedCallRoomId !== viewedRoomId) {
-            setViewedCallRoomId(activeCallRoomId);
+          if (nextCounter === 1) {
+            if (shouldFlipIframe) setIsPrimaryIframe(!isPrimaryIframe);
+            setShouldFlipIframe(false);
+            nextCounter++;
+            setHangupCounter(nextCounter);
           }
-        } else if (activeCallRoomId) setViewedCallRoomId(nextRoom);
+
+          if (nextCounter === 0 || nextCounter >= 3) {
+            if (
+              viewedCallRoomId &&
+              (lastViewedRoomDuringCall === activeCallRoomId ||
+                viewedCallRoomId !== lastViewedRoomDuringCall)
+            ) {
+              if (viewedCallRoomId !== lastViewedRoomDuringCall) {
+                setViewedCallRoomId(activeCallRoomId);
+              }
+              nextCounter = nextCounter <= 4 ? 4 : nextCounter++;
+            } else {
+              setViewedCallRoomId(activeCallRoomId);
+              nextCounter++;
+            }
+            setHangupCounter(nextCounter);
+          }
+
+          if (nextCounter === 2 || nextCounter >= 4) {
+            if (shouldFlipIframe) setIsPrimaryIframe(!isPrimaryIframe);
+            setShouldFlipIframe(false);
+            nextCounter++;
+            setHangupCounter(nextCounter);
+          }
+        }
+
+        setActiveClientWidgetApi(null, null, null);
+        setActiveCallRoomIdState(null);
+        setIsCallActive(false);
       }
-      setActiveClientWidgetApi(null, null, null);
-      setActiveCallRoomId(null);
-      setIsCallActive(false);
+
       logger.debug(`CallContext: Hang up called.`);
       activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     },
@@ -224,11 +259,11 @@ export function CallProvider({ children }: CallProviderProps) {
       activeClientWidgetApi?.transport,
       isCallActive,
       isPrimaryIframe,
-      setActiveCallRoomId,
+      lastViewedRoomDuringCall,
       setActiveClientWidgetApi,
       setViewedCallRoomId,
+      shouldFlipIframe,
       viewedCallRoomId,
-      viewedClientWidget,
       viewedRoomId,
     ]
   );
@@ -237,6 +272,23 @@ export function CallProvider({ children }: CallProviderProps) {
     if (!activeCallRoomId && !viewedCallRoomId) {
       return;
     }
+
+    currentHangupCounterRef.current = hangupCounter;
+
+    if (!lastViewedRoomDuringCall) {
+      if (activeCallRoomId)
+        setLastViewedRoomDuringCall((prevLastRoom) => prevLastRoom || activeCallRoomId);
+    }
+    if (
+      lastViewedRoomDuringCall &&
+      lastViewedRoomDuringCall !== viewedRoomId &&
+      activeCallRoomId &&
+      isCallActive
+    ) {
+      setHangupCounter(0);
+      setLastViewedRoomDuringCall(activeCallRoomId);
+    }
+
     const handleHangup = (ev: CustomEvent) => {
       ev.preventDefault();
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
@@ -291,9 +343,9 @@ export function CallProvider({ children }: CallProviderProps) {
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
       const setViewedAsActive = () => {
+        if (viewedCallRoomId !== activeCallRoomId) setIsPrimaryIframe(!isPrimaryIframe);
         setActiveClientWidgetApi(viewedClientWidgetApi, viewedClientWidget, viewedCallRoomId);
         setActiveCallRoomIdState(viewedCallRoomId);
-        setIsPrimaryIframe(!isPrimaryIframe);
         setIsCallActive(true);
       };
       activeClientWidgetApi?.transport.reply(ev.detail, {});
@@ -305,17 +357,16 @@ export function CallProvider({ children }: CallProviderProps) {
         if (isCallActive && viewedClientWidgetApi && viewedCallRoomId) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
-            setViewedAsActive();
+            setShouldFlipIframe(true);
+            return setViewedAsActive();
           });
         } else {
-          if (viewedClientWidgetApi && viewedCallRoomId) {
-            setViewedAsActive();
-          }
           setIsCallActive(true);
         }
       } else if (viewedCallRoomId !== viewedRoomId) {
         setIsCallActive(true);
       } else {
+        setShouldFlipIframe(true);
         setViewedAsActive();
       }
     };
@@ -351,6 +402,8 @@ export function CallProvider({ children }: CallProviderProps) {
     setActiveClientWidgetApi,
     viewedClientWidget,
     setViewedCallRoomId,
+    hangupCounter,
+    lastViewedRoomDuringCall,
   ]);
 
   const sendWidgetAction = useCallback(
