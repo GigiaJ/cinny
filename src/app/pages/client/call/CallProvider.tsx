@@ -254,7 +254,17 @@ export function CallProvider({ children }: CallProviderProps) {
       logger.debug(`CallContext: Hang up called.`);
       activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     },
-    [activeCallRoomId, activeClientWidgetApi?.transport, isCallActive, isPrimaryIframe, lastViewedRoomDuringCall, setActiveClientWidgetApi, setViewedCallRoomId, shouldFlipIframe, viewedCallRoomId]
+    [
+      activeCallRoomId,
+      activeClientWidgetApi?.transport,
+      isCallActive,
+      isPrimaryIframe,
+      lastViewedRoomDuringCall,
+      setActiveClientWidgetApi,
+      setViewedCallRoomId,
+      shouldFlipIframe,
+      viewedCallRoomId,
+    ]
   );
 
   useEffect(() => {
@@ -282,7 +292,8 @@ export function CallProvider({ children }: CallProviderProps) {
       ev.preventDefault();
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         activeClientWidgetApi?.transport.reply(ev.detail, {});
-        setIsCallActive(false);
+        hangUp();
+        //setIsCallActive(false);
       }
       logger.debug(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
