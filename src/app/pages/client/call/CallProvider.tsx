@@ -254,18 +254,7 @@ export function CallProvider({ children }: CallProviderProps) {
       logger.debug(`CallContext: Hang up called.`);
       activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     },
-    [
-      activeCallRoomId,
-      activeClientWidgetApi?.transport,
-      isCallActive,
-      isPrimaryIframe,
-      lastViewedRoomDuringCall,
-      setActiveClientWidgetApi,
-      setViewedCallRoomId,
-      shouldFlipIframe,
-      viewedCallRoomId,
-      viewedRoomId,
-    ]
+    [activeCallRoomId, activeClientWidgetApi?.transport, isCallActive, isPrimaryIframe, lastViewedRoomDuringCall, setActiveClientWidgetApi, setViewedCallRoomId, shouldFlipIframe, viewedCallRoomId]
   );
 
   useEffect(() => {
