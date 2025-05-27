@@ -1,7 +1,7 @@
 import * as badWords from 'badwords-list';
 import { sanitizeForRegex } from '../utils/regex';
 
-const additionalBadWords: string[] = ['Torture', 'T0rture'];
+const additionalBadWords: string[] = ['torture', 't0rture'];
 
 const fullBadWordList = additionalBadWords.concat(
   badWords.array.filter((word) => !additionalBadWords.includes(word))

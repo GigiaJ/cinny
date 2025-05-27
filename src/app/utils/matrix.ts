@@ -300,7 +300,7 @@ export const downloadEncryptedMedia = async (
 
 export const rateLimitedActions = async <T, R = void>(
   data: T[],
-  callback: (item: T) => Promise<R>,
+  callback: (item: T, index: number) => Promise<R>,
   maxRetryCount?: number
 ) => {
   let retryCount = 0;
@@ -312,8 +312,8 @@ export const rateLimitedActions = async <T, R = void>(
       setTimeout(resolve, ms);
     });
 
-  const performAction = async (dataItem: T) => {
-    const [err] = await to<R, MatrixError>(callback(dataItem));
+  const performAction = async (dataItem: T, index: number) => {
+    const [err] = await to<R, MatrixError>(callback(dataItem, index));
 
     if (err?.httpStatus === 429) {
       if (retryCount === maxRetryCount) {
@@ -321,11 +321,11 @@ export const rateLimitedActions = async <T, R = void>(
       }
 
       const waitMS = err.getRetryAfterMs() ?? 3000;
-      actionInterval = waitMS + 500;
+      actionInterval = waitMS * 1.5;
       await sleepForMs(waitMS);
       retryCount += 1;
 
-      await performAction(dataItem);
+      await performAction(dataItem, index);
     }
   };
 
@@ -333,7 +333,7 @@ export const rateLimitedActions = async <T, R = void>(
     const dataItem = data[i];
     retryCount = 0;
     // eslint-disable-next-line no-await-in-loop
-    await performAction(dataItem);
+    await performAction(dataItem, i);
     if (actionInterval > 0) {
       // eslint-disable-next-line no-await-in-loop
       await sleepForMs(actionInterval);

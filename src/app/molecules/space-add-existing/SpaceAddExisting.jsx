@@ -28,9 +28,11 @@ import { allRoomsAtom } from '../../state/room-list/roomList';
 import { mDirectAtom } from '../../state/mDirectList';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { getViaServers } from '../../plugins/via-servers';
+import { rateLimitedActions } from '../../utils/matrix';
+import { useAlive } from '../../hooks/useAlive';
 
 function SpaceAddExistingContent({ roomId, spaces: onlySpaces }) {
-  const mountStore = useStore(roomId);
+  const alive = useAlive();
   const [debounce] = useState(new Debounce());
   const [process, setProcess] = useState(null);
   const [allRoomIds, setAllRoomIds] = useState([]);
@@ -68,14 +70,14 @@ function SpaceAddExistingContent({ roomId, spaces: onlySpaces }) {
   const handleAdd = async () => {
     setProcess(`Adding ${selected.length} items...`);
 
-    const promises = selected.map((rId) => {
+    await rateLimitedActions(selected, async (rId) => {
       const room = mx.getRoom(rId);
       const via = getViaServers(room);
       if (via.length === 0) {
         via.push(getIdServer(rId));
       }
 
-      return mx.sendStateEvent(
+      await mx.sendStateEvent(
         roomId,
         'm.space.child',
         {
@@ -87,9 +89,7 @@ function SpaceAddExistingContent({ roomId, spaces: onlySpaces }) {
       );
     });
 
-    mountStore.setItem(true);
-    await Promise.allSettled(promises);
-    if (mountStore.getItem() !== true) return;
+    if (!alive()) return;
 
     const roomIds = onlySpaces ? [...spaces] : [...rooms, ...directs];
     const allIds = roomIds.filter(

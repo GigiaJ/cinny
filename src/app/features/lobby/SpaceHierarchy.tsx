@@ -31,6 +31,7 @@ type SpaceHierarchyProps = {
   draggingItem?: HierarchyItem;
   onDragging: (item?: HierarchyItem) => void;
   canDrop: CanDropCallback;
+  disabledReorder?: boolean;
   nextSpaceId?: string;
   getRoom: (roomId: string) => Room | undefined;
   pinned: boolean;
@@ -54,6 +55,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
       draggingItem,
       onDragging,
       canDrop,
+      disabledReorder,
       nextSpaceId,
       getRoom,
       pinned,
@@ -116,7 +118,9 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
           handleClose={handleClose}
           getRoom={getRoom}
           canEditChild={canEditSpaceChild(spacePowerLevels)}
-          canReorder={parentPowerLevels ? canEditSpaceChild(parentPowerLevels) : false}
+          canReorder={
+            parentPowerLevels && !disabledReorder ? canEditSpaceChild(parentPowerLevels) : false
+          }
           options={
             parentId &&
             parentPowerLevels && (
@@ -174,7 +178,7 @@ export const SpaceHierarchy = forwardRef<HTMLDivElement, SpaceHierarchyProps>(
                   dm={mDirects.has(roomItem.roomId)}
                   onOpen={onOpenRoom}
                   getRoom={getRoom}
-                  canReorder={canEditSpaceChild(spacePowerLevels)}
+                  canReorder={canEditSpaceChild(spacePowerLevels) && !disabledReorder}
                   options={
                     <HierarchyItemMenu
                       item={roomItem}
