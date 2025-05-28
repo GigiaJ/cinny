@@ -218,8 +218,8 @@ export function CallProvider({ children }: CallProviderProps) {
       } else if (activeClientWidget) {
         logger.debug('3 Hangup');
         const iframeDoc =
-          activeClientWidget?.iframe.contentDocument ||
-          activeClientWidget?.iframe.contentWindow.document;
+          activeClientWidget?.iframe?.contentDocument ||
+          activeClientWidget?.iframe?.contentWindow.document;
         const button = iframeDoc.querySelector('[data-testid="incall_leave"]');
         button.click();
       }
@@ -311,8 +311,8 @@ export function CallProvider({ children }: CallProviderProps) {
         setActiveCallRoomIdState(viewedCallRoomId);
         setIsCallActive(true);
         const iframeDoc =
-          viewedClientWidget?.iframe.contentDocument ||
-          viewedClientWidget?.iframe.contentWindow.document;
+          viewedClientWidget?.iframe?.contentDocument ||
+          viewedClientWidget?.iframe?.contentWindow.document;
         const observer = new MutationObserver(() => {
           const button = iframeDoc.querySelector('[data-testid="incall_leave"]');
           if (button) {
@@ -328,8 +328,8 @@ export function CallProvider({ children }: CallProviderProps) {
       if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         activeClientWidgetApi?.transport.reply(ev.detail, {});
         const iframeDoc =
-          activeClientWidget?.iframe.contentDocument ||
-          activeClientWidget?.iframe.contentWindow.document;
+          activeClientWidget?.iframe?.contentDocument ||
+          activeClientWidget?.iframe?.contentWindow.document;
         const observer = new MutationObserver(() => {
           const button = iframeDoc.querySelector('[data-testid="incall_leave"]');
           if (button) {
@@ -406,8 +406,8 @@ export function CallProvider({ children }: CallProviderProps) {
     viewedClientWidget,
     setViewedCallRoomId,
     lastViewedRoomDuringCall,
-    activeClientWidget?.iframe.contentDocument,
-    activeClientWidget?.iframe.contentWindow.document,
+    activeClientWidget?.iframe?.contentDocument,
+    activeClientWidget?.iframe?.contentWindow?.document,
   ]);
 
   const sendWidgetAction = useCallback(
