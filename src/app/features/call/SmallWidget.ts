@@ -90,6 +90,8 @@ export class SmallWidget extends EventEmitter {
 
   public url?: string;
 
+  public iframe: HTMLElement | null;
+
   private type: string; // Type of the widget (e.g., 'm.call')
 
   private readUpToMap: { [roomId: string]: string } = {}; // room ID to event ID
@@ -123,7 +125,7 @@ export class SmallWidget extends EventEmitter {
       true,
       this.roomId
     );
-
+    this.iframe = iframe;
     this.messaging = new ClientWidgetApi(this.mockWidget, iframe, driver);
 
     // Emit events during the widget lifecycle
