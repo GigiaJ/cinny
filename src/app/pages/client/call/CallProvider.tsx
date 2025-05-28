@@ -206,14 +206,17 @@ export function CallProvider({ children }: CallProviderProps) {
   const hangUp = useCallback(
     (nextRoom: string) => {
       if (typeof nextRoom === 'string') {
+        logger.debug('1 Hangup');
         setActiveClientWidgetApi(null, null, null);
         setActiveCallRoomIdState(null);
         activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
       } else if (viewedRoomId !== activeCallRoomId) {
+        logger.debug('2 Hangup');
         setActiveClientWidgetApi(null, null, null);
         setActiveCallRoomIdState(null);
         activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
       } else if (activeClientWidget) {
+        logger.debug('3 Hangup');
         const iframeDoc =
           activeClientWidget?.iframe.contentDocument ||
           activeClientWidget?.iframe.contentWindow.document;
@@ -302,13 +305,6 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
-      logger.error(`1
-        activeCall: ${activeCallRoomId}
-        viewedCall: ${viewedCallRoomId}
-        lastActiveCall: ${lastViewedRoomDuringCall}
-        viewed: ${viewedRoomId}
-        isCallActive ${isCallActive}
-        `);
       const setViewedAsActive = () => {
         if (viewedCallRoomId !== activeCallRoomId) setIsPrimaryIframe(!isPrimaryIframe);
         setActiveClientWidgetApi(viewedClientWidgetApi, viewedClientWidget, viewedCallRoomId);
@@ -324,15 +320,12 @@ export function CallProvider({ children }: CallProviderProps) {
               setIsCallActive(false);
             });
           }
-
           observer.disconnect();
         });
         observer.observe(iframeDoc, { childList: true, subtree: true });
       };
 
-      if (
-        ev.detail.widgetId === activeClientWidgetApi?.widget.id
-      ) {
+      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         activeClientWidgetApi?.transport.reply(ev.detail, {});
         const iframeDoc =
           activeClientWidget?.iframe.contentDocument ||
@@ -346,6 +339,7 @@ export function CallProvider({ children }: CallProviderProps) {
           }
           observer.disconnect();
         });
+        logger.debug('1 Join');
         observer.observe(iframeDoc, { childList: true, subtree: true });
         setIsCallActive(true);
         return;
@@ -355,22 +349,27 @@ export function CallProvider({ children }: CallProviderProps) {
         viewedRoomId === activeCallRoomId &&
         lastViewedRoomDuringCall === activeCallRoomId
       ) {
+        logger.debug('2 Join');
         setIsCallActive(true);
-        logger.error('Active widget joined on? Most likely a new widget after a hangup method.');
         return;
       }
       if (activeClientWidgetApi) {
         if (isCallActive && viewedClientWidgetApi && viewedCallRoomId) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
+            logger.debug('3 Join');
             setViewedAsActive();
           });
         } else {
+          logger.debug('4 Join');
+          setViewedAsActive();
           setIsCallActive(true);
         }
       } else if (viewedCallRoomId !== viewedRoomId) {
+        logger.debug('5 Join');
         setIsCallActive(true);
       } else {
+        logger.debug('6 Join');
         setViewedAsActive();
       }
     };
