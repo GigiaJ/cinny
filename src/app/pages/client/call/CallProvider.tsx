@@ -6,7 +6,6 @@ import React, {
   useCallback,
   ReactNode,
   useEffect,
-  useRef,
 } from 'react';
 import { logger } from 'matrix-js-sdk/lib/logger';
 import { WidgetApiToWidgetAction, WidgetApiAction, ClientWidgetApi } from 'matrix-widget-api';
@@ -96,14 +95,9 @@ export function CallProvider({ children }: CallProviderProps) {
   const [isChatOpen, setIsChatOpenState] = useState<boolean>(DEFAULT_CHAT_OPENED);
   const [isCallActive, setIsCallActive] = useState<boolean>(DEFAULT_CALL_ACTIVE);
   const [isPrimaryIframe, setIsPrimaryIframe] = useState<boolean>(DEFAULT_PRIMARY_IFRAME);
-  const [shouldFlipIframe, setShouldFlipIframe] = useState<boolean>(DEFAULT_VIDEO_ENABLED);
 
   const { roomIdOrAlias: viewedRoomId } = useParams<{ roomIdOrAlias: string }>();
-
-  const [hangupCounter, setHangupCounter] = useState(0);
   const [lastViewedRoomDuringCall, setLastViewedRoomDuringCall] = useState<string | null>(null);
-
-  const currentHangupCounterRef = useRef(hangupCounter);
 
   const resetMediaState = useCallback(() => {
     logger.debug('CallContext: Resetting media state to defaults.');
@@ -211,59 +205,31 @@ export function CallProvider({ children }: CallProviderProps) {
 
   const hangUp = useCallback(
     (nextRoom: string) => {
-      let nextCounter = currentHangupCounterRef.current;
-      if (isCallActive) {
-        if (typeof nextRoom !== 'string') {
-          if (nextCounter === 1) {
-            if (shouldFlipIframe) setIsPrimaryIframe(!isPrimaryIframe);
-            setShouldFlipIframe(false);
-            nextCounter++;
-            setHangupCounter(nextCounter);
-          }
-
-          if (nextCounter === 0 || nextCounter >= 3) {
-            if (
-              viewedCallRoomId &&
-              (lastViewedRoomDuringCall === activeCallRoomId ||
-                viewedCallRoomId !== lastViewedRoomDuringCall)
-            ) {
-              if (viewedCallRoomId !== lastViewedRoomDuringCall) {
-                setViewedCallRoomId(activeCallRoomId);
-              }
-              nextCounter = nextCounter <= 4 ? 4 : nextCounter++;
-            } else {
-              setViewedCallRoomId(activeCallRoomId);
-              nextCounter++;
-            }
-            setHangupCounter(nextCounter);
-          }
-
-          if (nextCounter === 2 || nextCounter >= 4) {
-            if (shouldFlipIframe) setIsPrimaryIframe(!isPrimaryIframe);
-            setShouldFlipIframe(false);
-            nextCounter++;
-            setHangupCounter(nextCounter);
-          }
-        }
-
+      if (typeof nextRoom === 'string') {
         setActiveClientWidgetApi(null, null, null);
         setActiveCallRoomIdState(null);
-        setIsCallActive(false);
+        activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
+      } else if (viewedRoomId !== activeCallRoomId) {
+        setActiveClientWidgetApi(null, null, null);
+        setActiveCallRoomIdState(null);
+        activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
+      } else if (activeClientWidget) {
+        const iframeDoc =
+          activeClientWidget?.iframe.contentDocument ||
+          activeClientWidget?.iframe.contentWindow.document;
+        const button = iframeDoc.querySelector('[data-testid="incall_leave"]');
+        button.click();
       }
+      setIsCallActive(false);
 
       logger.debug(`CallContext: Hang up called.`);
-      activeClientWidgetApi?.transport.send(`${WIDGET_HANGUP_ACTION}`, {});
     },
     [
       activeCallRoomId,
+      activeClientWidget,
       activeClientWidgetApi?.transport,
-      isCallActive,
-      isPrimaryIframe,
-      lastViewedRoomDuringCall,
       setActiveClientWidgetApi,
-      setViewedCallRoomId,
-      shouldFlipIframe,
-      viewedCallRoomId,
+      viewedRoomId,
     ]
   );
 
@@ -271,9 +237,6 @@ export function CallProvider({ children }: CallProviderProps) {
     if (!activeCallRoomId && !viewedCallRoomId) {
       return;
     }
-
-    currentHangupCounterRef.current = hangupCounter;
-
     if (!lastViewedRoomDuringCall) {
       if (activeCallRoomId)
         setLastViewedRoomDuringCall((prevLastRoom) => prevLastRoom || activeCallRoomId);
@@ -284,16 +247,13 @@ export function CallProvider({ children }: CallProviderProps) {
       activeCallRoomId &&
       isCallActive
     ) {
-      setHangupCounter(0);
       setLastViewedRoomDuringCall(activeCallRoomId);
     }
 
     const handleHangup = (ev: CustomEvent) => {
       ev.preventDefault();
-      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
+      if (isCallActive && ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
         activeClientWidgetApi?.transport.reply(ev.detail, {});
-        hangUp();
-        //setIsCallActive(false);
       }
       logger.debug(
         `CallContext: Received hangup action from widget in room ${activeCallRoomId}.`,
@@ -342,23 +302,68 @@ export function CallProvider({ children }: CallProviderProps) {
 
     const handleJoin = (ev: CustomEvent) => {
       ev.preventDefault();
+      logger.error(`1
+        activeCall: ${activeCallRoomId}
+        viewedCall: ${viewedCallRoomId}
+        lastActiveCall: ${lastViewedRoomDuringCall}
+        viewed: ${viewedRoomId}
+        isCallActive ${isCallActive}
+        `);
       const setViewedAsActive = () => {
         if (viewedCallRoomId !== activeCallRoomId) setIsPrimaryIframe(!isPrimaryIframe);
         setActiveClientWidgetApi(viewedClientWidgetApi, viewedClientWidget, viewedCallRoomId);
         setActiveCallRoomIdState(viewedCallRoomId);
         setIsCallActive(true);
+        const iframeDoc =
+          viewedClientWidget?.iframe.contentDocument ||
+          viewedClientWidget?.iframe.contentWindow.document;
+        const observer = new MutationObserver(() => {
+          const button = iframeDoc.querySelector('[data-testid="incall_leave"]');
+          if (button) {
+            button.addEventListener('click', () => {
+              setIsCallActive(false);
+            });
+          }
+
+          observer.disconnect();
+        });
+        observer.observe(iframeDoc, { childList: true, subtree: true });
       };
-      activeClientWidgetApi?.transport.reply(ev.detail, {});
-      if (ev.detail.widgetId === activeClientWidgetApi?.widget.id) {
+
+      if (
+        ev.detail.widgetId === activeClientWidgetApi?.widget.id
+      ) {
+        activeClientWidgetApi?.transport.reply(ev.detail, {});
+        const iframeDoc =
+          activeClientWidget?.iframe.contentDocument ||
+          activeClientWidget?.iframe.contentWindow.document;
+        const observer = new MutationObserver(() => {
+          const button = iframeDoc.querySelector('[data-testid="incall_leave"]');
+          if (button) {
+            button.addEventListener('click', () => {
+              setIsCallActive(false);
+            });
+          }
+          observer.disconnect();
+        });
+        observer.observe(iframeDoc, { childList: true, subtree: true });
         setIsCallActive(true);
+        return;
+      }
+      if (
+        lastViewedRoomDuringCall &&
+        viewedRoomId === activeCallRoomId &&
+        lastViewedRoomDuringCall === activeCallRoomId
+      ) {
+        setIsCallActive(true);
+        logger.error('Active widget joined on? Most likely a new widget after a hangup method.');
         return;
       }
       if (activeClientWidgetApi) {
         if (isCallActive && viewedClientWidgetApi && viewedCallRoomId) {
           activeClientWidgetApi?.removeAllListeners();
           activeClientWidgetApi?.transport.send(WIDGET_HANGUP_ACTION, {}).then(() => {
-            setShouldFlipIframe(true);
-            return setViewedAsActive();
+            setViewedAsActive();
           });
         } else {
           setIsCallActive(true);
@@ -366,7 +371,6 @@ export function CallProvider({ children }: CallProviderProps) {
       } else if (viewedCallRoomId !== viewedRoomId) {
         setIsCallActive(true);
       } else {
-        setShouldFlipIframe(true);
         setViewedAsActive();
       }
     };
@@ -402,8 +406,9 @@ export function CallProvider({ children }: CallProviderProps) {
     setActiveClientWidgetApi,
     viewedClientWidget,
     setViewedCallRoomId,
-    hangupCounter,
     lastViewedRoomDuringCall,
+    activeClientWidget?.iframe.contentDocument,
+    activeClientWidget?.iframe.contentWindow.document,
   ]);
 
   const sendWidgetAction = useCallback(
