@@ -209,7 +209,7 @@ export function Explore() {
                     <Box as="span" grow="Yes" alignItems="Center" gap="200">
                       <Avatar size="200" radii="400">
                         <Icon
-                          src={Icons.Category}
+                          src={Icons.Server}
                           size="100"
                           filled={selectedServer === userServer}
                         />
@@ -243,11 +243,7 @@ export function Explore() {
                     <NavItemContent>
                       <Box as="span" grow="Yes" alignItems="Center" gap="200">
                         <Avatar size="200" radii="400">
-                          <Icon
-                            src={Icons.Category}
-                            size="100"
-                            filled={server === selectedServer}
-                          />
+                          <Icon src={Icons.Server} size="100" filled={server === selectedServer} />
                         </Avatar>
                         <Box as="span" grow="Yes">
                           <Text as="span" size="Inherit" truncate>

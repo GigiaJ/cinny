@@ -507,7 +507,7 @@ export function PublicRooms() {
               )}
             </Box>
             <Box grow="Yes" justifyContent="Center" alignItems="Center" gap="200">
-              {screenSize !== ScreenSize.Mobile && <Icon size="400" src={Icons.Category} />}
+              {screenSize !== ScreenSize.Mobile && <Icon size="400" src={Icons.Server} />}
               <Text size="H3" truncate>
                 {server}
               </Text>

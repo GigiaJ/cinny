@@ -71,7 +71,7 @@ const useSettingsMenuItems = (): SettingsMenuItem[] =>
       {
         page: SettingsPages.DevicesPage,
         name: 'Devices',
-        icon: Icons.Category,
+        icon: Icons.Monitor,
       },
       {
         page: SettingsPages.EmojisStickersPage,
