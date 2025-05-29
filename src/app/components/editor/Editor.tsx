@@ -106,22 +106,24 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor, onKeyDown]
     );
 
-    const renderPlaceholder = useCallback(({ attributes, children }: RenderPlaceholderProps) => {
-      // drop style attribute as we use our custom placeholder css.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { style, ...props } = attributes;
-      return (
-        <Text
-          as="span"
-          {...props}
-          className={css.EditorPlaceholder}
-          contentEditable={false}
-          truncate
+    const renderPlaceholder = useCallback(
+      ({ attributes, children }: RenderPlaceholderProps) => (
+        <span
+          {...attributes}
+          className={css.EditorPlaceholderContainer}
         >
-          {children}
-        </Text>
-      );
-    }, []);
+          {/* Inner component to style the actual text position and appearance */}
+          <Text
+            as="span"
+            className={css.EditorPlaceholderTextVisual}
+            truncate
+          >
+            {children}
+          </Text>
+        </span>
+      ),
+      []
+    );
 
     return (
       <div className={css.Editor} ref={ref}>
@@ -145,8 +147,8 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 data-editable-name={editableName}
                 className={css.EditorTextarea}
                 placeholder={placeholder}
-                //renderPlaceholder={renderPlaceholder}
-                //renderElement={renderElement}
+                renderPlaceholder={renderPlaceholder}
+                renderElement={renderElement}
                 renderLeaf={renderLeaf}
                 onKeyDown={handleKeydown}
                 onKeyUp={onKeyUp}
