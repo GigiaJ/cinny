@@ -35,6 +35,7 @@ import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
 import { AuthMetadataProvider } from '../../hooks/useAuthMetadata';
 import { getFallbackSession } from '../../state/sessions';
+import { useAppVisibility } from '../../hooks/useAppVisibility';
 
 function ClientRootLoading() {
   return (
@@ -160,6 +161,7 @@ export function ClientRoot({ children }: ClientRootProps) {
   );
 
   useLogoutListener(mx);
+  useAppVisibility(mx);
 
   useEffect(() => {
     if (loadState.status === AsyncStatus.Idle) {
@@ -181,7 +183,6 @@ export function ClientRoot({ children }: ClientRootProps) {
       }
     }, [])
   );
-
   return (
     <SpecVersions baseUrl={baseUrl!}>
       {mx && <SyncStatus mx={mx} />}
