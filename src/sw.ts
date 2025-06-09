@@ -3,18 +3,32 @@
 export type {};
 declare const self: ServiceWorkerGlobalScope;
 
-async function askForAccessToken(client: Client): Promise<string | undefined> {
-  return new Promise((resolve) => {
-    const responseKey = Math.random().toString(36);
-    const listener = (event: ExtendableMessageEvent) => {
-      if (event.data.responseKey !== responseKey) return;
-      resolve(event.data.token);
-      self.removeEventListener('message', listener);
-    };
-    self.addEventListener('message', listener);
-    client.postMessage({ responseKey, type: 'token' });
+const DEFAULT_NOTIFICATION_ICON = '/icons/icon-192x192.png'; // Replace with your actual default icon path
+const DEFAULT_NOTIFICATION_BADGE = '/icons/badge-72x72.png'; // Replace with your actual default badge icon path (for notification UI)
+
+const pendingReplies = new Map();
+let messageIdCounter = 0;
+function sendAndWaitForReply(client: WindowClient, type: string, payload: object) {
+  messageIdCounter += 1;
+  const id = messageIdCounter;
+  const promise = new Promise((resolve) => {
+    pendingReplies.set(id, resolve);
   });
+  client.postMessage({ type, id, payload });
+  return promise;
 }
+
+self.addEventListener('message', (event) => {
+  const { replyTo } = event.data;
+  if (replyTo) {
+    const resolve = pendingReplies.get(replyTo);
+    if (resolve) {
+      pendingReplies.delete(replyTo);
+      resolve(event.data.payload);
+    }
+  }
+});
+
 
 function fetchConfig(token?: string): RequestInit | undefined {
   if (!token) return undefined;
