@@ -18,10 +18,9 @@ import './app/i18n';
 
 document.body.classList.add(configClass, varsClass);
 
-// Register Service Worker
 if ('serviceWorker' in navigator) {
-  const swUrl =
-    import.meta.env.MODE === 'production'
+  const isProduction = import.meta.env.MODE === 'production';
+  const swUrl = isProduction
       ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`
       : `/dev-sw.js?dev-sw`;
 
