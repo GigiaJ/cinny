@@ -28,7 +28,15 @@ function fetchConfig(token?: string): RequestInit | undefined {
 }
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
-  event.waitUntil(clients.claim());
+  event.waitUntil(
+    (async () => {
+      await self.clients.claim();
+    })()
+  );
+});
+
+self.addEventListener('install', (event: ExtendableEvent) => {
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('fetch', (event: FetchEvent) => {
