@@ -65,11 +65,11 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
   event.respondWith(
     (async (): Promise<Response> => {
+      console.log('Unironic race condition mitigation it seems.');
       const client = await self.clients.get(event.clientId);
-      let token: string | undefined;
-      if (client) token = await askForAccessToken(client);
-
-      return fetch(url, fetchConfig(token));
+      const token: string = await sendAndWaitForReply(client, 'token', {});
+      const response = await fetch(url, fetchConfig(token));
+      return response;
     })()
   );
 });
