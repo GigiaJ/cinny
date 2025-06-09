@@ -41,21 +41,21 @@ export const EditorTextarea = style([
   },
 ]);
 
-export const EditorPlaceholder = style([
+export const EditorPlaceholderContainer = style([
   DefaultReset,
   {
-    position: 'absolute',
-    zIndex: 1,
-    width: '100%',
     opacity: config.opacity.Placeholder,
     pointerEvents: 'none',
     userSelect: 'none',
+  },
+]);
 
-    selectors: {
-      '&:not(:first-child)': {
-        display: 'none',
-      },
-    },
+export const EditorPlaceholderTextVisual = style([
+  DefaultReset,
+  {
+    display: 'block',
+    paddingTop: toRem(13),
+    paddingLeft: toRem(1),
   },
 ]);
 
