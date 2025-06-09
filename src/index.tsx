@@ -25,7 +25,43 @@ if ('serviceWorker' in navigator) {
       ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`
       : `/dev-sw.js?dev-sw`;
 
-  navigator.serviceWorker.register(swUrl);
+  const swRegisterOptions: RegistrationOptions = {};
+  if (!isProduction) {
+    swRegisterOptions.type = 'module';
+  }
+
+  const showUpdateAvailablePrompt = (registration: ServiceWorkerRegistration) => {
+    const DONT_SHOW_PROMPT_KEY = 'cinny_dont_show_sw_update_prompt';
+    const userPreference = localStorage.getItem(DONT_SHOW_PROMPT_KEY);
+
+    if (userPreference === 'true') {
+      return;
+    }
+
+    if (window.confirm('A new version of the app is available. Refresh to update?')) {
+      if (registration.waiting) {
+        registration.waiting.postMessage({ type: 'SKIP_WAITING_AND_CLAIM' });
+      } else {
+        window.location.reload();
+      }
+    }
+  };
+
+  navigator.serviceWorker.register(swUrl, swRegisterOptions).then((registration) => {
+    registration.onupdatefound = () => {
+      const installingWorker = registration.installing;
+      if (installingWorker) {
+        installingWorker.onstatechange = () => {
+          if (installingWorker.state === 'installed') {
+            if (navigator.serviceWorker.controller) {
+              showUpdateAvailablePrompt(registration);
+            }
+          }
+        };
+      }
+    };
+  });
+
   navigator.serviceWorker.addEventListener('message', (event) => {
     if (event.data?.type === 'token' && event.data?.responseKey) {
       // Get the token for SW.
