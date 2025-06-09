@@ -19,7 +19,7 @@ function sendAndWaitForReply(client: WindowClient, type: string, payload: object
   return promise;
 }
 
-self.addEventListener('message', (event) => {
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
   const { replyTo } = event.data;
   if (replyTo) {
     const resolve = pendingReplies.get(replyTo);
