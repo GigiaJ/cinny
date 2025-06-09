@@ -37,6 +37,7 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
+import { togglePusher } from '../../features/settings/notifications/PushNotifications';
 
 function ClientRootLoading() {
   return (
@@ -124,6 +125,18 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   );
 }
 
+const pushNotificationListener = (mx: MatrixClient) => {
+  navigator.serviceWorker.ready.then((registration) => {
+    registration.pushManager.getSubscription().then((subscription) => {
+      document.addEventListener('visibilitychange', () => {
+        console.log('Check check baby');
+        togglePusher(mx, subscription, document.visibilityState === 'visible');
+      });
+      togglePusher(mx, subscription, true);
+    });
+  });
+};
+
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
@@ -171,13 +184,16 @@ export function ClientRoot({ children }: ClientRootProps) {
 
   useSyncState(
     mx,
-    useCallback((state) => {
-      if (state === 'PREPARED') {
-        setLoading(false);
-      }
-    }, [])
+    useCallback(
+      (state) => {
+        if (state === 'PREPARED') {
+          setLoading(false);
+          pushNotificationListener(mx);
+        }
+      },
+      [mx]
+    )
   );
-
   return (
     <SpecVersions baseUrl={baseUrl!}>
       {mx && <SyncStatus mx={mx} />}
