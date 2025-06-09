@@ -62,13 +62,23 @@ if ('serviceWorker' in navigator) {
   });
 
   navigator.serviceWorker.addEventListener('message', (event) => {
-    if (event.data?.type === 'token' && event.data?.responseKey) {
-      // Get the token for SW.
+    if (!event.data || !event.source) {
+      return;
+    }
+
+    if (event.data.type === 'token' && event.data.id) {
       const token = localStorage.getItem('cinny_access_token') ?? undefined;
-      event.source!.postMessage({
-        responseKey: event.data.responseKey,
-        token,
+      event.source.postMessage({
+        replyTo: event.data.id,
+        payload: token,
       });
+    } else if (event.data.type === 'openRoom' && event.data.id) {
+      /* Example:
+      event.source.postMessage({
+        replyTo: event.data.id,
+        payload: success?,
+      });
+      */
     }
   });
 }
