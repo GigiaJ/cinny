@@ -84,6 +84,110 @@ function EmailNotification() {
   );
 }
 
+function WebPushNotificationSetting() {
+  const mx = useMatrixClient();
+  const clientConfig = useClientConfig();
+  const [userWantsWebPush, setUserWantsWebPush] = useSetting(settingsAtom, 'enableWebPush');
+
+  const browserPermission = usePermissionState('notifications', getNotificationState());
+  const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading to check status
+
+  const checkSubscriptionStatus = useCallback(async () => {
+    if (
+      browserPermission === 'granted' &&
+      'serviceWorker' in navigator &&
+      'PushManager' in window
+    ) {
+      setIsLoading(true);
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        setIsPushSubscribed(!!subscription);
+      } catch (err) {
+        setIsPushSubscribed(false);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setIsPushSubscribed(false);
+      setIsLoading(false);
+    }
+  }, [browserPermission]);
+
+  useEffect(() => {
+    checkSubscriptionStatus();
+  }, [checkSubscriptionStatus]);
+
+  const handleRequestPermissionAndEnable = async () => {
+    setIsLoading(true);
+    try {
+      const permissionResult = await requestBrowserNotificationPermission();
+      if (permissionResult === 'granted') {
+        setUserWantsWebPush(true);
+        await enablePushNotifications(mx, clientConfig);
+      } else {
+        setUserWantsWebPush(false);
+      }
+    } catch (error: any) {
+      setUserWantsWebPush(false);
+    } finally {
+      await checkSubscriptionStatus();
+      setIsLoading(false);
+    }
+  };
+
+  const handlePushSwitchChange = async (wantsPush: boolean) => {
+    setIsLoading(true);
+    setUserWantsWebPush(wantsPush);
+
+    try {
+      if (wantsPush) {
+        await enablePushNotifications(mx, clientConfig);
+      } else {
+        await disablePushNotifications(mx, clientConfig);
+      }
+    } catch (error: any) {
+      setUserWantsWebPush(!wantsPush);
+    } finally {
+      await checkSubscriptionStatus();
+      setIsLoading(false);
+    }
+  };
+
+  let descriptionText = 'Receive notifications when the app is closed or in the background.';
+  if (browserPermission === 'granted' && isPushSubscribed) {
+    descriptionText =
+      'You are subscribed to receive notifications when the app is in the background.';
+  }
+
+  return (
+    <SettingTile
+      title="Background Push Notifications"
+      description={
+        browserPermission === 'denied' ? (
+          <Text as="span" style={{ color: color.Critical.Main }} size="T200">
+            Notification permission is blocked by your browser. Please allow it from site settings.
+          </Text>
+        ) : (
+          <span>{descriptionText}</span>
+        )
+      }
+      after={
+        isLoading ? (
+          <Spinner variant="Secondary" />
+        ) : browserPermission === 'prompt' ? (
+          <Button size="300" radii="300" onClick={handleRequestPermissionAndEnable}>
+            <Text size="B300">Enable</Text>
+          </Button>
+        ) : browserPermission === 'granted' ? (
+          <Switch value={userWantsWebPush && isPushSubscribed} onChange={handlePushSwitchChange} />
+        ) : null
+      }
+    />
+  );
+}
+
 export function SystemNotification() {
   const notifPermission = usePermissionState('notifications', getNotificationState());
   const [showNotifications, setShowNotifications] = useSetting(settingsAtom, 'showNotifications');
