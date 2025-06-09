@@ -1,4 +1,3 @@
-/* eslint-disable import/first */
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { enableMapSet } from 'immer';
@@ -17,8 +16,8 @@ document.body.classList.add(configClass, varsClass);
 if ('serviceWorker' in navigator) {
   const isProduction = import.meta.env.MODE === 'production';
   const swUrl = isProduction
-      ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`
-      : `/dev-sw.js?dev-sw`;
+    ? `${trimTrailingSlash(import.meta.env.BASE_URL)}/sw.js`
+    : `/dev-sw.js?dev-sw`;
 
   const swRegisterOptions: RegistrationOptions = {};
   if (!isProduction) {
