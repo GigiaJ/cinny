@@ -76,11 +76,19 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
   event.respondWith(
     (async (): Promise<Response> => {
-      console.log('Unironic race condition mitigation it seems.');
+      if (!event.clientId) throw new Error('Missing clientId');
       const client = await self.clients.get(event.clientId);
-      const token: string = await sendAndWaitForReply(client, 'token', {});
+      if (!client) throw new Error('Client not found');
+      const token = await sendAndWaitForReply(client, 'token', {});
+      if (!token) throw new Error('Failed to retrieve token');
       const response = await fetch(url, fetchConfig(token));
+      if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
       return response;
+    })()
+  );
+  event.waitUntil(
+    (async function () {
+      console.log('Ensuring fetch processing completes before worker termination.');
     })()
   );
 });
