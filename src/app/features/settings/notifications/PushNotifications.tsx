@@ -1,4 +1,4 @@
-import { MatrixClient, PushRuleActionName, PushRuleKind, TweakName } from 'matrix-js-sdk';
+import { MatrixClient } from 'matrix-js-sdk';
 import { ClientConfig } from '../../../hooks/useClientConfig';
 
 export async function requestBrowserNotificationPermission(): Promise<NotificationPermission> {
