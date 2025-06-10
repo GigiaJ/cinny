@@ -38,6 +38,7 @@ import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
 import { togglePusher } from '../../features/settings/notifications/PushNotifications';
+import { ClientConfig, useClientConfig } from '../../hooks/useClientConfig';
 
 function ClientRootLoading() {
   return (
@@ -125,12 +126,11 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   );
 }
 
-const pushNotificationListener = (mx: MatrixClient) => {
+const pushNotificationListener = (mx: MatrixClient, clientConfig: ClientConfig) => {
   navigator.serviceWorker.ready.then((registration) => {
     registration.pushManager.getSubscription().then((subscription) => {
       document.addEventListener('visibilitychange', () => {
-        console.log('Check check baby');
-        togglePusher(mx, subscription, document.visibilityState === 'visible');
+        togglePusher(mx, subscription, clientConfig, document.visibilityState === 'visible');
       });
       togglePusher(mx, subscription, true);
     });
@@ -159,6 +159,7 @@ type ClientRootProps = {
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
   const { baseUrl } = getSecret();
+  const clientConfig = useClientConfig();
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(() => initClient(getSecret() as any), [])
@@ -188,10 +189,10 @@ export function ClientRoot({ children }: ClientRootProps) {
       (state) => {
         if (state === 'PREPARED') {
           setLoading(false);
-          pushNotificationListener(mx);
+          pushNotificationListener(mx, clientConfig);
         }
       },
-      [mx]
+      [clientConfig, mx]
     )
   );
   return (
