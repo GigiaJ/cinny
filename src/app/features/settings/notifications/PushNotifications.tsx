@@ -86,7 +86,6 @@ export async function enablePushNotifications(
   };
 
   try {
-
     navigator.serviceWorker.controller?.postMessage({
       url: mx.baseUrl,
       type: 'togglePush',
@@ -168,40 +167,10 @@ export async function deRegisterAllPushers(mx: MatrixClient): Promise<void> {
 
 export async function togglePusher(
   mx: MatrixClient,
-  subscription: PushSubscription,
   clientConfig: ClientConfig,
   visible: boolean
 ): Promise<void> {
-  const MUTE_RULE_ID = 'cc.cinny.mute_push';
-  const p256dhKey = subscription?.toJSON().keys?.p256dh;
-  const { pushers } = await mx.getPushers();
-  const existingPusher = pushers.find((p) => p.pushkey === p256dhKey);
-
   if (visible) {
-    /*
-      Need to clean up the old push rules I made
-      The push rules should be removed upon roomId change
-      and a new one added for the NEW current room
-
-      On visibility change push rule should be added for the given room
-      so in background pushrule removed and in foreground pushrule added
-
-      In some ways it is simply easier to just de-register the push notificaitons
-      as this gives perfect behavior. Then on visibility change re-enable them.
-      We can check the stored setting for background push notifs and if it exists
-      enable the push notifs based on that settings value.
-      Can look to the SettingsNotifications for how the other settings are stored.
-      
-      I might also want to mention that the reason I list the above
-      is explicitly BECAUSE otherwise we use both push notifs and the normal notifs
-      
-      Tuwunnel fails to deserialize custom tweaks as a result of:
-      https://github.com/ruma/ruma/issues/368 <- related deserialization issue
-      https://github.com/serde-rs/serde/issues/1183 <- upstream for ruma for deserializing
-
-      Instead we'll do a hackier bypass, but only Cinny will acknowledge this as the client is responsible
-      for handling the sounds themselves. This is more or less a custom tweak still.
-      */
     disablePushNotifications(mx, clientConfig);
   } else {
     enablePushNotifications(mx, clientConfig);
