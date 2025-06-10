@@ -169,6 +169,7 @@ export async function deRegisterAllPushers(mx: MatrixClient): Promise<void> {
 export async function togglePusher(
   mx: MatrixClient,
   subscription: PushSubscription,
+  clientConfig: ClientConfig,
   visible: boolean
 ): Promise<void> {
   const MUTE_RULE_ID = 'cc.cinny.mute_push';
