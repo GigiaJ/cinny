@@ -19,18 +19,6 @@ function sendAndWaitForReply(client: WindowClient, type: string, payload: object
   return promise;
 }
 
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  const { replyTo } = event.data;
-  if (replyTo) {
-    const resolve = pendingReplies.get(replyTo);
-    if (resolve) {
-      pendingReplies.delete(replyTo);
-      resolve(event.data.payload);
-    }
-  }
-});
-
-
 function fetchConfig(token?: string): RequestInit | undefined {
   if (!token) return undefined;
 
@@ -41,6 +29,29 @@ function fetchConfig(token?: string): RequestInit | undefined {
     cache: 'default',
   };
 }
+
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (event.data.type === 'togglePush') {
+    const token = event.data?.token;
+    const fetchOptions = fetchConfig(token);
+    event.waitUntil(
+      fetch(`${event.data.url}/_matrix/client/v3/pushers/set`, {
+        method: 'POST',
+        ...fetchOptions,
+        body: JSON.stringify(event.data.pusherData),
+      })
+    );
+    return;
+  }
+  const { replyTo } = event.data;
+  if (replyTo) {
+    const resolve = pendingReplies.get(replyTo);
+    if (resolve) {
+      pendingReplies.delete(replyTo);
+      resolve(event.data.payload);
+    }
+  }
+});
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
