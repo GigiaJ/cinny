@@ -127,13 +127,8 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
 }
 
 const pushNotificationListener = (mx: MatrixClient, clientConfig: ClientConfig) => {
-  navigator.serviceWorker.ready.then((registration) => {
-    registration.pushManager.getSubscription().then((subscription) => {
-      document.addEventListener('visibilitychange', () => {
-        togglePusher(mx, subscription, clientConfig, document.visibilityState === 'visible');
-      });
-      togglePusher(mx, subscription, true);
-    });
+  document.addEventListener('visibilitychange', () => {
+    togglePusher(mx, clientConfig, document.visibilityState === 'visible');
   });
 };
 
