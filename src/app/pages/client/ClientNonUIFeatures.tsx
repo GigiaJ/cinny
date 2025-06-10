@@ -187,15 +187,13 @@ function MessageNotifications() {
     ) => {
       if (mx.getSyncState() !== 'SYNCING') return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
-      let pushActions = mx.getPushActionsForEvent(mEvent);
-      const hasInAppTweak = pushActions?.tweaks?.sound === 'cinny_show_banner';
 
       if (
         !room ||
         !data.liveEvent ||
         room.isSpaceRoom() ||
         !isNotificationEvent(mEvent) ||
-        (getNotificationType(mx, room.roomId) === NotificationType.Mute && !hasInAppTweak)
+        getNotificationType(mx, room.roomId) === NotificationType.Mute
       ) {
         return;
       }
