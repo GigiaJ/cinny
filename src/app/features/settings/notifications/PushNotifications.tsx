@@ -86,7 +86,13 @@ export async function enablePushNotifications(
   };
 
   try {
-    await mx.setPusher(pusherData);
+
+    navigator.serviceWorker.controller?.postMessage({
+      url: mx.baseUrl,
+      type: 'togglePush',
+      pusherData,
+      token: mx.getAccessToken(),
+    });
   } catch (pusherError: any) {
     await subscription.unsubscribe();
     throw new Error(
@@ -119,12 +125,18 @@ export async function disablePushNotifications(
   const authKey = subJson.keys?.auth;
 
   if (mx && mx.getAccessToken() && pwaAppIdForPlatform) {
-    const pusherToRemove = {
+    const pusherData = {
       kind: null,
       app_id: pwaAppIdForPlatform,
       pushkey: p256dhKey,
     };
-    await mx.setPusher(pusherToRemove as any);
+
+    navigator.serviceWorker.controller?.postMessage({
+      url: mx.baseUrl,
+      type: 'togglePush',
+      pusherData,
+      token: mx.getAccessToken(),
+    });
   }
 }
 
