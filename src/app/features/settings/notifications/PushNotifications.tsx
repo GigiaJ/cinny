@@ -177,9 +177,8 @@ export async function togglePusher(
   const { pushers } = await mx.getPushers();
   const existingPusher = pushers.find((p) => p.pushkey === p256dhKey);
 
-  if (existingPusher && existingPusher.kind === 'http') {
-    if (visible) {
-      /*
+  if (visible) {
+    /*
       Need to clean up the old push rules I made
       The push rules should be removed upon roomId change
       and a new one added for the NEW current room
@@ -203,22 +202,8 @@ export async function togglePusher(
       Instead we'll do a hackier bypass, but only Cinny will acknowledge this as the client is responsible
       for handling the sounds themselves. This is more or less a custom tweak still.
       */
-      mx.addPushRule('global', PushRuleKind.Override, `${MUTE_RULE_ID}`, {
-        conditions: [],
-        actions: [
-          PushRuleActionName.DontNotify,
-          {
-            set_tweak: TweakName.Sound,
-            value: 'cinny_show_banner',
-          },
-          {
-            set_tweak: TweakName.Highlight,
-            value: true,
-          },
-        ],
-      });
-    } else {
-      await mx.deletePushRule('global', PushRuleKind.Override, `${MUTE_RULE_ID}`);
-    }
+    disablePushNotifications(mx, clientConfig);
+  } else {
+    enablePushNotifications(mx, clientConfig);
   }
 }
