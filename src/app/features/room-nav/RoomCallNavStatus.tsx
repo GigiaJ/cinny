@@ -60,7 +60,7 @@ export function CallNavStatus() {
         >
           {(triggerRef) => (
             <IconButton variant="Background" ref={triggerRef} onClick={toggleAudio}>
-              <Icon src={!isAudioEnabled ? Icons.Mic : Icons.MicMute} />
+              <Icon src={!isAudioEnabled ? Icons.MicMute : Icons.Mic} />
             </IconButton>
           )}
         </TooltipProvider>
@@ -75,7 +75,7 @@ export function CallNavStatus() {
         >
           {(triggerRef) => (
             <IconButton variant="Background" ref={triggerRef} onClick={toggleVideo}>
-              <Icon src={!isVideoEnabled ? Icons.VideoCamera : Icons.VideoCameraMute} />
+              <Icon src={!isVideoEnabled ? Icons.VideoCameraMute : Icons.VideoCamera} />
             </IconButton>
           )}
         </TooltipProvider>
