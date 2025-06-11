@@ -77,6 +77,7 @@ import {
   useRoomsNotificationPreferencesContext,
 } from '../../../hooks/useRoomsNotificationPreferences';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
+import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { CallNavStatus } from '../../../features/room-nav/RoomCallNavStatus';
 import { getStateEvents } from '../../../utils/room';
 import { RoomNavUser } from '../../../features/room-nav/RoomNavUser';
@@ -198,11 +199,13 @@ type SpaceMenuProps = {
 const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClose }, ref) => {
   const mx = useMatrixClient();
   const [hideActivity] = useSetting(settingsAtom, 'hideActivity');
+  const [developerTools] = useSetting(settingsAtom, 'developerTools');
   const roomToParents = useAtomValue(roomToParentsAtom);
   const powerLevels = usePowerLevels(room);
   const { getPowerLevel, canDoAction } = usePowerLevelsAPI(powerLevels);
   const canInvite = canDoAction('invite', mx.getUserId() ?? '');
   const openSpaceSettings = useOpenSpaceSettings();
+  const { navigateRoom } = useRoomNavigate();
 
   const allChild = useSpaceChildren(
     allRoomsAtom,
@@ -230,6 +233,11 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClo
 
   const handleRoomSettings = () => {
     openSpaceSettings(room.roomId);
+    requestClose();
+  };
+
+  const handleOpenTimeline = () => {
+    navigateRoom(room.roomId);
     requestClose();
   };
 
@@ -283,6 +291,18 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(({ room, requestClo
             Space Settings
           </Text>
         </MenuItem>
+        {developerTools && (
+          <MenuItem
+            onClick={handleOpenTimeline}
+            size="300"
+            after={<Icon size="100" src={Icons.Terminal} />}
+            radii="300"
+          >
+            <Text style={{ flexGrow: 1 }} as="span" size="T300" truncate>
+              Event Timeline
+            </Text>
+          </MenuItem>
+        )}
       </Box>
       <Line variant="Surface" size="300" />
       <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>

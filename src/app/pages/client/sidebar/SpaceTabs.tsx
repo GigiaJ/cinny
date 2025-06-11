@@ -744,13 +744,14 @@ export function SpaceTabs({ scrollRef }: SpaceTabsProps) {
     const targetSpaceId = target.getAttribute('data-id');
     if (!targetSpaceId) return;
 
+    const spacePath = getSpacePath(getCanonicalAliasOrRoomId(mx, targetSpaceId));
     if (screenSize === ScreenSize.Mobile) {
-      navigate(getSpacePath(getCanonicalAliasOrRoomId(mx, targetSpaceId)));
+      navigate(spacePath);
       return;
     }
 
     const activePath = navToActivePath.get(targetSpaceId);
-    if (activePath) {
+    if (activePath && activePath.pathname.startsWith(spacePath)) {
       navigate(joinPathComponent(activePath));
       return;
     }
