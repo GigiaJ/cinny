@@ -97,7 +97,7 @@ function WebPushNotificationSetting() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const browserPermission = usePermissionState('notifications', getNotificationState());
   useEffect(() => {
-    const storedPreference = localStorage.getItem(PUSH_PREFERENCE_KEY);
+    const storedPreference = localStorage.getItem('cinny_web_push_enabled');
     setUserPushPreference(storedPreference === 'true');
     setIsLoading(false);
   }, []);
