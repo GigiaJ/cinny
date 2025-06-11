@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Text, Switch, Button, color, Spinner } from 'folds';
+import { IPusherRequest } from 'matrix-js-sdk';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -92,59 +93,30 @@ function EmailNotification() {
 function WebPushNotificationSetting() {
   const mx = useMatrixClient();
   const clientConfig = useClientConfig();
-  const [userWantsWebPush, setUserWantsWebPush] = useSetting(settingsAtom, 'enableWebPush');
-
+  const [userPushPreference, setUserPushPreference] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const browserPermission = usePermissionState('notifications', getNotificationState());
-  const [isPushSubscribed, setIsPushSubscribed] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(true); // Start loading to check status
-
-  const checkSubscriptionStatus = useCallback(async () => {
-    if (
-      browserPermission === 'granted' &&
-      'serviceWorker' in navigator &&
-      'PushManager' in window
-    ) {
-      setIsLoading(true);
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.getSubscription();
-        setIsPushSubscribed(!!subscription);
-      } catch (err) {
-        setIsPushSubscribed(false);
-      } finally {
-        setIsLoading(false);
-      }
-    } else {
-      setIsPushSubscribed(false);
-      setIsLoading(false);
-    }
-  }, [browserPermission]);
-
   useEffect(() => {
-    checkSubscriptionStatus();
-  }, [checkSubscriptionStatus]);
-
+    const storedPreference = localStorage.getItem(PUSH_PREFERENCE_KEY);
+    setUserPushPreference(storedPreference === 'true');
+    setIsLoading(false);
+  }, []);
   const handleRequestPermissionAndEnable = async () => {
     setIsLoading(true);
     try {
       const permissionResult = await requestBrowserNotificationPermission();
       if (permissionResult === 'granted') {
-        setUserWantsWebPush(true);
         await enablePushNotifications(mx, clientConfig);
-      } else {
-        setUserWantsWebPush(false);
+        localStorage.setItem('cinny_web_push_enabled', 'true');
+        setUserPushPreference(true);
       }
-    } catch (error: any) {
-      setUserWantsWebPush(false);
     } finally {
-      await checkSubscriptionStatus();
       setIsLoading(false);
     }
   };
 
   const handlePushSwitchChange = async (wantsPush: boolean) => {
     setIsLoading(true);
-    setUserWantsWebPush(wantsPush);
 
     try {
       if (wantsPush) {
@@ -152,19 +124,12 @@ function WebPushNotificationSetting() {
       } else {
         await disablePushNotifications(mx, clientConfig);
       }
-    } catch (error: any) {
-      setUserWantsWebPush(!wantsPush);
+      localStorage.setItem('cinny_web_push_enabled', String(wantsPush));
+      setUserPushPreference(wantsPush);
     } finally {
-      await checkSubscriptionStatus();
       setIsLoading(false);
     }
   };
-
-  let descriptionText = 'Receive notifications when the app is closed or in the background.';
-  if (browserPermission === 'granted' && isPushSubscribed) {
-    descriptionText =
-      'You are subscribed to receive notifications when the app is in the background.';
-  }
 
   return (
     <SettingTile
@@ -172,10 +137,10 @@ function WebPushNotificationSetting() {
       description={
         browserPermission === 'denied' ? (
           <Text as="span" style={{ color: color.Critical.Main }} size="T200">
-            Notification permission is blocked by your browser. Please allow it from site settings.
+            Permission blocked. Please allow notifications in your browser settings.
           </Text>
         ) : (
-          <span>{descriptionText}</span>
+          'Receive notifications when the app is closed or in the background.'
         )
       }
       after={
@@ -186,7 +151,10 @@ function WebPushNotificationSetting() {
             <Text size="B300">Enable</Text>
           </Button>
         ) : browserPermission === 'granted' ? (
-          <Switch value={userWantsWebPush && isPushSubscribed} onChange={handlePushSwitchChange} />
+          <Switch
+            value={userPushPreference}
+            onChange={handlePushSwitchChange}
+          />
         ) : null
       }
     />

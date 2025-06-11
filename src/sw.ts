@@ -19,18 +19,6 @@ function sendAndWaitForReply(client: WindowClient, type: string, payload: object
   return promise;
 }
 
-self.addEventListener('message', (event: ExtendableMessageEvent) => {
-  const { replyTo } = event.data;
-  if (replyTo) {
-    const resolve = pendingReplies.get(replyTo);
-    if (resolve) {
-      pendingReplies.delete(replyTo);
-      resolve(event.data.payload);
-    }
-  }
-});
-
-
 function fetchConfig(token?: string): RequestInit | undefined {
   if (!token) return undefined;
 
@@ -41,6 +29,29 @@ function fetchConfig(token?: string): RequestInit | undefined {
     cache: 'default',
   };
 }
+
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  if (event.data.type === 'togglePush') {
+    const token = event.data?.token;
+    const fetchOptions = fetchConfig(token);
+    event.waitUntil(
+      fetch(`${event.data.url}/_matrix/client/v3/pushers/set`, {
+        method: 'POST',
+        ...fetchOptions,
+        body: JSON.stringify(event.data.pusherData),
+      })
+    );
+    return;
+  }
+  const { replyTo } = event.data;
+  if (replyTo) {
+    const resolve = pendingReplies.get(replyTo);
+    if (resolve) {
+      pendingReplies.delete(replyTo);
+      resolve(event.data.payload);
+    }
+  }
+});
 
 self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
@@ -65,11 +76,19 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
   event.respondWith(
     (async (): Promise<Response> => {
-      console.log('Unironic race condition mitigation it seems.');
+      if (!event.clientId) throw new Error('Missing clientId');
       const client = await self.clients.get(event.clientId);
-      const token: string = await sendAndWaitForReply(client, 'token', {});
+      if (!client) throw new Error('Client not found');
+      const token = await sendAndWaitForReply(client, 'token', {});
+      if (!token) throw new Error('Failed to retrieve token');
       const response = await fetch(url, fetchConfig(token));
+      if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
       return response;
+    })()
+  );
+  event.waitUntil(
+    (async function () {
+      console.log('Ensuring fetch processing completes before worker termination.');
     })()
   );
 });
