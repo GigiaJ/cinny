@@ -212,7 +212,7 @@ function MessageNotifications() {
       ) {
         return;
       }
-
+      navigator.setAppBadge(unreadInfo.total);
       if (showNotifications && notificationPermission('granted')) {
         const avatarMxc =
           room.getAvatarFallbackMember()?.getMxcAvatarUrl() ?? room.getMxcAvatarUrl();
