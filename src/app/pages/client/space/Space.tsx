@@ -604,7 +604,7 @@ export function Space() {
           })}
         </NavCategory>
       </PageNavContent>
-      <CallNavStatus space={space} />
+      <CallNavStatus />
     </PageNav>
   );
 }
