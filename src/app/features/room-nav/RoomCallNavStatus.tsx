@@ -1,14 +1,10 @@
 import { Box, Chip, Icon, IconButton, Icons, Text, Tooltip, TooltipProvider } from 'folds';
 import React from 'react';
-import { Room } from 'matrix-js-sdk';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useCallState } from '../../pages/client/call/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 
-type CallNavStatusProps = {
-  space: Room | null;
-};
-export function CallNavStatus({ space }: CallNavStatusProps) {
+export function CallNavStatus() {
   const {
     activeCallRoomId,
     isAudioEnabled,
@@ -64,7 +60,7 @@ export function CallNavStatus({ space }: CallNavStatusProps) {
         >
           {(triggerRef) => (
             <IconButton variant="Background" ref={triggerRef} onClick={toggleAudio}>
-              <Icon src={!isAudioEnabled ? Icons.VolumeHigh : Icons.VolumeMute} />
+              <Icon src={!isAudioEnabled ? Icons.Mic : Icons.MicMute} />
             </IconButton>
           )}
         </TooltipProvider>
@@ -79,7 +75,7 @@ export function CallNavStatus({ space }: CallNavStatusProps) {
         >
           {(triggerRef) => (
             <IconButton variant="Background" ref={triggerRef} onClick={toggleVideo}>
-              <Icon src={!isVideoEnabled ? Icons.Vlc : Icons.Lock} />
+              <Icon src={!isVideoEnabled ? Icons.VideoCamera : Icons.VideoCameraMute} />
             </IconButton>
           )}
         </TooltipProvider>
