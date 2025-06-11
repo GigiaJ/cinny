@@ -1,6 +1,7 @@
 import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
 
 import { cryptoCallbacks } from './state/secretStorageKeys';
+import { clearNavToActivePathStore } from '../app/state/navToActivePath';
 
 type Session = {
   baseUrl: string;
@@ -46,6 +47,7 @@ export const startClient = async (mx: MatrixClient) => {
 
 export const clearCacheAndReload = async (mx: MatrixClient) => {
   mx.stopClient();
+  clearNavToActivePathStore(mx.getSafeUserId());
   await mx.store.deleteAllData();
   window.location.reload();
 };

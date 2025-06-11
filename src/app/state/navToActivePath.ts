@@ -9,6 +9,8 @@ import {
 
 const NAV_TO_ACTIVE_PATH = 'navToActivePath';
 
+const getStoreKey = (userId: string): string => `${NAV_TO_ACTIVE_PATH}${userId}`;
+
 type NavToActivePath = Map<string, Path>;
 
 type NavToActivePathAction =
@@ -25,7 +27,7 @@ type NavToActivePathAction =
 export type NavToActivePathAtom = WritableAtom<NavToActivePath, [NavToActivePathAction], undefined>;
 
 export const makeNavToActivePathAtom = (userId: string): NavToActivePathAtom => {
-  const storeKey = `${NAV_TO_ACTIVE_PATH}${userId}`;
+  const storeKey = getStoreKey(userId);
 
   const baseNavToActivePathAtom = atomWithLocalStorage<NavToActivePath>(
     storeKey,
@@ -63,4 +65,8 @@ export const makeNavToActivePathAtom = (userId: string): NavToActivePathAtom => 
   );
 
   return navToActivePathAtom;
+};
+
+export const clearNavToActivePathStore = (userId: string) => {
+  localStorage.removeItem(getStoreKey(userId));
 };
