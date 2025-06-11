@@ -344,61 +344,45 @@ export function RoomViewHeader() {
             )}
           </Box>
         </Box>
-        {(room.isCallRoom() && !isDirectMessage() && (
-          <Box>
+
+        <Box shrink="No">
+          {false && isDirectMessage() && (
+            <TooltipProvider
+              position="Bottom"
+              align="End"
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>Start a call</Text>
+                </Tooltip>
+              }
+            >
+              {(triggerRef) => (
+                <IconButton onClick={handleCall} ref={triggerRef}>
+                  <Icon size="400" src={Icons.Phone} />
+                </IconButton>
+              )}
+            </TooltipProvider>
+          )}
+
+          {!ecryptedRoom && !room.isCallRoom() && (
             <TooltipProvider
               position="Bottom"
               offset={4}
               tooltip={
                 <Tooltip>
-                  <Text>Chat</Text>
+                  <Text>Search</Text>
                 </Tooltip>
               }
             >
               {(triggerRef) => (
-                <IconButton ref={triggerRef} onClick={toggleChat}>
-                  <Icon size="400" src={Icons.Message} />
+                <IconButton ref={triggerRef} onClick={handleSearchClick}>
+                  <Icon size="400" src={Icons.Search} />
                 </IconButton>
               )}
             </TooltipProvider>
-          </Box>
-        )) || (
-          <Box shrink="No">
-            {false && isDirectMessage() && (
-              <TooltipProvider
-                position="Bottom"
-                align="End"
-                offset={4}
-                tooltip={
-                  <Tooltip>
-                    <Text>Start a call</Text>
-                  </Tooltip>
-                }
-              >
-                {(triggerRef) => (
-                  <IconButton onClick={handleCall} ref={triggerRef}>
-                    <Icon size="400" src={Icons.Phone} />
-                  </IconButton>
-                )}
-              </TooltipProvider>
-            )}
-            {!ecryptedRoom && (
-              <TooltipProvider
-                position="Bottom"
-                offset={4}
-                tooltip={
-                  <Tooltip>
-                    <Text>Search</Text>
-                  </Tooltip>
-                }
-              >
-                {(triggerRef) => (
-                  <IconButton ref={triggerRef} onClick={handleSearchClick}>
-                    <Icon size="400" src={Icons.Search} />
-                  </IconButton>
-                )}
-              </TooltipProvider>
-            )}
+          )}
+          {!room.isCallRoom() && (
             <TooltipProvider
               position="Bottom"
               offset={4}
@@ -436,6 +420,8 @@ export function RoomViewHeader() {
                 </IconButton>
               )}
             </TooltipProvider>
+          )}
+          {!room.isCallRoom() && (
             <PopOut
               anchor={pinMenuAnchor}
               position="Bottom"
@@ -455,62 +441,80 @@ export function RoomViewHeader() {
                 </FocusTrap>
               }
             />
+          )}
 
-            {screenSize === ScreenSize.Desktop && (
-              <TooltipProvider
-                position="Bottom"
-                offset={4}
-                tooltip={
-                  <Tooltip>
-                    <Text>Members</Text>
-                  </Tooltip>
-                }
-              >
-                {(triggerRef) => (
-                  <IconButton ref={triggerRef} onClick={() => setPeopleDrawer((drawer) => !drawer)}>
-                    <Icon size="400" src={Icons.User} />
-                  </IconButton>
-                )}
-              </TooltipProvider>
-            )}
+          {!room.isCallRoom() && screenSize === ScreenSize.Desktop && (
             <TooltipProvider
               position="Bottom"
-              align="End"
               offset={4}
               tooltip={
                 <Tooltip>
-                  <Text>More Options</Text>
+                  <Text>Members</Text>
                 </Tooltip>
               }
             >
               {(triggerRef) => (
-                <IconButton onClick={handleOpenMenu} ref={triggerRef} aria-pressed={!!menuAnchor}>
-                  <Icon size="400" src={Icons.VerticalDots} filled={!!menuAnchor} />
+                <IconButton ref={triggerRef} onClick={() => setPeopleDrawer((drawer) => !drawer)}>
+                  <Icon size="400" src={Icons.User} />
                 </IconButton>
               )}
             </TooltipProvider>
-            <PopOut
-              anchor={menuAnchor}
+          )}
+
+          <TooltipProvider
+            position="Bottom"
+            align="End"
+            offset={4}
+            tooltip={
+              <Tooltip>
+                <Text>More Options</Text>
+              </Tooltip>
+            }
+          >
+            {(triggerRef) => (
+              <IconButton onClick={handleOpenMenu} ref={triggerRef} aria-pressed={!!menuAnchor}>
+                <Icon size="400" src={Icons.VerticalDots} filled={!!menuAnchor} />
+              </IconButton>
+            )}
+          </TooltipProvider>
+          <PopOut
+            anchor={menuAnchor}
+            position="Bottom"
+            align="End"
+            content={
+              <FocusTrap
+                focusTrapOptions={{
+                  initialFocus: false,
+                  returnFocusOnDeactivate: false,
+                  onDeactivate: () => setMenuAnchor(undefined),
+                  clickOutsideDeactivates: true,
+                  isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                  isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                  escapeDeactivates: stopPropagation,
+                }}
+              >
+                <RoomMenu room={room} requestClose={() => setMenuAnchor(undefined)} />
+              </FocusTrap>
+            }
+          />
+          {room.isCallRoom() && !isDirectMessage() && (
+            <TooltipProvider
               position="Bottom"
-              align="End"
-              content={
-                <FocusTrap
-                  focusTrapOptions={{
-                    initialFocus: false,
-                    returnFocusOnDeactivate: false,
-                    onDeactivate: () => setMenuAnchor(undefined),
-                    clickOutsideDeactivates: true,
-                    isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-                    isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-                    escapeDeactivates: stopPropagation,
-                  }}
-                >
-                  <RoomMenu room={room} requestClose={() => setMenuAnchor(undefined)} />
-                </FocusTrap>
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>Chat</Text>
+                </Tooltip>
               }
-            />
-          </Box>
-        )}
+            >
+              {(triggerRef) => (
+                <IconButton ref={triggerRef} onClick={toggleChat}>
+                  <Icon size="400" src={Icons.Message} />
+                </IconButton>
+              )}
+            </TooltipProvider>
+          )}
+        </Box>
       </Box>
     </PageHeader>
   );
