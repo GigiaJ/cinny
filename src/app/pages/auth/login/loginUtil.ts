@@ -14,16 +14,12 @@ export const factoryGetBaseUrl = (clientConfig: ClientConfig, server: string) =>
     if (!clientAllowedServer(clientConfig, server)) {
       throw new Error(GetBaseUrlError.NotAllow);
     }
-
     const [, discovery] = await to(autoDiscovery(fetch, server));
-
     let mxIdBaseUrl: string | undefined;
     const [, discoveryInfo] = discovery ?? [];
-
     if (discoveryInfo) {
       mxIdBaseUrl = discoveryInfo['m.homeserver'].base_url;
     }
-
     if (!mxIdBaseUrl) {
       throw new Error(GetBaseUrlError.NotFound);
     }
@@ -69,31 +65,12 @@ export const login = async (
   const [err, res] = await to<LoginResponse, MatrixError>(mx.loginRequest(data));
 
   if (err) {
-    if (err.httpStatus === 400) {
-      throw new MatrixError({
-        errcode: LoginError.InvalidRequest,
-      });
-    }
-    if (err.httpStatus === 429) {
-      throw new MatrixError({
-        errcode: LoginError.RateLimited,
-      });
-    }
-    if (err.errcode === ErrorCode.M_USER_DEACTIVATED) {
-      throw new MatrixError({
-        errcode: LoginError.UserDeactivated,
-      });
-    }
-
-    if (err.httpStatus === 403) {
-      throw new MatrixError({
-        errcode: LoginError.Forbidden,
-      });
-    }
-
-    throw new MatrixError({
-      errcode: LoginError.Unknown,
-    });
+    if (err.httpStatus === 400) throw new MatrixError({ errcode: LoginError.InvalidRequest });
+    if (err.httpStatus === 429) throw new MatrixError({ errcode: LoginError.RateLimited });
+    if (err.errcode === ErrorCode.M_USER_DEACTIVATED)
+      throw new MatrixError({ errcode: LoginError.UserDeactivated });
+    if (err.httpStatus === 403) throw new MatrixError({ errcode: LoginError.Forbidden });
+    throw new MatrixError({ errcode: LoginError.Unknown });
   }
   return {
     baseUrl: url,
