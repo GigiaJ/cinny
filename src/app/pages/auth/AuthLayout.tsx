@@ -1,7 +1,6 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { ReactNode, useCallback, useEffect } from 'react';
 import { Box, Header, Scroll, Spinner, Text, color } from 'folds';
 import {
-  Outlet,
   generatePath,
   matchPath,
   useLocation,
@@ -32,15 +31,9 @@ import { AuthServerProvider } from '../../hooks/useAuthServer';
 import { tryDecodeURIComponent } from '../../utils/dom';
 
 const currentAuthPath = (pathname: string): string => {
-  if (matchPath(LOGIN_PATH, pathname)) {
-    return LOGIN_PATH;
-  }
-  if (matchPath(RESET_PASSWORD_PATH, pathname)) {
-    return RESET_PASSWORD_PATH;
-  }
-  if (matchPath(REGISTER_PATH, pathname)) {
-    return REGISTER_PATH;
-  }
+  if (matchPath(LOGIN_PATH, pathname)) return LOGIN_PATH;
+  if (matchPath(RESET_PASSWORD_PATH, pathname)) return RESET_PASSWORD_PATH;
+  if (matchPath(REGISTER_PATH, pathname)) return REGISTER_PATH;
   return LOGIN_PATH;
 };
 
@@ -65,13 +58,12 @@ function AuthLayoutError({ message }: { message: string }) {
   );
 }
 
-export function AuthLayout() {
+export function AuthLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { server: urlEncodedServer } = useParams();
 
   const clientConfig = useClientConfig();
-
   const defaultServer = clientDefaultServer(clientConfig);
   let server: string = urlEncodedServer ? tryDecodeURIComponent(urlEncodedServer) : defaultServer;
 
@@ -82,10 +74,7 @@ export function AuthLayout() {
   const [discoveryState, discoverServer] = useAsyncCallback(
     useCallback(async (serverName: string) => {
       const response = await autoDiscovery(fetch, serverName);
-      return {
-        serverName,
-        response,
-      };
+      return { serverName, response };
     }, [])
   );
 
@@ -93,17 +82,14 @@ export function AuthLayout() {
     if (server) discoverServer(server);
   }, [discoverServer, server]);
 
-  // if server is mismatches with path server, update path
   useEffect(() => {
     if (!urlEncodedServer || tryDecodeURIComponent(urlEncodedServer) !== server) {
       navigate(
-        generatePath(currentAuthPath(location.pathname), {
-          server: encodeURIComponent(server),
-        }),
+        generatePath(currentAuthPath(location.pathname), { server: encodeURIComponent(server) }),
         { replace: true }
       );
     }
-  }, [urlEncodedServer, navigate, location, server]);
+  }, [urlEncodedServer, navigate, location.pathname, server]);
 
   const selectServer = useCallback(
     (newServer: string) => {
@@ -190,7 +176,7 @@ export function AuthLayout() {
                         >
                           {(authFlows) => (
                             <AuthFlowsProvider value={authFlows}>
-                              <Outlet />
+                              {children}
                             </AuthFlowsProvider>
                           )}
                         </AuthFlowsLoader>
