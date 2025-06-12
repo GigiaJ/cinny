@@ -1,4 +1,4 @@
-import { MatrixClient } from 'matrix-js-sdk';
+import { MatrixClient, PushRuleKind } from 'matrix-js-sdk';
 import { ClientConfig } from '../../../hooks/useClientConfig';
 
 export async function requestBrowserNotificationPermission(): Promise<NotificationPermission> {
@@ -165,6 +165,8 @@ export async function deRegisterAllPushers(mx: MatrixClient): Promise<void> {
   await Promise.allSettled(deletionPromises);
 }
 
+const MUTE_RULE_ID = 'cc.cinny.mute_push';
+
 export async function togglePusher(
   mx: MatrixClient,
   clientConfig: ClientConfig,
@@ -172,6 +174,7 @@ export async function togglePusher(
 ): Promise<void> {
   if (visible) {
     disablePushNotifications(mx, clientConfig);
+    await mx.deletePushRule('global', PushRuleKind.Override, `${MUTE_RULE_ID}`);
   } else {
     enablePushNotifications(mx, clientConfig);
   }
