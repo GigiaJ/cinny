@@ -11,6 +11,10 @@ type Session = {
 };
 
 export const initClient = async (session: Session): Promise<MatrixClient> => {
+  if (!session || !session.baseUrl || !session.accessToken || !session.userId) {
+    throw new Error('NoCredentials');
+  }
+
   const indexedDBStore = new IndexedDBStore({
     indexedDB: global.indexedDB,
     localStorage: global.localStorage,
