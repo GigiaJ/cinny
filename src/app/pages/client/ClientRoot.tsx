@@ -124,13 +124,13 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
 
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
+    if (!mx) return;
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
-      mx?.stopClient();
-      await mx?.clearStores();
+      mx.stopClient();
+      await mx.clearStores();
       window.localStorage.clear();
       window.location.reload();
     };
-
     mx?.on(HttpApiEvent.SessionLoggedOut, handleLogout);
     return () => {
       mx?.removeListener(HttpApiEvent.SessionLoggedOut, handleLogout);
