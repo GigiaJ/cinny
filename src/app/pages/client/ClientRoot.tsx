@@ -176,7 +176,7 @@ export function ClientRoot({ children }: { children: ReactNode }) {
     mx,
     useCallback((state) => {
       if (state === 'PREPARED') {
-        setLoading(false);
+        setIsSyncPrepared(true);
       }
     }, [])
   );
