@@ -108,16 +108,4 @@ export const login = async (
   };
 };
 
-export const useLoginComplete = (data?: CustomLoginResponse) => {
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (data) {
-      const { response: loginRes, baseUrl: loginBaseUrl } = data;
-      updateLocalStore(loginRes.access_token, loginRes.device_id, loginRes.user_id, loginBaseUrl);
-      const afterLoginRedirectUrl = getAfterLoginRedirectPath();
-      deleteAfterLoginRedirectPath();
-      navigate(afterLoginRedirectUrl ?? getHomePath(), { replace: true });
-    }
-  }, [data, navigate]);
-};
+export { updateLocalStore };
