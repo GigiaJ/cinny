@@ -33,7 +33,11 @@ const useLoginSearchParams = (searchParams: URLSearchParams): LoginPathSearchPar
     [searchParams]
   );
 
-export function Login() {
+type LoginProps = {
+  onLoginSuccess: () => void;
+};
+
+export function Login({ onLoginSuccess }: LoginProps) {
   const server = useAuthServer();
   const { hashRouter } = useClientConfig();
   const { loginFlows } = useAuthFlows();
@@ -59,13 +63,14 @@ export function Login() {
         Login
       </Text>
       {parsedFlows.token && loginSearchParams.loginToken && (
-        <TokenLogin token={loginSearchParams.loginToken} />
+        <TokenLogin token={loginSearchParams.loginToken} onLoginSuccess={onLoginSuccess} />
       )}
       {parsedFlows.password && (
         <>
           <PasswordLoginForm
             defaultUsername={loginSearchParams.username}
             defaultEmail={loginSearchParams.email}
+            onLoginSuccess={onLoginSuccess}
           />
           <span data-spacing-node />
           {parsedFlows.sso && <OrDivider />}
