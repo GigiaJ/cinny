@@ -234,23 +234,16 @@ export function ClientRoot({ children }: { children: ReactNode }) {
     if (startState.status === AsyncStatus.Error) {
       return (
         <SplashScreen>
-          <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
-            <Dialog>
-              <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
-                {loadState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to load. ${loadState.error.message}`}</Text>
-                )}
-                {startState.status === AsyncStatus.Error && (
-                  <Text>{`Failed to start. ${startState.error.message}`}</Text>
-                )}
-                <Button variant="Critical" onClick={mx ? () => startMatrix(mx) : loadMatrix}>
-                  <Text as="span" size="B400">
-                    Retry
-                  </Text>
-                </Button>
-              </Box>
-            </Dialog>
-          </Box>
+          <Dialog>
+            <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
+              <Text>{`Failed to start client: ${startState.error.message}`}</Text>
+              <Button variant="Critical" onClick={() => startMatrix(mx)}>
+                <Text as="span" size="B400">
+                  Retry
+                </Text>
+              </Button>
+            </Box>
+          </Dialog>
         </SplashScreen>
       )}
       {loading || !mx ? (
