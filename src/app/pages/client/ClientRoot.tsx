@@ -84,8 +84,6 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
               returnFocusOnDeactivate: false,
               onDeactivate: () => setMenuAnchor(undefined),
               clickOutsideDeactivates: true,
-              isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-              isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
               escapeDeactivates: stopPropagation,
             }}
           >
