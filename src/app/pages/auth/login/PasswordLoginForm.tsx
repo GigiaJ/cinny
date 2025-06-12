@@ -115,8 +115,13 @@ function UsernameHint({ server }: { server: string }) {
 type PasswordLoginFormProps = {
   defaultUsername?: string;
   defaultEmail?: string;
+  onLoginSuccess: () => void;
 };
-export function PasswordLoginForm({ defaultUsername, defaultEmail }: PasswordLoginFormProps) {
+export function PasswordLoginForm({
+  defaultUsername,
+  defaultEmail,
+  onLoginSuccess,
+}: PasswordLoginFormProps) {
   const server = useAuthServer();
   const clientConfig = useClientConfig();
 
