@@ -245,11 +245,14 @@ export function ClientRoot({ children }: { children: ReactNode }) {
             </Box>
           </Dialog>
         </SplashScreen>
-      )}
-      {loading || !mx ? (
-        <ClientRootLoading />
-      ) : (
+      );
+    }
+
+    return (
+      <SpecVersions baseUrl={baseUrl!}>
         <MatrixClientProvider value={mx}>
+          <SyncStatus mx={mx} />
+          <ClientRootOptions mx={mx} />
           <CapabilitiesAndMediaConfigLoader>
             {(capabilities, mediaConfig) => (
               <CapabilitiesProvider value={capabilities ?? {}}>
@@ -258,12 +261,18 @@ export function ClientRoot({ children }: { children: ReactNode }) {
                   <Windows />
                   <Dialogs />
                   <ReusableContextMenu />
+                  <RoomSettingsRenderer />
+                  <SpaceSettingsRenderer />
+                  <ReceiveSelfDeviceVerification />
+                  <AutoRestoreBackupOnVerification />
                 </MediaConfigProvider>
               </CapabilitiesProvider>
             )}
           </CapabilitiesAndMediaConfigLoader>
         </MatrixClientProvider>
-      )}
-    </SpecVersions>
-  );
+      </SpecVersions>
+    );
+  }
+
+  return <ClientRootLoading />;
 }
