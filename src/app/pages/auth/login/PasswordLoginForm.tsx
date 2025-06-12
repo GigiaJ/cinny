@@ -145,10 +145,7 @@ export function PasswordLoginForm({
   const handleUsernameLogin = (username: string, password: string) => {
     startLogin(baseUrl, {
       type: 'm.login.password',
-      identifier: {
-        type: 'm.id.user',
-        user: username,
-      },
+      identifier: { type: 'm.id.user', user: username },
       password,
       initial_device_display_name: 'Cinny Web',
     });
@@ -158,15 +155,10 @@ export function PasswordLoginForm({
     const mxIdServer = getMxIdServer(mxId);
     const mxIdUsername = getMxIdLocalPart(mxId);
     if (!mxIdServer || !mxIdUsername) return;
-
     const getBaseUrl = factoryGetBaseUrl(clientConfig, mxIdServer);
-
     startLogin(getBaseUrl, {
       type: 'm.login.password',
-      identifier: {
-        type: 'm.id.user',
-        user: mxIdUsername,
-      },
+      identifier: { type: 'm.id.user', user: mxIdUsername },
       password,
       initial_device_display_name: 'Cinny Web',
     });
@@ -174,11 +166,7 @@ export function PasswordLoginForm({
   const handleEmailLogin = (email: string, password: string) => {
     startLogin(baseUrl, {
       type: 'm.login.password',
-      identifier: {
-        type: 'm.id.thirdparty',
-        medium: 'email',
-        address: email,
-      },
+      identifier: { type: 'm.id.thirdparty', medium: 'email', address: email },
       password,
       initial_device_display_name: 'Cinny Web',
     });
@@ -190,7 +178,6 @@ export function PasswordLoginForm({
       usernameInput: HTMLInputElement;
       passwordInput: HTMLInputElement;
     };
-
     const username = usernameInput.value.trim();
     const password = passwordInput.value;
     if (!username) {
@@ -201,7 +188,6 @@ export function PasswordLoginForm({
       passwordInput.focus();
       return;
     }
-
     if (isUserId(username)) {
       handleMxIdLogin(username, password);
       return;
@@ -278,12 +264,7 @@ export function PasswordLoginForm({
         </Text>
       </Button>
 
-      <Overlay
-        open={
-          loginState.status === AsyncStatus.Loading || loginState.status === AsyncStatus.Success
-        }
-        backdrop={<OverlayBackdrop />}
-      >
+      <Overlay open={loginState.status === AsyncStatus.Loading} backdrop={<OverlayBackdrop />}>
         <OverlayCenter>
           <Spinner variant="Secondary" size="600" />
         </OverlayCenter>
