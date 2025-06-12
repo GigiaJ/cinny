@@ -42,8 +42,10 @@ function LoginTokenError({ message }: { message: string }) {
 
 type TokenLoginProps = {
   token: string;
+  onLoginSuccess: () => void;
 };
-export function TokenLogin({ token }: TokenLoginProps) {
+
+export function TokenLogin({ token, onLoginSuccess }: TokenLoginProps) {
   const discovery = useAutoDiscoveryInfo();
   const baseUrl = discovery['m.homeserver'].base_url;
 
