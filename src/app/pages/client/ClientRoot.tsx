@@ -142,6 +142,7 @@ export function ClientRoot({ children }: { children: ReactNode }) {
   const [isSyncPrepared, setIsSyncPrepared] = useState(false);
   const [justLoggedIn, setJustLoggedIn] = useState(false);
   const { baseUrl } = getSecret();
+  const navigate = useNavigate();
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(() => initClient(getSecret() as any), [])
@@ -151,13 +152,19 @@ export function ClientRoot({ children }: { children: ReactNode }) {
     useCallback((m) => startClient(m), [])
   );
 
+  const handleLoginSuccess = useCallback(() => {
+    setIsSyncPrepared(false);
+    setJustLoggedIn(true);
+    loadMatrix();
+  }, [loadMatrix]);
+
   useLogoutListener(mx);
 
   useEffect(() => {
     if (loadState.status === AsyncStatus.Idle) {
       loadMatrix();
     }
-  }, [loadState, loadMatrix]);
+  }, [loadState.status, loadMatrix]);
 
   useEffect(() => {
     if (mx && !mx.clientRunning) {
