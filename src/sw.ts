@@ -127,7 +127,11 @@ const onPushNotification = async (event: PushEvent) => {
         options.data = { ...options.data, ...pushData.data };
       }
       if (typeof pushData.unread === 'number') {
-        await self.navigator.setAppBadge(pushData.unread);
+        try {
+          self.navigator.setAppBadge(pushData.unread);
+        } catch (e) {
+          // Likely Firefox/Gecko-based and doesn't support badging API
+        }
       } else {
         await navigator.clearAppBadge();
       }

@@ -48,7 +48,11 @@ export const useRoomEventReaders = (room: Room, eventId?: string): string[] => {
     room.on(RoomEvent.Receipt, handleReceipt);
     room.on(RoomEvent.LocalEchoUpdated, handleLocalEcho);
 
-    navigator.setAppBadge(unreadInfo.total);
+    try {
+      navigator.setAppBadge(unreadInfo.total);
+    } catch (e) {
+      // Likely Firefox/Gecko-based and doesn't support badging API
+    }
     return () => {
       room.removeListener(RoomEvent.Receipt, handleReceipt);
       room.removeListener(RoomEvent.LocalEchoUpdated, handleLocalEcho);
