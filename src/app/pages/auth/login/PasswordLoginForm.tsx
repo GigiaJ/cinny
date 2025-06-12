@@ -1,4 +1,10 @@
-import React, { FormEventHandler, MouseEventHandler, useCallback, useState } from 'react';
+import React, {
+  FormEventHandler,
+  MouseEventHandler,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import {
   Box,
   Button,
@@ -31,7 +37,7 @@ import {
   LoginError,
   factoryGetBaseUrl,
   login,
-  useLoginComplete,
+  updateLocalStore,
 } from './loginUtil';
 import { PasswordInput } from '../../../components/password-input';
 import { FieldError } from '../FiledError';
