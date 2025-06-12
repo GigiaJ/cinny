@@ -134,8 +134,14 @@ export function PasswordLoginForm({
     Parameters<typeof login>
   >(useCallback(login, []));
 
-  useLoginComplete(loginState.status === AsyncStatus.Success ? loginState.data : undefined);
-
+  const loginData = loginState.status === AsyncStatus.Success ? loginState.data : undefined;
+  useEffect(() => {
+    if (loginData) {
+      const { response: loginRes, baseUrl: loginBaseUrl } = loginData;
+      updateLocalStore(loginRes.access_token, loginRes.device_id, loginRes.user_id, loginBaseUrl);
+      onLoginSuccess();
+    }
+  }, [loginData, onLoginSuccess]);
   const handleUsernameLogin = (username: string, password: string) => {
     startLogin(baseUrl, {
       type: 'm.login.password',
