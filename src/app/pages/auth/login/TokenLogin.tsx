@@ -14,7 +14,7 @@ import React, { useCallback, useEffect } from 'react';
 import { MatrixError } from 'matrix-js-sdk';
 import { useAutoDiscoveryInfo } from '../../../hooks/useAutoDiscoveryInfo';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { CustomLoginResponse, LoginError, login, useLoginComplete } from './loginUtil';
+import { CustomLoginResponse, LoginError, login, updateLocalStore } from './loginUtil';
 
 function LoginTokenError({ message }: { message: string }) {
   return (
@@ -94,7 +94,7 @@ export function TokenLogin({ token, onLoginSuccess }: TokenLoginProps) {
           )}
         </>
       )}
-      <Overlay open={loginState.status !== AsyncStatus.Error} backdrop={<OverlayBackdrop />}>
+      <Overlay open={loginState.status === AsyncStatus.Loading} backdrop={<OverlayBackdrop />}>
         <OverlayCenter>
           <Spinner size="600" variant="Secondary" />
         </OverlayCenter>
