@@ -69,46 +69,7 @@ export const createRouter = (clientConfig: ClientConfig, screenSize: ScreenSize)
   const routes = createRoutesFromElements(
     <Route>
       <Route
-        index
-        loader={() => {
-          if (isAuthenticated()) return redirect(getHomePath());
-          const afterLoginPath = getAppPathFromHref(getOriginBaseUrl(), window.location.href);
-          if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
-          return redirect(getLoginPath());
-        }}
-      />
-      <Route
-        loader={() => {
-          if (isAuthenticated()) {
-            return redirect(getHomePath());
-          }
-
-          return null;
-        }}
-        element={
-          <>
-            <AuthLayout />
-            <UnAuthRouteThemeManager />
-          </>
-        }
-      >
-        <Route path={LOGIN_PATH} element={<Login />} />
-        <Route path={REGISTER_PATH} element={<Register />} />
-        <Route path={RESET_PASSWORD_PATH} element={<ResetPassword />} />
-      </Route>
-
-      <Route
-        loader={() => {
-          if (!isAuthenticated()) {
-            const afterLoginPath = getAppPathFromHref(
-              getOriginBaseUrl(hashRouter),
-              window.location.href
-            );
-            if (afterLoginPath) setAfterLoginRedirectPath(afterLoginPath);
-            return redirect(getLoginPath());
-          }
-          return null;
-        }}
+        path="/"
         element={
           <AuthRouteThemeManager>
             <ClientRoot>
