@@ -61,19 +61,12 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
 
   const handleToggle: MouseEventHandler<HTMLButtonElement> = (evt) => {
     const cords = evt.currentTarget.getBoundingClientRect();
-    setMenuAnchor((currentState) => {
-      if (currentState) return undefined;
-      return cords;
-    });
+    setMenuAnchor((currentState) => (currentState ? undefined : cords));
   };
 
   return (
     <IconButton
-      style={{
-        position: 'absolute',
-        top: config.space.S100,
-        right: config.space.S100,
-      }}
+      style={{ position: 'absolute', top: config.space.S100, right: config.space.S100 }}
       variant="Background"
       fill="None"
       onClick={handleToggle}
