@@ -181,11 +181,58 @@ export function ClientRoot({ children }: { children: ReactNode }) {
     }, [])
   );
 
-  return (
-    <SpecVersions baseUrl={baseUrl!}>
-      {mx && <SyncStatus mx={mx} />}
-      {loading && <ClientRootOptions mx={mx} />}
-      {(loadState.status === AsyncStatus.Error || startState.status === AsyncStatus.Error) && (
+  useEffect(() => {
+    if (isSyncPrepared && justLoggedIn) {
+      navigate(getHomePath(), { replace: true });
+      setJustLoggedIn(false);
+    }
+  }, [isSyncPrepared, justLoggedIn, navigate]);
+
+  if (loadState.status === AsyncStatus.Idle || loadState.status === AsyncStatus.Loading) {
+    return (
+      <>
+        <ClientRootOptions />
+        <ClientRootLoading />
+      </>
+    );
+  }
+
+  if (loadState.status === AsyncStatus.Error) {
+    if (loadState.error.message === 'NoCredentials') {
+      return (
+        <AuthLayout>
+          <Login onLoginSuccess={handleLoginSuccess} />
+        </AuthLayout>
+      );
+    }
+    return (
+      <SplashScreen>
+        <Dialog>
+          <Box direction="Column" gap="400" style={{ padding: config.space.S400 }}>
+            <Text>{`Failed to load. ${loadState.error.message}`}</Text>
+            <Button variant="Critical" onClick={loadMatrix}>
+              <Text as="span" size="B400">
+                Retry
+              </Text>
+            </Button>
+          </Box>
+        </Dialog>
+      </SplashScreen>
+    );
+  }
+
+  if (loadState.status === AsyncStatus.Success && mx) {
+    if (!isSyncPrepared || startState.status === AsyncStatus.Loading || justLoggedIn) {
+      return (
+        <>
+          <ClientRootOptions mx={mx} />
+          <ClientRootLoading />
+        </>
+      );
+    }
+
+    if (startState.status === AsyncStatus.Error) {
+      return (
         <SplashScreen>
           <Box direction="Column" grow="Yes" alignItems="Center" justifyContent="Center" gap="400">
             <Dialog>
