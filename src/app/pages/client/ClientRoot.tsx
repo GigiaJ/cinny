@@ -138,11 +138,9 @@ const useLogoutListener = (mx?: MatrixClient) => {
   }, [mx]);
 };
 
-type ClientRootProps = {
-  children: ReactNode;
-};
-export function ClientRoot({ children }: ClientRootProps) {
-  const [loading, setLoading] = useState(true);
+export function ClientRoot({ children }: { children: ReactNode }) {
+  const [isSyncPrepared, setIsSyncPrepared] = useState(false);
+  const [justLoggedIn, setJustLoggedIn] = useState(false);
   const { baseUrl } = getSecret();
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
