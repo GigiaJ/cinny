@@ -102,9 +102,9 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
                   onClick={() => {
                     if (mx) {
                       logoutClient(mx);
-                      return;
+                    } else {
+                      clearLoginData();
                     }
-                    clearLoginData();
                   }}
                   size="300"
                   radii="300"
