@@ -1,3 +1,7 @@
+import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { HttpApiEvent, HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
+import FocusTrap from 'focus-trap-react';
 import {
   Box,
   Button,
@@ -13,9 +17,6 @@ import {
   Spinner,
   Text,
 } from 'folds';
-import { HttpApiEvent, HttpApiEventHandlerMap, MatrixClient } from 'matrix-js-sdk';
-import FocusTrap from 'focus-trap-react';
-import React, { MouseEventHandler, ReactNode, useCallback, useEffect, useState } from 'react';
 import {
   clearCacheAndReload,
   clearLoginData,
@@ -24,19 +25,25 @@ import {
   startClient,
 } from '../../../client/initMatrix';
 import { getSecret } from '../../../client/state/auth';
+import { useAsyncCallback, AsyncStatus } from '../../hooks/useAsyncCallback';
+import { useSyncState } from '../../hooks/useSyncState';
+import { getHomePath } from '../pathUtils';
 import { SplashScreen } from '../../components/splash-screen';
 import { CapabilitiesAndMediaConfigLoader } from '../../components/CapabilitiesAndMediaConfigLoader';
+import { MatrixClientProvider } from '../../hooks/useMatrixClient';
 import { CapabilitiesProvider } from '../../hooks/useCapabilities';
 import { MediaConfigProvider } from '../../hooks/useMediaConfig';
-import { MatrixClientProvider } from '../../hooks/useMatrixClient';
-import { SpecVersions } from './SpecVersions';
+import { AuthLayout, Login } from '../auth';
+import { SyncStatus } from './SyncStatus';
 import Windows from '../../organisms/pw/Windows';
 import Dialogs from '../../organisms/pw/Dialogs';
 import ReusableContextMenu from '../../atoms/context-menu/ReusableContextMenu';
-import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
-import { useSyncState } from '../../hooks/useSyncState';
+import { SpecVersions } from './SpecVersions';
+import { RoomSettingsRenderer } from '../../features/room-settings';
+import { SpaceSettingsRenderer } from '../../features/space-settings';
+import { ReceiveSelfDeviceVerification } from '../../components/DeviceVerification';
+import { AutoRestoreBackupOnVerification } from '../../components/BackupRestore';
 import { stopPropagation } from '../../utils/keyboard';
-import { SyncStatus } from './SyncStatus';
 
 function ClientRootLoading() {
   return (
