@@ -80,7 +80,8 @@
     "slate-history": "0.110.3",
     "slate-react": "0.112.1",
     "tippy.js": "6.3.7",
-    "ua-parser-js": "1.0.35"
+    "ua-parser-js": "1.0.35",
+    "use-long-press": "3.3.0"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "0.2.3",
