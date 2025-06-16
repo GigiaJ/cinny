@@ -135,6 +135,17 @@ export function MessageDropdownMenu({
   );
 }
 
+type ExtendedOptionsProps = BaseOptionProps & {
+  imagePackRooms: Room[] | undefined;
+  onActiveStateChange: React.Dispatch<React.SetStateAction<boolean>>;
+  menuAnchor: RectCords | undefined;
+  emojiBoardAnchor: RectCords | undefined;
+  handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement>;
+  handleOpenMenu: MouseEventHandler<HTMLButtonElement>;
+  setMenuAnchor: React.Dispatch<React.SetStateAction<RectCords | undefined>>;
+  setEmojiBoardAnchor: React.Dispatch<React.SetStateAction<RectCords | undefined>>;
+};
+
 export function MessageOptionsMenu({
   mEvent,
   room,
