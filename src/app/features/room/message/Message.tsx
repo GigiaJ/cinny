@@ -80,9 +80,9 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { getTagIconSrc, PowerLevelTag } from '../../../hooks/usePowerLevelTags';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
-import { MessageDropdownMenu, MessageOptionsMenu } from '../MessageOptionsMenu';
-import { BottomSheetMenu } from '../MobileClickMenu';
+import { MessageDropdownMenu, MessageOptionsMenu, BottomSheetMenu } from '../MessageOptionsMenu';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { DraggableMessage } from './DraggableMessage';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
 
@@ -719,13 +719,13 @@ export const Message = as<'div', MessageProps>(
     const useAuthentication = useMediaAuthentication();
     const senderId = mEvent.getSender() ?? '';
     const { hoverProps, isHovered } = useHover({});
-    const { focusWithinProps, isFocusWithin } = useFocusWithin({});
+    const { focusWithinProps } = useFocusWithin({});
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
     const screenSize = useScreenSizeContext();
     const isMobile = screenSize === ScreenSize.Mobile;
     const [isDesktopOptionsActive, setDesktopOptionsActive] = useState(false);
-    const showDesktopOptions = !isMobile && (isHovered || isFocusWithin || isDesktopOptionsActive);
+    //const showDesktopOptions = !isMobile && (isHovered || isFocusWithin || isDesktopOptionsActive);
     const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
     const senderDisplayName =
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
@@ -763,6 +763,10 @@ export const Message = as<'div', MessageProps>(
       onReactionToggle(mEvent.getId(), key, shortcode);
       handleClose();
     };
+
+    // TODO: Remove this and clean it up later...
+    const button = document.createElement('button');
+    button.setAttribute('data-event-id', mEvent.getId());
 
     const tagColor = powerLevelTag?.color
       ? accessibleTagColors?.get(powerLevelTag.color)
@@ -926,23 +930,90 @@ export const Message = as<'div', MessageProps>(
               handleOpenMenu={handleOpenMenu}
             />
           )}
-          {messageLayout === MessageLayout.Compact && (
-            <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
-              {msgContentJSX}
-            </CompactLayout>
-          )}
-          {messageLayout === MessageLayout.Bubble && (
-            <BubbleLayout before={avatarJSX} onContextMenu={handleContextMenu}>
-              {headerJSX}
-              {msgContentJSX}
-            </BubbleLayout>
-          )}
-          {messageLayout !== MessageLayout.Compact && messageLayout !== MessageLayout.Bubble && (
-            <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
-              {headerJSX}
-              {msgContentJSX}
-            </ModernLayout>
-          )}
+          {messageLayout === MessageLayout.Compact &&
+            (!isMobile ? (
+              <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                {msgContentJSX}
+              </CompactLayout>
+            ) : (
+              <DraggableMessage
+                event={mEvent}
+                onReply={() => {
+                  const mockTargetElement = document.createElement('button');
+                  mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+                  const mockEvent = {
+                    currentTarget: mockTargetElement,
+                  };
+
+                  onReplyClick(mockEvent);
+                }}
+                onEdit={() => {
+                  onEditId(mEvent.getId());
+                }}
+                mx={mx}
+              >
+                <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                  {msgContentJSX}
+                </CompactLayout>
+              </DraggableMessage>
+            ))}
+          {messageLayout === MessageLayout.Bubble &&
+            (!isMobile ? (
+              <BubbleLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                {msgContentJSX}
+              </BubbleLayout>
+            ) : (
+              <DraggableMessage
+                event={mEvent}
+                onReply={() => {
+                  const mockTargetElement = document.createElement('button');
+                  mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+                  const mockEvent = {
+                    currentTarget: mockTargetElement,
+                  };
+
+                  onReplyClick(mockEvent);
+                }}
+                onEdit={() => {
+                  onEditId(mEvent.getId());
+                }}
+                mx={mx}
+              >
+                <BubbleLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                  {msgContentJSX}
+                </BubbleLayout>
+              </DraggableMessage>
+            ))}
+          {messageLayout !== MessageLayout.Compact &&
+            messageLayout !== MessageLayout.Bubble &&
+            (!isMobile ? (
+              <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
+                {headerJSX}
+                {msgContentJSX}
+              </ModernLayout>
+            ) : (
+              <DraggableMessage
+                event={mEvent}
+                onReply={() => {
+                  const mockTargetElement = document.createElement('button');
+                  mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+                  const mockEvent = {
+                    currentTarget: mockTargetElement,
+                  };
+
+                  onReplyClick(mockEvent);
+                }}
+                onEdit={() => {
+                  onEditId(mEvent.getId());
+                }}
+                mx={mx}
+              >
+                <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
+                  {headerJSX}
+                  {msgContentJSX}
+                </ModernLayout>
+              </DraggableMessage>
+            ))}
         </MessageBase>
 
         {isMobile && (
@@ -954,7 +1025,6 @@ export const Message = as<'div', MessageProps>(
                   setMobileSheetOpen(false);
                 }}
                 mEvent={mEvent}
-                eventId={mEvent.getId()}
                 room={room}
                 mx={mx}
                 relations={relations}
