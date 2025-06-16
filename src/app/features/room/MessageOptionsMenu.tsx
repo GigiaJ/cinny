@@ -130,9 +130,17 @@ export function MessageOptionsMenu({
   onReplyClick,
   onEditId,
   onActiveStateChange,
+  closeMenu,
+  menuAnchor,
+  emojiBoardAnchor,
+  handleOpenEmojiBoard,
+  handleOpenMenu,
+  handleAddReactions,
+  setMenuAnchor,
+  setEmojiBoardAnchor,
 }) {
-  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-  const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+  // const [menuAnchor, setMenuAnchor] = useState<RectCords>();
+  // const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
 
   useEffect(() => {
     onActiveStateChange?.(!!menuAnchor || !!emojiBoardAnchor);
@@ -141,28 +149,6 @@ export function MessageOptionsMenu({
   const eventId = mEvent.getId();
   if (!eventId) return null;
 
-  const closeMenu = () => {
-    setMenuAnchor(undefined);
-  };
-
-  const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-    setMenuAnchor(target.getBoundingClientRect());
-  };
-
-  const handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement> = (evt) => {
-    const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-    setEmojiBoardAnchor(target.getBoundingClientRect());
-  };
-
-  const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
-    const rect = menuAnchor;
-    closeMenu();
-    // Use a timeout to allow the first menu to close before opening the next
-    setTimeout(() => {
-      setEmojiBoardAnchor(rect);
-    }, 100);
-  };
   return (
     <div className={css.MessageOptionsBase}>
       <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
