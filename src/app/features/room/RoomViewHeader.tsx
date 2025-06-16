@@ -353,7 +353,7 @@ export function RoomViewHeader() {
               offset={4}
               tooltip={
                 <Tooltip>
-                  <Text>Start a call</Text>
+                  <Text>Start a Call</Text>
                 </Tooltip>
               }
             >
