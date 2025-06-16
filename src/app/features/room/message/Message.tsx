@@ -947,23 +947,57 @@ export const Message = as<'div', MessageProps>(
 
         {isMobile && (
           <BottomSheetMenu onClose={() => setMobileSheetOpen(false)} isOpen={isMobileSheetOpen}>
-            <MessageDropdownMenu
-              closeMenu={() => setMobileSheetOpen(false)}
-              mEvent={mEvent}
-              eventId={mEvent.getId()}
-              room={room}
-              mx={mx}
-              relations={relations}
-              canSendReaction={canSendReaction}
-              canEdit={canEditEvent(mx, mEvent)}
-              canDelete={canDelete || mEvent?.getSender() === mx.getUserId()}
-              canPinEvent={canPinEvent}
-              hideReadReceipts={hideReadReceipts}
-              onReactionToggle={onReactionToggle}
-              onReplyClick={onReplyClick}
-              onEditId={onEditId}
-              handleAddReactions={null}
-            />
+            {view === 'options' ? (
+              <MessageDropdownMenu
+                closeMenu={() => {
+                  closeMenu();
+                  setMobileSheetOpen(false);
+                }}
+                mEvent={mEvent}
+                eventId={mEvent.getId()}
+                room={room}
+                mx={mx}
+                relations={relations}
+                canSendReaction={canSendReaction}
+                canEdit={canEditEvent(mx, mEvent)}
+                canDelete={canDelete || mEvent?.getSender() === mx.getUserId()}
+                canPinEvent={canPinEvent}
+                hideReadReceipts={hideReadReceipts}
+                onReactionToggle={onReactionToggle}
+                onReplyClick={onReplyClick}
+                onEditId={onEditId}
+                handleAddReactions={() => setView('emoji')}
+              />
+            ) : (
+              <Box direction="Column" style={{ width: '100%' }}>
+                <Header variant="Surface" size="500">
+                  <IconButton size="300" onClick={() => setView('options')}>
+                    <Icon src={Icons.ArrowLeft} />
+                  </IconButton>
+                  <Box grow="Yes" alignItems="Center">
+                    <Text size="H4">Add Reaction</Text>
+                  </Box>
+                </Header>
+                <EmojiBoard
+                  imagePackRooms={imagePackRooms ?? []}
+                  returnFocusOnDeactivate={false}
+                  allowTextCustomEmoji
+                  onEmojiSelect={(key) => {
+                    onReactionToggle(mEvent.getId(), key);
+                    setEmojiBoardAnchor(undefined);
+                    closeMenu();
+                    setMobileSheetOpen(false);
+                  }}
+                  onCustomEmojiSelect={(mxc, shortcode) => {
+                    onReactionToggle(mEvent.getId(), mxc, shortcode);
+                    setEmojiBoardAnchor(undefined);
+                    closeMenu();
+                    setMobileSheetOpen(false);
+                  }}
+                  requestClose={() => setEmojiBoardAnchor(undefined)}
+                />
+              </Box>
+            )}
           </BottomSheetMenu>
         )}
       </>
