@@ -118,7 +118,6 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
         <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
         {canPinEvent && <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />}
       </Box>
-      {/* Redact and Report actions */}
       {((!mEvent.isRedacted() && canDelete) || mEvent.getSender() !== mx.getUserId()) && (
         <>
           <Line size="300" />
