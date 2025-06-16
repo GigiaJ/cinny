@@ -385,7 +385,7 @@ export function RoomNavItem({
                 offset={4}
                 tooltip={
                   <Tooltip>
-                    <Text>Open chat</Text>
+                    <Text>Open Chat</Text>
                   </Tooltip>
                 }
               >
