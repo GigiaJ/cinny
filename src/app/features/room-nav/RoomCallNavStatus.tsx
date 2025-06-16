@@ -116,7 +116,9 @@ export function CallNavStatus() {
                 onClick={handleGoToCallRoom}
                 ref={triggerRef}
               >
-                {mx.getRoom(activeCallRoomId)?.normalizedName}
+                <Text style={{ flexGrow: 1 }} size="B400" truncate>
+                  {mx.getRoom(activeCallRoomId)?.name}
+                </Text>
               </Chip>
             )}
           </TooltipProvider>
