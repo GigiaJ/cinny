@@ -36,6 +36,7 @@ import { MatrixEvent, Room } from 'matrix-js-sdk';
 import { Relations } from 'matrix-js-sdk/lib/models/relations';
 import classNames from 'classnames';
 import { RoomPinnedEventsEventContent } from 'matrix-js-sdk/lib/types';
+import { useLongPress } from 'use-long-press';
 import {
   AvatarBase,
   BubbleLayout,
@@ -79,6 +80,9 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { getTagIconSrc, PowerLevelTag } from '../../../hooks/usePowerLevelTags';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
+import { MessageDropdownMenu, MessageOptionsMenu, BottomSheetMenu } from '../MessageOptionsMenu';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import { DraggableMessage } from './DraggableMessage';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
 
@@ -714,15 +718,55 @@ export const Message = as<'div', MessageProps>(
     const mx = useMatrixClient();
     const useAuthentication = useMediaAuthentication();
     const senderId = mEvent.getSender() ?? '';
-    const [hover, setHover] = useState(false);
-    const { hoverProps } = useHover({ onHoverChange: setHover });
-    const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
+    const { hoverProps, isHovered } = useHover({});
+    const { focusWithinProps } = useFocusWithin({});
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
-
+    const screenSize = useScreenSizeContext();
+    const isMobile = screenSize === ScreenSize.Mobile;
+    const [isDesktopOptionsActive, setDesktopOptionsActive] = useState(false);
+    //const showDesktopOptions = !isMobile && (isHovered || isFocusWithin || isDesktopOptionsActive);
+    const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
     const senderDisplayName =
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
     const senderAvatarMxc = getMemberAvatarMxc(room, senderId);
+    const [view, setView] = useState('options');
+
+    const closeMenu = () => {
+      setMenuAnchor(undefined);
+    };
+
+    const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
+      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
+      setMenuAnchor(target.getBoundingClientRect());
+    };
+
+    const handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement> = (evt) => {
+      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
+      setEmojiBoardAnchor(target.getBoundingClientRect());
+    };
+
+    const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
+      const rect = menuAnchor;
+      closeMenu();
+      setTimeout(() => {
+        setEmojiBoardAnchor(rect);
+      }, 100);
+    };
+
+    const handleClose = () => {
+      setView('options');
+      closeMenu();
+    };
+
+    const onEmojiSelect = (key, shortcode) => {
+      onReactionToggle(mEvent.getId(), key, shortcode);
+      handleClose();
+    };
+
+    // TODO: Remove this and clean it up later...
+    const button = document.createElement('button');
+    button.setAttribute('data-event-id', mEvent.getId());
 
     const tagColor = powerLevelTag?.color
       ? accessibleTagColors?.get(powerLevelTag.color)
@@ -732,6 +776,18 @@ export const Message = as<'div', MessageProps>(
       : undefined;
 
     const usernameColor = legacyUsernameColor ? colorMXID(senderId) : tagColor;
+
+    const longPressBinder = useLongPress(
+      () => {
+        if (isMobile) {
+          setMobileSheetOpen(true);
+        }
+      },
+      {
+        threshold: 400,
+        cancelOnMovement: true,
+      }
+    );
 
     const headerJSX = !collapse && (
       <Box
@@ -760,7 +816,7 @@ export const Message = as<'div', MessageProps>(
           {tagIconSrc && <PowerIcon size="100" iconSrc={tagIconSrc} />}
         </Box>
         <Box shrink="No" gap="100">
-          {messageLayout === MessageLayout.Modern && hover && (
+          {messageLayout === MessageLayout.Modern && isHovered && (
             <>
               <Text as="span" size="T200" priority="300">
                 {senderId}
@@ -833,263 +889,188 @@ export const Message = as<'div', MessageProps>(
       });
     };
 
-    const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
-      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-      setMenuAnchor(target.getBoundingClientRect());
-    };
-
-    const closeMenu = () => {
-      setMenuAnchor(undefined);
-    };
-
-    const handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement> = (evt) => {
-      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
-      setEmojiBoardAnchor(target.getBoundingClientRect());
-    };
-    const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
-      const rect = menuAnchor;
-      closeMenu();
-      // open it with timeout because closeMenu
-      // FocusTrap will return focus from emojiBoard
-
-      setTimeout(() => {
-        setEmojiBoardAnchor(rect);
-      }, 100);
-    };
-
     return (
-      <MessageBase
-        className={classNames(css.MessageBase, className)}
-        tabIndex={0}
-        space={messageSpacing}
-        collapse={collapse}
-        highlight={highlight}
-        selected={!!menuAnchor || !!emojiBoardAnchor}
-        {...props}
-        {...hoverProps}
-        {...focusWithinProps}
-        ref={ref}
-      >
-        {!edit && (hover || !!menuAnchor || !!emojiBoardAnchor) && (
-          <div className={css.MessageOptionsBase}>
-            <Menu className={css.MessageOptionsBar} variant="SurfaceVariant">
-              <Box gap="100">
-                {canSendReaction && (
-                  <PopOut
-                    position="Bottom"
-                    align={emojiBoardAnchor?.width === 0 ? 'Start' : 'End'}
-                    offset={emojiBoardAnchor?.width === 0 ? 0 : undefined}
-                    anchor={emojiBoardAnchor}
-                    content={
-                      <EmojiBoard
-                        imagePackRooms={imagePackRooms ?? []}
-                        returnFocusOnDeactivate={false}
-                        allowTextCustomEmoji
-                        onEmojiSelect={(key) => {
-                          onReactionToggle(mEvent.getId()!, key);
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                        onCustomEmojiSelect={(mxc, shortcode) => {
-                          onReactionToggle(mEvent.getId()!, mxc, shortcode);
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                        requestClose={() => {
-                          setEmojiBoardAnchor(undefined);
-                        }}
-                      />
-                    }
-                  >
-                    <IconButton
-                      onClick={handleOpenEmojiBoard}
-                      variant="SurfaceVariant"
-                      size="300"
-                      radii="300"
-                      aria-pressed={!!emojiBoardAnchor}
-                    >
-                      <Icon src={Icons.SmilePlus} size="100" />
-                    </IconButton>
-                  </PopOut>
-                )}
-                <IconButton
-                  onClick={onReplyClick}
-                  data-event-id={mEvent.getId()}
-                  variant="SurfaceVariant"
-                  size="300"
-                  radii="300"
-                >
-                  <Icon src={Icons.ReplyArrow} size="100" />
-                </IconButton>
-                {canEditEvent(mx, mEvent) && onEditId && (
-                  <IconButton
-                    onClick={() => onEditId(mEvent.getId())}
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                  >
-                    <Icon src={Icons.Pencil} size="100" />
+      <>
+        <MessageBase
+          className={classNames(css.MessageBase, className)}
+          tabIndex={0}
+          space={messageSpacing}
+          collapse={collapse}
+          highlight={highlight}
+          selected={isDesktopOptionsActive || isMobileSheetOpen}
+          {...props}
+          {...hoverProps}
+          {...focusWithinProps}
+          {...(isMobile ? longPressBinder() : {})}
+          ref={ref}
+        >
+          {!edit && (isHovered || !!menuAnchor || !!emojiBoardAnchor) && (
+            <MessageOptionsMenu
+              mEvent={mEvent}
+              room={room}
+              mx={mx}
+              relations={relations}
+              imagePackRooms={imagePackRooms}
+              canSendReaction={canSendReaction}
+              canEdit={canEditEvent(mx, mEvent)}
+              canDelete={canDelete}
+              canPinEvent={canPinEvent}
+              hideReadReceipts={hideReadReceipts}
+              onReactionToggle={onReactionToggle}
+              onReplyClick={onReplyClick}
+              onEditId={onEditId}
+              onActiveStateChange={setDesktopOptionsActive}
+              handleAddReactions={handleAddReactions}
+              closeMenu={closeMenu}
+              emojiBoardAnchor={emojiBoardAnchor}
+              menuAnchor={menuAnchor}
+              handleOpenEmojiBoard={handleOpenEmojiBoard}
+              setEmojiBoardAnchor={setEmojiBoardAnchor}
+              setMenuAnchor={setMenuAnchor}
+              handleOpenMenu={handleOpenMenu}
+            />
+          )}
+          {messageLayout === MessageLayout.Compact &&
+            (!isMobile ? (
+              <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                {msgContentJSX}
+              </CompactLayout>
+            ) : (
+              <DraggableMessage
+                event={mEvent}
+                onReply={() => {
+                  const mockTargetElement = document.createElement('button');
+                  mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+                  const mockEvent = {
+                    currentTarget: mockTargetElement,
+                  };
+
+                  onReplyClick(mockEvent);
+                }}
+                onEdit={() => {
+                  onEditId(mEvent.getId());
+                }}
+                mx={mx}
+              >
+                <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                  {msgContentJSX}
+                </CompactLayout>
+              </DraggableMessage>
+            ))}
+          {messageLayout === MessageLayout.Bubble &&
+            (!isMobile ? (
+              <BubbleLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                {msgContentJSX}
+              </BubbleLayout>
+            ) : (
+              <DraggableMessage
+                event={mEvent}
+                onReply={() => {
+                  const mockTargetElement = document.createElement('button');
+                  mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+                  const mockEvent = {
+                    currentTarget: mockTargetElement,
+                  };
+
+                  onReplyClick(mockEvent);
+                }}
+                onEdit={() => {
+                  onEditId(mEvent.getId());
+                }}
+                mx={mx}
+              >
+                <BubbleLayout before={headerJSX} onContextMenu={handleContextMenu}>
+                  {msgContentJSX}
+                </BubbleLayout>
+              </DraggableMessage>
+            ))}
+          {messageLayout !== MessageLayout.Compact &&
+            messageLayout !== MessageLayout.Bubble &&
+            (!isMobile ? (
+              <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
+                {headerJSX}
+                {msgContentJSX}
+              </ModernLayout>
+            ) : (
+              <DraggableMessage
+                event={mEvent}
+                onReply={() => {
+                  const mockTargetElement = document.createElement('button');
+                  mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+                  const mockEvent = {
+                    currentTarget: mockTargetElement,
+                  };
+
+                  onReplyClick(mockEvent);
+                }}
+                onEdit={() => {
+                  onEditId(mEvent.getId());
+                }}
+                mx={mx}
+              >
+                <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
+                  {headerJSX}
+                  {msgContentJSX}
+                </ModernLayout>
+              </DraggableMessage>
+            ))}
+        </MessageBase>
+
+        {isMobile && (
+          <BottomSheetMenu onClose={() => setMobileSheetOpen(false)} isOpen={isMobileSheetOpen}>
+            {view === 'options' ? (
+              <MessageDropdownMenu
+                closeMenu={() => {
+                  closeMenu();
+                  setMobileSheetOpen(false);
+                }}
+                mEvent={mEvent}
+                room={room}
+                mx={mx}
+                relations={relations}
+                canSendReaction={canSendReaction}
+                canEdit={canEditEvent(mx, mEvent)}
+                canDelete={canDelete || mEvent?.getSender() === mx.getUserId()}
+                canPinEvent={canPinEvent}
+                hideReadReceipts={hideReadReceipts}
+                onReactionToggle={onReactionToggle}
+                onReplyClick={onReplyClick}
+                onEditId={onEditId}
+                handleAddReactions={() => setView('emoji')}
+              />
+            ) : (
+              <Box direction="Column" style={{ width: '100%' }}>
+                <Header variant="Surface" size="500">
+                  <IconButton size="300" onClick={() => setView('options')}>
+                    <Icon src={Icons.ArrowLeft} />
                   </IconButton>
-                )}
-                <PopOut
-                  anchor={menuAnchor}
-                  position="Bottom"
-                  align={menuAnchor?.width === 0 ? 'Start' : 'End'}
-                  offset={menuAnchor?.width === 0 ? 0 : undefined}
-                  content={
-                    <FocusTrap
-                      focusTrapOptions={{
-                        initialFocus: false,
-                        onDeactivate: () => setMenuAnchor(undefined),
-                        clickOutsideDeactivates: true,
-                        isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
-                        isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
-                        escapeDeactivates: stopPropagation,
-                      }}
-                    >
-                      <Menu>
-                        {canSendReaction && (
-                          <MessageQuickReactions
-                            onReaction={(key, shortcode) => {
-                              onReactionToggle(mEvent.getId()!, key, shortcode);
-                              closeMenu();
-                            }}
-                          />
-                        )}
-                        <Box direction="Column" gap="100" className={css.MessageMenuGroup}>
-                          {canSendReaction && (
-                            <MenuItem
-                              size="300"
-                              after={<Icon size="100" src={Icons.SmilePlus} />}
-                              radii="300"
-                              onClick={handleAddReactions}
-                            >
-                              <Text
-                                className={css.MessageMenuItemText}
-                                as="span"
-                                size="T300"
-                                truncate
-                              >
-                                Add Reaction
-                              </Text>
-                            </MenuItem>
-                          )}
-                          {relations && (
-                            <MessageAllReactionItem
-                              room={room}
-                              relations={relations}
-                              onClose={closeMenu}
-                            />
-                          )}
-                          <MenuItem
-                            size="300"
-                            after={<Icon size="100" src={Icons.ReplyArrow} />}
-                            radii="300"
-                            data-event-id={mEvent.getId()}
-                            onClick={(evt: any) => {
-                              onReplyClick(evt);
-                              closeMenu();
-                            }}
-                          >
-                            <Text
-                              className={css.MessageMenuItemText}
-                              as="span"
-                              size="T300"
-                              truncate
-                            >
-                              Reply
-                            </Text>
-                          </MenuItem>
-                          {canEditEvent(mx, mEvent) && onEditId && (
-                            <MenuItem
-                              size="300"
-                              after={<Icon size="100" src={Icons.Pencil} />}
-                              radii="300"
-                              data-event-id={mEvent.getId()}
-                              onClick={() => {
-                                onEditId(mEvent.getId());
-                                closeMenu();
-                              }}
-                            >
-                              <Text
-                                className={css.MessageMenuItemText}
-                                as="span"
-                                size="T300"
-                                truncate
-                              >
-                                Edit Message
-                              </Text>
-                            </MenuItem>
-                          )}
-                          {!hideReadReceipts && (
-                            <MessageReadReceiptItem
-                              room={room}
-                              eventId={mEvent.getId() ?? ''}
-                              onClose={closeMenu}
-                            />
-                          )}
-                          <MessageSourceCodeItem room={room} mEvent={mEvent} onClose={closeMenu} />
-                          <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
-                          {canPinEvent && (
-                            <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />
-                          )}
-                        </Box>
-                        {((!mEvent.isRedacted() && canDelete) ||
-                          mEvent.getSender() !== mx.getUserId()) && (
-                          <>
-                            <Line size="300" />
-                            <Box direction="Column" gap="100" className={css.MessageMenuGroup}>
-                              {!mEvent.isRedacted() && canDelete && (
-                                <MessageDeleteItem
-                                  room={room}
-                                  mEvent={mEvent}
-                                  onClose={closeMenu}
-                                />
-                              )}
-                              {mEvent.getSender() !== mx.getUserId() && (
-                                <MessageReportItem
-                                  room={room}
-                                  mEvent={mEvent}
-                                  onClose={closeMenu}
-                                />
-                              )}
-                            </Box>
-                          </>
-                        )}
-                      </Menu>
-                    </FocusTrap>
-                  }
-                >
-                  <IconButton
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
-                    onClick={handleOpenMenu}
-                    aria-pressed={!!menuAnchor}
-                  >
-                    <Icon src={Icons.VerticalDots} size="100" />
-                  </IconButton>
-                </PopOut>
+                  <Box grow="Yes" alignItems="Center">
+                    <Text size="H4">Add Reaction</Text>
+                  </Box>
+                </Header>
+                <EmojiBoard
+                  imagePackRooms={imagePackRooms ?? []}
+                  returnFocusOnDeactivate={false}
+                  allowTextCustomEmoji
+                  onEmojiSelect={(key) => {
+                    onReactionToggle(mEvent.getId(), key);
+                    setEmojiBoardAnchor(undefined);
+                    closeMenu();
+                    setMobileSheetOpen(false);
+                  }}
+                  onCustomEmojiSelect={(mxc, shortcode) => {
+                    onReactionToggle(mEvent.getId(), mxc, shortcode);
+                    setEmojiBoardAnchor(undefined);
+                    closeMenu();
+                    setMobileSheetOpen(false);
+                  }}
+                  requestClose={() => setEmojiBoardAnchor(undefined)}
+                />
               </Box>
-            </Menu>
-          </div>
+            )}
+          </BottomSheetMenu>
         )}
-        {messageLayout === MessageLayout.Compact && (
-          <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
-            {msgContentJSX}
-          </CompactLayout>
-        )}
-        {messageLayout === MessageLayout.Bubble && (
-          <BubbleLayout before={avatarJSX} onContextMenu={handleContextMenu}>
-            {headerJSX}
-            {msgContentJSX}
-          </BubbleLayout>
-        )}
-        {messageLayout !== MessageLayout.Compact && messageLayout !== MessageLayout.Bubble && (
-          <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
-            {headerJSX}
-            {msgContentJSX}
-          </ModernLayout>
-        )}
-      </MessageBase>
+      </>
     );
   }
 );
@@ -1155,7 +1136,7 @@ export const Event = as<'div', EventProps>(
         highlight={highlight}
         selected={!!menuAnchor}
         {...props}
-        {...hoverProps}
+        {...hoverProps} // Impacts hover
         {...focusWithinProps}
         ref={ref}
       >

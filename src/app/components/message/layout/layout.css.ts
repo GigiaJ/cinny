@@ -174,13 +174,23 @@ export const MessageTextBody = recipe({
     jumboEmoji: {
       true: {
         fontSize: '1.504em',
-        lineHeight: '1.4962em',
+        lineHeight: 1.1,
       },
     },
     emote: {
       true: {
-        color: color.Success.Main,
         fontStyle: 'italic',
+      },
+    },
+  },
+
+  '@media': {
+    'screen and (max-width: 768px)': {
+      base: {
+        userSelect: 'none',
+        WebkitUserSelect: 'none',
+        MozUserSelect: 'none',
+        msUserSelect: 'none',
       },
     },
   },
