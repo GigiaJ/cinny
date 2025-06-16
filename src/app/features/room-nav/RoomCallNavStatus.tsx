@@ -96,7 +96,7 @@ export function CallNavStatus() {
           )}
         </TooltipProvider>
 
-        <Box grow="Yes">
+        <Box grow="Yes" justifyContent="Center" alignItems="Center">
           <TooltipProvider
             position="Top"
             offset={4}
