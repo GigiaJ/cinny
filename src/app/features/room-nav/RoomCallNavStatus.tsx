@@ -102,7 +102,7 @@ export function CallNavStatus() {
             offset={4}
             tooltip={
               <Tooltip>
-                <Text>Go to room</Text>
+                <Text>Go to Room</Text>
               </Tooltip>
             }
           >
