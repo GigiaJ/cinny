@@ -85,7 +85,7 @@ export function CallNavStatus() {
           offset={4}
           tooltip={
             <Tooltip>
-              <Text>Hang up</Text>
+              <Text>Hang Up</Text>
             </Tooltip>
           }
         >
