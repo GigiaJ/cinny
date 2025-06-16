@@ -916,6 +916,14 @@ export const Message = as<'div', MessageProps>(
               onReplyClick={onReplyClick}
               onEditId={onEditId}
               onActiveStateChange={setDesktopOptionsActive}
+              handleAddReactions={handleAddReactions}
+              closeMenu={closeMenu}
+              emojiBoardAnchor={emojiBoardAnchor}
+              menuAnchor={menuAnchor}
+              handleOpenEmojiBoard={handleOpenEmojiBoard}
+              setEmojiBoardAnchor={setEmojiBoardAnchor}
+              setMenuAnchor={setMenuAnchor}
+              handleOpenMenu={handleOpenMenu}
             />
           )}
           {messageLayout === MessageLayout.Compact && (
