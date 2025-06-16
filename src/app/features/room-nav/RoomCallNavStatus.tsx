@@ -69,7 +69,7 @@ export function CallNavStatus() {
           offset={4}
           tooltip={
             <Tooltip>
-              <Text>{!isVideoEnabled ? 'Video on' : 'Video off'}</Text>
+              <Text>{!isVideoEnabled ? 'Video On' : 'Video Off'}</Text>
             </Tooltip>
           }
         >
