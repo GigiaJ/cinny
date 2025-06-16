@@ -24,7 +24,6 @@ type BaseOptionProps = {
   room: Room;
   mx: MatrixClient;
   relations: Relations | undefined;
-  eventId: string;
   canSendReaction: boolean | undefined;
   canEdit: boolean | undefined;
   canDelete: boolean | undefined;
@@ -42,7 +41,6 @@ export function MessageDropdownMenu({
   room,
   mx,
   relations,
-  eventId,
   canSendReaction,
   canEdit,
   canDelete,
@@ -59,7 +57,7 @@ export function MessageDropdownMenu({
       {canSendReaction && (
         <MessageQuickReactions
           onReaction={(key, shortcode) => {
-            onReactionToggle(eventId, key, shortcode);
+            onReactionToggle(mEvent.getId() ?? '', key, shortcode);
             closeMenu();
           }}
         />
@@ -84,7 +82,7 @@ export function MessageDropdownMenu({
           size="300"
           after={<Icon size="100" src={Icons.ReplyArrow} />}
           radii="300"
-          data-event-id={eventId}
+          data-event-id={mEvent.getId()}
           onClick={(evt) => {
             onReplyClick(evt);
             closeMenu();
@@ -99,9 +97,9 @@ export function MessageDropdownMenu({
             size="300"
             after={<Icon size="100" src={Icons.Pencil} />}
             radii="300"
-            data-event-id={eventId}
+            data-event-id={mEvent.getId()}
             onClick={() => {
-              onEditId(eventId);
+              onEditId(mEvent.getId());
               closeMenu();
             }}
           >
@@ -111,7 +109,7 @@ export function MessageDropdownMenu({
           </MenuItem>
         )}
         {!hideReadReceipts && (
-          <MessageReadReceiptItem room={room} eventId={eventId} onClose={closeMenu} />
+          <MessageReadReceiptItem room={room} eventId={mEvent.getId() ?? ''} onClose={closeMenu} />
         )}
         <MessageSourceCodeItem room={room} mEvent={mEvent} onClose={closeMenu} />
         <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
@@ -255,7 +253,6 @@ export function MessageOptionsMenu({
                   room={room}
                   mx={mx}
                   relations={relations}
-                  eventId={eventId}
                   canSendReaction={canSendReaction}
                   canEdit={canEdit}
                   canDelete={canDelete}
