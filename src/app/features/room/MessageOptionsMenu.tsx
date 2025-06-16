@@ -1,7 +1,9 @@
 import { Box, Icon, IconButton, Icons, Line, Menu, MenuItem, PopOut, RectCords, Text } from 'folds';
-import React, { MouseEventHandler, useEffect, useState } from 'react';
+import React, { MouseEventHandler, useEffect } from 'react';
 
 import FocusTrap from 'focus-trap-react';
+import classNames from 'classnames';
+import { MatrixClient, MatrixEvent, Relations, Room } from 'matrix-js-sdk';
 import { EmojiBoard } from '../../components/emoji-board';
 import { stopPropagation } from '../../utils/keyboard';
 import * as css from './message/styles.css';
