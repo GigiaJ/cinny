@@ -731,6 +731,28 @@ export const Message = as<'div', MessageProps>(
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
     const senderAvatarMxc = getMemberAvatarMxc(room, senderId);
 
+    const closeMenu = () => {
+      setMenuAnchor(undefined);
+    };
+
+    const handleOpenMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
+      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
+      setMenuAnchor(target.getBoundingClientRect());
+    };
+
+    const handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement> = (evt) => {
+      const target = evt.currentTarget.parentElement?.parentElement ?? evt.currentTarget;
+      setEmojiBoardAnchor(target.getBoundingClientRect());
+    };
+
+    const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
+      const rect = menuAnchor;
+      closeMenu();
+      setTimeout(() => {
+        setEmojiBoardAnchor(rect);
+      }, 100);
+    };
+
     const tagColor = powerLevelTag?.color
       ? accessibleTagColors?.get(powerLevelTag.color)
       : undefined;
