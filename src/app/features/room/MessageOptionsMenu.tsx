@@ -53,7 +53,7 @@ export function MessageDropdownMenu({
   onEditId,
   handleAddReactions,
   closeMenu,
-}) {
+}: BaseOptionProps) {
   return (
     <Menu>
       {canSendReaction && (
