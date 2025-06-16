@@ -730,6 +730,7 @@ export const Message = as<'div', MessageProps>(
     const senderDisplayName =
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
     const senderAvatarMxc = getMemberAvatarMxc(room, senderId);
+    const [view, setView] = useState('options');
 
     const closeMenu = () => {
       setMenuAnchor(undefined);
