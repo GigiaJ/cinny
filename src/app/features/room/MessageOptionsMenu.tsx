@@ -169,10 +169,7 @@ export function MessageOptionsMenu({
   handleAddReactions,
   setMenuAnchor,
   setEmojiBoardAnchor,
-}) {
-  // const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-  // const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
-
+}: ExtendedOptionsProps) {
   useEffect(() => {
     onActiveStateChange?.(!!menuAnchor || !!emojiBoardAnchor);
   }, [emojiBoardAnchor, menuAnchor, onActiveStateChange]);
