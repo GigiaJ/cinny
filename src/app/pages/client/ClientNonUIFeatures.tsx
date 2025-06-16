@@ -187,6 +187,7 @@ function MessageNotifications() {
     ) => {
       if (mx.getSyncState() !== 'SYNCING') return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
+
       if (
         !room ||
         !data.liveEvent ||
@@ -210,6 +211,11 @@ function MessageNotifications() {
         unreadEqual(unreadInfoToUnread(cachedUnreadInfo), unreadInfoToUnread(unreadInfo))
       ) {
         return;
+      }
+      try {
+        navigator.setAppBadge(unreadInfo.total);
+      } catch (e) {
+        // Likely Firefox/Gecko-based and doesn't support badging API
       }
 
       if (showNotifications && notificationPermission('granted')) {
