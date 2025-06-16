@@ -754,6 +754,16 @@ export const Message = as<'div', MessageProps>(
       }, 100);
     };
 
+    const handleClose = () => {
+      setView('options');
+      closeMenu();
+    };
+
+    const onEmojiSelect = (key, shortcode) => {
+      onReactionToggle(mEvent.getId(), key, shortcode);
+      handleClose();
+    };
+
     const tagColor = powerLevelTag?.color
       ? accessibleTagColors?.get(powerLevelTag.color)
       : undefined;
