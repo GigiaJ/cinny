@@ -1,5 +1,5 @@
 import { Box, Icon, IconButton, Icons, Line, Menu, MenuItem, PopOut, RectCords, Text } from 'folds';
-import React, { MouseEventHandler, useEffect } from 'react';
+import React, { forwardRef, MouseEventHandler, useEffect } from 'react';
 
 import FocusTrap from 'focus-trap-react';
 import classNames from 'classnames';
@@ -36,24 +36,27 @@ type BaseOptionProps = {
   closeMenu: () => void;
 };
 
-export function MessageDropdownMenu({
-  mEvent,
-  room,
-  mx,
-  relations,
-  canSendReaction,
-  canEdit,
-  canDelete,
-  canPinEvent,
-  hideReadReceipts,
-  onReactionToggle,
-  onReplyClick,
-  onEditId,
-  handleAddReactions,
-  closeMenu,
-}: BaseOptionProps) {
-  return (
-    <Menu>
+export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
+  (
+    {
+      mEvent,
+      room,
+      mx,
+      relations,
+      canSendReaction,
+      canEdit,
+      canDelete,
+      canPinEvent,
+      hideReadReceipts,
+      onReactionToggle,
+      onReplyClick,
+      onEditId,
+      handleAddReactions,
+      closeMenu,
+    },
+    ref
+  ) => (
+    <Menu ref={ref}>
       {canSendReaction && (
         <MessageQuickReactions
           onReaction={(key, shortcode) => {
@@ -130,8 +133,8 @@ export function MessageDropdownMenu({
         </>
       )}
     </Menu>
-  );
-}
+  )
+);
 
 type ExtendedOptionsProps = BaseOptionProps & {
   imagePackRooms: Room[] | undefined;
