@@ -19,6 +19,24 @@ import {
   MessageSourceCodeItem,
 } from './message/Message';
 
+type BaseOptionProps = {
+  mEvent: MatrixEvent;
+  room: Room;
+  mx: MatrixClient;
+  relations: Relations | undefined;
+  eventId: string;
+  canSendReaction: boolean | undefined;
+  canEdit: boolean | undefined;
+  canDelete: boolean | undefined;
+  canPinEvent: boolean | undefined;
+  hideReadReceipts: boolean | undefined;
+  onReactionToggle: (targetEventId: string, key: string, shortcode?: string | undefined) => void;
+  onReplyClick: MouseEventHandler<HTMLButtonElement>;
+  onEditId: ((eventId?: string | undefined) => void) | undefined;
+  handleAddReactions: MouseEventHandler<HTMLButtonElement>;
+  closeMenu: () => void;
+};
+
 export function MessageDropdownMenu({
   mEvent,
   room,
