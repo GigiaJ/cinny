@@ -724,12 +724,10 @@ export const Message = as<'div', MessageProps>(
     const screenSize = useScreenSizeContext();
     const isMobile = screenSize === ScreenSize.Mobile;
     const [isDesktopOptionsActive, setDesktopOptionsActive] = useState(false);
-    //const showDesktopOptions = !isMobile && (isHovered || isFocusWithin || isDesktopOptionsActive);
     const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
     const senderDisplayName =
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
     const senderAvatarMxc = getMemberAvatarMxc(room, senderId);
-    const [view, setView] = useState('options');
 
     const closeMenu = () => {
       setMenuAnchor(undefined);
