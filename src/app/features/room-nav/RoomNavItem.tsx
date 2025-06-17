@@ -325,8 +325,10 @@ export function RoomNavItem({
               />
             ) : (
               <RoomIcon
-                style={{ opacity: unread ? config.opacity.P500 : config.opacity.P300 }}
-                filled={selected}
+                style={{
+                  opacity: unread || isActiveCall ? config.opacity.P500 : config.opacity.P300,
+                }}
+                filled={selected || isActiveCall}
                 size="100"
                 joinRule={room.getJoinRule()}
                 call={room.isCallRoom()}
