@@ -336,7 +336,12 @@ export function RoomNavItem({
             )}
           </Avatar>
           <Box as="span" grow="Yes">
-            <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+            <Text
+              priority={unread || isActiveCall ? '500' : '300'}
+              as="span"
+              size="Inherit"
+              truncate
+            >
               {room.name}
             </Text>
           </Box>
