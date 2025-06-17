@@ -1,4 +1,4 @@
-import { Avatar, Box, Icon, Icons } from 'folds';
+import { Avatar, Box, Icon, Icons, Text } from 'folds';
 import React from 'react';
 import { Room, RoomMember } from 'matrix-js-sdk';
 import { NavItem, NavItemContent } from '../../components/nav';
