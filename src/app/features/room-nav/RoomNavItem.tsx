@@ -225,6 +225,7 @@ export function RoomNavItem({
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
   const {
+    isCallActive,
     activeCallRoomId,
     setActiveCallRoomId,
     setViewedCallRoomId,
