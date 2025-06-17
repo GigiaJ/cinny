@@ -394,7 +394,7 @@ export function RoomNavItem({
                     ref={triggerRef}
                     data-testid="chat-button"
                     onClick={handleChatButtonClick}
-                    aria-pressed={isChatOpen}
+                    aria-pressed={isChatOpen && selected}
                     variant="Background"
                     fill="None"
                     size="300"
