@@ -236,6 +236,7 @@ export function RoomNavItem({
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
+  const isActiveCall = isCallActive && activeCallRoomId === room.roomId;
   const { navigateRoom } = useRoomNavigate();
   const { roomIdOrAlias: viewedRoomId } = useParams();
   const screenSize = useScreenSizeContext();
