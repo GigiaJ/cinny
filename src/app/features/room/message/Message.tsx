@@ -66,7 +66,6 @@ import * as css from './styles.css';
 import { EventReaders } from '../../../components/event-readers';
 import { TextViewer } from '../../../components/text-viewer';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
-import { EmojiBoard } from '../../../components/emoji-board';
 import { ReactionViewer } from '../reaction-viewer';
 import { MessageEditor } from './MessageEditor';
 import { UserAvatar } from '../../../components/user-avatar';
@@ -80,7 +79,7 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { getTagIconSrc, PowerLevelTag } from '../../../hooks/usePowerLevelTags';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
-import { MessageDropdownMenu, MessageOptionsMenu, BottomSheetMenu } from '../MessageOptionsMenu';
+import { MessageOptionsMenu } from './MessageOptionsMenu';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
 import { DraggableMessage } from './DraggableMessage';
 
