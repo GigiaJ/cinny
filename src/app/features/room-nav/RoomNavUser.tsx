@@ -41,7 +41,9 @@ export function RoomNavUser({ room, space, sender }: RoomNavUserProps) {
               renderFallback={() => <Icon size="50" src={Icons.User} filled />}
             />
           </Avatar>
-          {getName}
+          <Text size="B400" priority="300" truncate>
+            {getName}
+          </Text>
         </Box>
       </NavItemContent>
     </NavItem>
