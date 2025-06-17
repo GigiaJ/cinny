@@ -586,7 +586,7 @@ export function Space() {
                 case 'user': {
                   const { sender, room } = item;
                   return (
-                    <Box>
+                    <Box style={{ paddingLeft: config.space.S200 }}>
                       <RoomNavUser room={room} space={space} sender={sender} />
                     </Box>
                   );
