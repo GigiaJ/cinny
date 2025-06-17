@@ -749,7 +749,7 @@ export const Message = as<'div', MessageProps>(
       setEmojiBoardOpen(true);
       setTimeout(() => {
         setEmojiBoardAnchor(rect);
-      }, 150);
+      }, 100);
     };
 
     // TODO: Remove this and clean it up later...
