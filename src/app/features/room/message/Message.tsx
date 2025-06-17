@@ -751,16 +751,6 @@ export const Message = as<'div', MessageProps>(
       }, 100);
     };
 
-    const handleClose = () => {
-      setView('options');
-      closeMenu();
-    };
-
-    const onEmojiSelect = (key, shortcode) => {
-      onReactionToggle(mEvent.getId(), key, shortcode);
-      handleClose();
-    };
-
     // TODO: Remove this and clean it up later...
     const button = document.createElement('button');
     button.setAttribute('data-event-id', mEvent.getId());
