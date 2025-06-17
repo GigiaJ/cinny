@@ -16,6 +16,8 @@ import {
   RectCords,
   Badge,
   Spinner,
+  Tooltip,
+  TooltipProvider,
 } from 'folds';
 import { useFocusWithin, useHover } from 'react-aria';
 import FocusTrap from 'focus-trap-react';
@@ -250,7 +252,7 @@ export function RoomNavItem({
     evt.preventDefault();
 
     if (isMobile) {
-    //  return;
+      //  return;
     }
     setMenuAnchor({
       x: evt.clientX,
