@@ -81,7 +81,7 @@ import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
 import { MessageOptionsMenu } from './MessageOptionsMenu';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
-import { DraggableMessage } from './DraggableMessage';
+import { DraggableMessage } from '../../../components/message/behavior/DraggableMessage';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
 
