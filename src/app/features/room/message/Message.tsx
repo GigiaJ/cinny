@@ -721,15 +721,18 @@ export const Message = as<'div', MessageProps>(
     const { focusWithinProps } = useFocusWithin({});
     const [menuAnchor, setMenuAnchor] = useState<RectCords>();
     const [emojiBoardAnchor, setEmojiBoardAnchor] = useState<RectCords>();
+    const [isDesktopOptionsActive, setDesktopOptionsActive] = useState(false);
+    const [isOptionsMenuOpen, setOptionsMenuOpen] = useState(false);
+    const [isEmojiBoardOpen, setEmojiBoardOpen] = useState(false);
+
     const screenSize = useScreenSizeContext();
     const isMobile = screenSize === ScreenSize.Mobile;
-    const [isDesktopOptionsActive, setDesktopOptionsActive] = useState(false);
-    const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
     const senderDisplayName =
       getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
     const senderAvatarMxc = getMemberAvatarMxc(room, senderId);
 
     const closeMenu = () => {
+      setOptionsMenuOpen(false);
       setMenuAnchor(undefined);
     };
 
@@ -745,10 +748,10 @@ export const Message = as<'div', MessageProps>(
 
     const handleAddReactions: MouseEventHandler<HTMLButtonElement> = () => {
       const rect = menuAnchor;
-      closeMenu();
+      setEmojiBoardOpen(true);
       setTimeout(() => {
         setEmojiBoardAnchor(rect);
-      }, 100);
+      }, 150);
     };
 
     // TODO: Remove this and clean it up later...
@@ -767,7 +770,7 @@ export const Message = as<'div', MessageProps>(
     const longPressBinder = useLongPress(
       () => {
         if (isMobile) {
-          setMobileSheetOpen(true);
+          setOptionsMenuOpen(true);
         }
       },
       {
@@ -883,125 +886,114 @@ export const Message = as<'div', MessageProps>(
         space={messageSpacing}
         collapse={collapse}
         highlight={highlight}
-        selected={isDesktopOptionsActive || isMobileSheetOpen}
+        selected={isDesktopOptionsActive || isOptionsMenuOpen || isEmojiBoardOpen}
         {...props}
         {...hoverProps}
-        {...focusWithinProps}
+        {...(!isMobile ? focusWithinProps : {})}
         {...(isMobile ? longPressBinder() : {})}
         ref={ref}
       >
-        {!edit && (isMobileSheetOpen || isHovered || !!menuAnchor || !!emojiBoardAnchor) && (
-          <MessageOptionsMenu
-            mEvent={mEvent}
-            room={room}
+        {!edit &&
+          (isOptionsMenuOpen ||
+            isEmojiBoardOpen ||
+            isHovered ||
+            !!menuAnchor ||
+            !!emojiBoardAnchor) && (
+            <MessageOptionsMenu
+              mEvent={mEvent}
+              room={room}
+              mx={mx}
+              relations={relations}
+              imagePackRooms={imagePackRooms}
+              canSendReaction={canSendReaction}
+              canEdit={canEditEvent(mx, mEvent)}
+              canDelete={canDelete}
+              canPinEvent={canPinEvent}
+              hideReadReceipts={hideReadReceipts}
+              onReactionToggle={onReactionToggle}
+              onReplyClick={onReplyClick}
+              onEditId={onEditId}
+              handleAddReactions={handleAddReactions}
+              closeMenu={closeMenu}
+              emojiBoardAnchor={emojiBoardAnchor}
+              menuAnchor={menuAnchor}
+              handleOpenEmojiBoard={handleOpenEmojiBoard}
+              setEmojiBoardAnchor={setEmojiBoardAnchor}
+              setMenuAnchor={setMenuAnchor}
+              handleOpenMenu={handleOpenMenu}
+              setOptionsMenuOpen={setOptionsMenuOpen}
+              isOptionsMenuOpen={isOptionsMenuOpen}
+              setEmojiBoardOpen={setEmojiBoardOpen}
+              isEmojiBoardOpen={isEmojiBoardOpen}
+            />
+          )}
+        {messageLayout === MessageLayout.Compact && (
+          <DraggableMessage
+            event={mEvent}
+            onReply={() => {
+              const mockTargetElement = document.createElement('button');
+              mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+              const mockEvent = {
+                currentTarget: mockTargetElement,
+              };
+
+              onReplyClick(mockEvent);
+            }}
+            onEdit={() => {
+              onEditId(mEvent.getId());
+            }}
             mx={mx}
-            relations={relations}
-            imagePackRooms={imagePackRooms}
-            canSendReaction={canSendReaction}
-            canEdit={canEditEvent(mx, mEvent)}
-            canDelete={canDelete}
-            canPinEvent={canPinEvent}
-            hideReadReceipts={hideReadReceipts}
-            onReactionToggle={onReactionToggle}
-            onReplyClick={onReplyClick}
-            onEditId={onEditId}
-            onActiveStateChange={setDesktopOptionsActive}
-            handleAddReactions={handleAddReactions}
-            closeMenu={closeMenu}
-            emojiBoardAnchor={emojiBoardAnchor}
-            menuAnchor={menuAnchor}
-            handleOpenEmojiBoard={handleOpenEmojiBoard}
-            setEmojiBoardAnchor={setEmojiBoardAnchor}
-            setMenuAnchor={setMenuAnchor}
-            handleOpenMenu={handleOpenMenu}
-            setMobileSheetOpen={setMobileSheetOpen}
-            isMobileSheetOpen={isMobileSheetOpen}
-          />
-        )}
-        {messageLayout === MessageLayout.Compact &&
-          (!isMobile ? (
+          >
             <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
               {msgContentJSX}
             </CompactLayout>
-          ) : (
-            <DraggableMessage
-              event={mEvent}
-              onReply={() => {
-                const mockTargetElement = document.createElement('button');
-                mockTargetElement.setAttribute('data-event-id', mEvent.getId());
-                const mockEvent = {
-                  currentTarget: mockTargetElement,
-                };
+          </DraggableMessage>
+        )}
+        {messageLayout === MessageLayout.Bubble && (
+          <DraggableMessage
+            event={mEvent}
+            onReply={() => {
+              const mockTargetElement = document.createElement('button');
+              mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+              const mockEvent = {
+                currentTarget: mockTargetElement,
+              };
 
-                onReplyClick(mockEvent);
-              }}
-              onEdit={() => {
-                onEditId(mEvent.getId());
-              }}
-              mx={mx}
-            >
-              <CompactLayout before={headerJSX} onContextMenu={handleContextMenu}>
-                {msgContentJSX}
-              </CompactLayout>
-            </DraggableMessage>
-          ))}
-        {messageLayout === MessageLayout.Bubble &&
-          (!isMobile ? (
+              onReplyClick(mockEvent);
+            }}
+            onEdit={() => {
+              onEditId(mEvent.getId());
+            }}
+            mx={mx}
+          >
             <BubbleLayout before={headerJSX} onContextMenu={handleContextMenu}>
               {msgContentJSX}
             </BubbleLayout>
-          ) : (
-            <DraggableMessage
-              event={mEvent}
-              onReply={() => {
-                const mockTargetElement = document.createElement('button');
-                mockTargetElement.setAttribute('data-event-id', mEvent.getId());
-                const mockEvent = {
-                  currentTarget: mockTargetElement,
-                };
+          </DraggableMessage>
+        )}
+        {messageLayout !== MessageLayout.Compact && messageLayout !== MessageLayout.Bubble && (
+          <DraggableMessage
+            event={mEvent}
+            onReply={() => {
+              const mockTargetElement = document.createElement('button');
+              mockTargetElement.setAttribute('data-event-id', mEvent.getId());
+              const mockEvent = {
+                currentTarget: mockTargetElement,
+              };
 
-                onReplyClick(mockEvent);
-              }}
-              onEdit={() => {
-                onEditId(mEvent.getId());
-              }}
-              mx={mx}
-            >
-              <BubbleLayout before={headerJSX} onContextMenu={handleContextMenu}>
-                {msgContentJSX}
-              </BubbleLayout>
-            </DraggableMessage>
-          ))}
-        {messageLayout !== MessageLayout.Compact &&
-          messageLayout !== MessageLayout.Bubble &&
-          (!isMobile ? (
+              onReplyClick(mockEvent);
+            }}
+            onEdit={() => {
+              onEditId(mEvent.getId());
+            }}
+            mx={mx}
+          >
             <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
               {headerJSX}
               {msgContentJSX}
             </ModernLayout>
-          ) : (
-            <DraggableMessage
-              event={mEvent}
-              onReply={() => {
-                const mockTargetElement = document.createElement('button');
-                mockTargetElement.setAttribute('data-event-id', mEvent.getId());
-                const mockEvent = {
-                  currentTarget: mockTargetElement,
-                };
-
-                onReplyClick(mockEvent);
-              }}
-              onEdit={() => {
-                onEditId(mEvent.getId());
-              }}
-              mx={mx}
-            >
-              <ModernLayout before={avatarJSX} onContextMenu={handleContextMenu}>
-                {headerJSX}
-                {msgContentJSX}
-              </ModernLayout>
-            </DraggableMessage>
-          ))}
+          </DraggableMessage>
+        )}
       </MessageBase>
     );
   }
