@@ -2,7 +2,6 @@
 import { Room } from 'matrix-js-sdk';
 import React, { useContext, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Box } from 'folds';
-import { RoomViewHeader } from '../room/RoomViewHeader';
 import { useCallState } from '../../pages/client/call/CallProvider';
 import {
   PrimaryRefContext,
