@@ -3,6 +3,14 @@ import { DefaultReset, config, toRem } from 'folds';
 
 export const MessageBase = style({
   position: 'relative',
+  '@media': {
+    'screen and (max-width: 768px)': {
+      userSelect: 'none',
+      WebkitUserSelect: 'none',
+      MozUserSelect: 'none',
+      msUserSelect: 'none',
+    },
+  },
 });
 
 export const MessageOptionsBase = style([
