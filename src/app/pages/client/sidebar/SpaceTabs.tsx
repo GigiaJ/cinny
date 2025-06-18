@@ -426,6 +426,7 @@ function SpaceTab({
           data-drop-above={dropType === 'reorder-above'}
           data-drop-below={dropType === 'reorder-below'}
           data-inside-folder={!!folder}
+          {...(isMobile ? longPressBinder() : {})}
         >
           <SidebarItemTooltip tooltip={disabled ? undefined : space.name}>
             {(triggerRef) => (
