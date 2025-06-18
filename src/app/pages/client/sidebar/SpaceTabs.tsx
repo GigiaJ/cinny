@@ -415,6 +415,18 @@ function SpaceTab({
     });
   };
 
+  const longPressBinder = useLongPress(
+    () => {
+      if (isMobile && !isDragging) {
+        setMobileSheetOpen(true);
+      }
+    },
+    {
+      threshold: 400,
+      cancelOnMovement: true,
+    }
+  );
+
   return (
     <RoomUnreadProvider roomId={space.roomId}>
       {(unread) => (
