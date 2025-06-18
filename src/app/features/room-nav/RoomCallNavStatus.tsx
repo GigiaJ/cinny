@@ -22,20 +22,7 @@ export function CallNavStatus() {
     }
   };
   if (!isCallActive) {
-    return (
-      <Box
-        direction="Column"
-        gap="500"
-        style={{
-          flexShrink: 0,
-          borderTop: `1px solid #e0e0e0`,
-        }}
-      >
-        <Text size="T200" color="Muted" align="Center">
-          No active call
-        </Text>
-      </Box>
-    );
+    return null;
   }
 
   return (
