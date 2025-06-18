@@ -11,12 +11,10 @@ import {
   RectCords,
   Text,
 } from 'folds';
-import React, { forwardRef, MouseEventHandler, useEffect, useState } from 'react';
+import React, { forwardRef, lazy, MouseEventHandler, Suspense, useEffect, useState } from 'react';
 
 import FocusTrap from 'focus-trap-react';
-import classNames from 'classnames';
 import { MatrixClient, MatrixEvent, Relations, Room } from 'matrix-js-sdk';
-import { EmojiBoard } from '../../../components/emoji-board';
 import { stopPropagation } from '../../../utils/keyboard';
 import * as css from './styles.css';
 
