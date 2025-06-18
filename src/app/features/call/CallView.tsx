@@ -32,7 +32,7 @@ type OriginalStyles = {
   border?: string;
 };
 
-export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
+export function CallView({ room }: { room: Room }) {
   const primaryIframeRef = useContext(PrimaryRefContext);
   const backupIframeRef = useContext(BackupRefContext);
   const iframeHostRef = useRef<HTMLDivElement>(null);
