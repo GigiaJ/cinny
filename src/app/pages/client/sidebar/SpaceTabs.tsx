@@ -388,6 +388,11 @@ function SpaceTab({
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const targetRef = useRef<HTMLDivElement>(null);
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
+  const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
+
+  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const spaceDraggable: SidebarDraggable = useMemo(
     () =>
