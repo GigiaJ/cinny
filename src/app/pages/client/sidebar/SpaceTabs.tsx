@@ -400,7 +400,21 @@ function SpaceTab({
     [folder, space]
   );
 
-  useDraggableItem(spaceDraggable, targetRef, onDragging);
+  const handleDragStart = useCallback(() => {
+    if (isMobileSheetOpen) {
+      setMenuAnchor(undefined);
+      setMobileSheetOpen(false);
+    }
+  }, [isMobileSheetOpen]);
+
+  const isDragging = useDraggableItem(
+    spaceDraggable,
+    targetRef,
+    onDragging,
+    undefined,
+    handleDragStart
+  );
+
   const dropState = useDropTarget(spaceDraggable, targetRef);
   const dropType = dropState?.type;
 
