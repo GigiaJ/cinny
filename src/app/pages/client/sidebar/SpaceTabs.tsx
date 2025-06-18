@@ -221,7 +221,8 @@ const useDraggableItem = (
   item: SidebarDraggable,
   targetRef: RefObject<HTMLElement>,
   onDragging: (item?: SidebarDraggable) => void,
-  dragHandleRef?: RefObject<HTMLElement>
+  dragHandleRef?: RefObject<HTMLElement>,
+  onActualDragStart?: () => void
 ): boolean => {
   const [dragging, setDragging] = useState(false);
 
@@ -238,13 +239,16 @@ const useDraggableItem = (
           onDragStart: () => {
             setDragging(true);
             onDragging?.(item);
+            if (typeof onActualDragStart === 'function') {
+              onActualDragStart();
+            }
           },
           onDrop: () => {
             setDragging(false);
             onDragging?.(undefined);
           },
         });
-  }, [targetRef, dragHandleRef, item, onDragging]);
+  }, [targetRef, dragHandleRef, item, onDragging, onActualDragStart]);
 
   return dragging;
 };
