@@ -31,7 +31,11 @@ import {
   MessageSourceCodeItem,
 } from './Message';
 import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
-import { BottomSheetMenu } from './MobileContextMenu';
+import MobileContextMenu from '../../../molecules/mobile-context-menu/MobileContextMenu';
+
+const EmojiBoard = lazy(() =>
+  import('../../../components/emoji-board').then((module) => ({ default: module.EmojiBoard }))
+);
 
 type BaseOptionProps = {
   mEvent: MatrixEvent;
@@ -85,7 +89,10 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
             size="300"
             after={<Icon size="100" src={Icons.SmilePlus} />}
             radii="300"
-            onClick={handleAddReactions}
+            onClick={(e) => {
+              handleAddReactions(e);
+              closeMenu();
+            }}
           >
             <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
               Add Reaction
@@ -93,7 +100,7 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
           </MenuItem>
         )}
         {relations && (
-          <MessageAllReactionItem room={room} relations={relations} onClose={closeMenu} />
+          <MessageAllReactionItem room={room} relations={relations} onClose={() => {}} />
         )}
         <MenuItem
           size="300"
@@ -151,15 +158,16 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
 
 type ExtendedOptionsProps = BaseOptionProps & {
   imagePackRooms: Room[] | undefined;
-  onActiveStateChange: React.Dispatch<React.SetStateAction<boolean>>;
   menuAnchor: RectCords | undefined;
   emojiBoardAnchor: RectCords | undefined;
   handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement>;
   handleOpenMenu: MouseEventHandler<HTMLButtonElement>;
   setMenuAnchor: React.Dispatch<React.SetStateAction<RectCords | undefined>>;
   setEmojiBoardAnchor: React.Dispatch<React.SetStateAction<RectCords | undefined>>;
-  isMobileSheetOpen;
-  setMobileSheetOpen;
+  isOptionsMenuOpen;
+  setOptionsMenuOpen;
+  isEmojiBoardOpen;
+  setEmojiBoardOpen;
 };
 
 export function MessageOptionsMenu({
@@ -176,7 +184,6 @@ export function MessageOptionsMenu({
   onReactionToggle,
   onReplyClick,
   onEditId,
-  onActiveStateChange,
   closeMenu,
   menuAnchor,
   emojiBoardAnchor,
@@ -185,13 +192,11 @@ export function MessageOptionsMenu({
   handleAddReactions,
   setMenuAnchor,
   setEmojiBoardAnchor,
-  isMobileSheetOpen,
-  setMobileSheetOpen,
+  isOptionsMenuOpen,
+  setOptionsMenuOpen,
+  isEmojiBoardOpen,
+  setEmojiBoardOpen,
 }: ExtendedOptionsProps) {
-  useEffect(() => {
-    onActiveStateChange?.(!!menuAnchor || !!emojiBoardAnchor);
-  }, [emojiBoardAnchor, menuAnchor, onActiveStateChange]);
-
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
   const [view, setView] = useState('options');
@@ -218,47 +223,58 @@ export function MessageOptionsMenu({
 
   if (isMobile) {
     return (
-      <BottomSheetMenu onClose={() => setMobileSheetOpen(false)} isOpen={isMobileSheetOpen}>
-        {view === 'options' ? (
-          <MessageDropdownMenu
-            {...optionProps}
-            closeMenu={() => {
+      <>
+        {isOptionsMenuOpen && (
+          <MobileContextMenu
+            onClose={() => {
               closeMenu();
-              setMobileSheetOpen(false);
             }}
-            handleAddReactions={() => setView('emoji')}
-          />
-        ) : (
-          <Box direction="Column" style={{ width: '100%' }}>
-            <Header variant="Surface" size="500">
-              <IconButton size="300" onClick={() => setView('options')}>
-                <Icon src={Icons.ArrowLeft} />
-              </IconButton>
-              <Box grow="Yes" alignItems="Center">
-                <Text size="H4">Add Reaction</Text>
-              </Box>
-            </Header>
-            <EmojiBoard
-              imagePackRooms={imagePackRooms ?? []}
-              returnFocusOnDeactivate={false}
-              allowTextCustomEmoji
-              onEmojiSelect={(key) => {
-                onReactionToggle(mEvent.getId(), key);
-                setEmojiBoardAnchor(undefined);
+            isOpen={isOptionsMenuOpen}
+          >
+            <MessageDropdownMenu
+              {...optionProps}
+              closeMenu={() => {
                 closeMenu();
-                setMobileSheetOpen(false);
               }}
-              onCustomEmojiSelect={(mxc, shortcode) => {
-                onReactionToggle(mEvent.getId(), mxc, shortcode);
-                setEmojiBoardAnchor(undefined);
-                closeMenu();
-                setMobileSheetOpen(false);
-              }}
-              requestClose={() => setEmojiBoardAnchor(undefined)}
+              handleAddReactions={handleAddReactions}
             />
-          </Box>
+          </MobileContextMenu>
         )}
-      </BottomSheetMenu>
+
+        {isEmojiBoardOpen && (
+          <MobileContextMenu
+            onClose={() => {
+              closeMenu();
+              setEmojiBoardOpen(false);
+            }}
+            isOpen={isEmojiBoardOpen}
+          >
+            <Suspense fallback={<p>Loading</p>}>
+              <EmojiBoard
+                imagePackRooms={imagePackRooms ?? []}
+                returnFocusOnDeactivate
+                allowTextCustomEmoji
+                onEmojiSelect={(key) => {
+                  onReactionToggle(mEvent.getId(), key);
+                  setEmojiBoardAnchor(undefined);
+                  setEmojiBoardOpen(false);
+                  (document.activeElement as HTMLElement)?.blur();
+                }}
+                onCustomEmojiSelect={(mxc, shortcode) => {
+                  onReactionToggle(mEvent.getId(), mxc, shortcode);
+                  setEmojiBoardAnchor(undefined);
+                  setEmojiBoardOpen(false);
+                  (document.activeElement as HTMLElement)?.blur();
+                }}
+                requestClose={() => {
+                  setEmojiBoardAnchor(undefined);
+                  setEmojiBoardOpen(false);
+                }}
+              />
+            </Suspense>
+          </MobileContextMenu>
+        )}
+      </>
     );
   }
 
