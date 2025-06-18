@@ -516,6 +516,21 @@ function SpaceTab({
               }
             />
           )}
+          {createPortal(
+            <MobileContextMenu
+              onClose={() => {
+                setMobileSheetOpen(false);
+              }}
+              isOpen={isMobileSheetOpen}
+            >
+              <SpaceMenu
+                room={space}
+                requestClose={() => setMobileSheetOpen(false)}
+                onUnpin={onUnpin}
+              />
+            </MobileContextMenu>,
+            document.body
+          )}
         </SidebarItem>
       )}
     </RoomUnreadProvider>
