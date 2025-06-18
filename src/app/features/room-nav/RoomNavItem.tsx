@@ -56,7 +56,7 @@ import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationS
 import { useCallState } from '../../pages/client/call/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
-import { BottomSheetMenu } from '../room/MessageOptionsMenu';
+import { MobileContextMenu } from '../../molecules/mobile-context-menu/MobileContextMenu';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -99,7 +99,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     };
 
     return (
-      <Menu ref={ref} style={!isMobile ? { maxWidth: toRem(160), width: '100vw' } : {}}>
+      <Menu ref={ref}>
         <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
           <MenuItem
             onClick={handleMarkAsRead}
@@ -236,18 +236,6 @@ export function RoomNavItem({
   const isMobile = screenSize === ScreenSize.Mobile;
   const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
 
-  const longPressBinder = useLongPress(
-    () => {
-      if (isMobile) {
-        setMobileSheetOpen(true);
-      }
-    },
-    {
-      threshold: 400,
-      cancelOnMovement: true,
-    }
-  );
-
   const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
     evt.preventDefault();
 
@@ -302,148 +290,163 @@ export function RoomNavItem({
     setViewedCallRoomId(room.roomId);
   };
 
+  const handleCloseMenu = () => {
+    setMenuAnchor(undefined);
+    setMobileSheetOpen(false);
+  };
+
   const optionsVisible = !isMobile && (hover || !!menuAnchor);
 
+  const longPressBinder = useLongPress(
+    () => {
+      if (isMobile) {
+        setMobileSheetOpen(true);
+      }
+    },
+    {
+      threshold: 400,
+      cancelOnMovement: true,
+    }
+  );
+
+  const menuContent = (
+    <RoomNavItemMenu
+      room={room}
+      requestClose={handleCloseMenu}
+      notificationMode={notificationMode}
+    />
+  );
+
   return (
-    <>
-      <NavItem
-        variant="Background"
-        radii="400"
-        highlight={unread !== undefined}
-        aria-selected={selected}
-        data-hover={!!menuAnchor}
-        onContextMenu={handleContextMenu}
-        {...hoverProps}
-        {...focusWithinProps}
-        {...longPressBinder()}
-      >
-        <NavItemContent onClick={handleNavItemClick}>
-          <Box as="span" grow="Yes" alignItems="Center" gap="200">
-            <Avatar size="200" radii="400">
-              {showAvatar ? (
-                <RoomAvatar
-                  roomId={room.roomId}
-                  src={
-                    direct
-                      ? getDirectRoomAvatarUrl(mx, room, 96, useAuthentication)
-                      : getRoomAvatarUrl(mx, room, 96, useAuthentication)
-                  }
-                  alt={room.name}
-                  renderFallback={() => (
-                    <Text as="span" size="H6">
-                      {nameInitials(room.name)}
-                    </Text>
-                  )}
-                />
-              ) : (
-                <RoomIcon
-                  style={{ opacity: unread ? config.opacity.P500 : config.opacity.P300 }}
-                  filled={selected}
-                  size="100"
-                  joinRule={room.getJoinRule()}
-                  call={room.isCallRoom()}
-                />
-              )}
-            </Avatar>
-            <Box as="span" grow="Yes">
-              <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
-                {room.name}
-              </Text>
-            </Box>
-            {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
-              <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
-                <TypingIndicator size="300" disableAnimation />
-              </Badge>
+    <NavItem
+      variant="Background"
+      radii="400"
+      highlight={unread !== undefined}
+      aria-selected={selected}
+      data-hover={!!menuAnchor}
+      onContextMenu={handleContextMenu}
+      {...hoverProps}
+      {...focusWithinProps}
+      {...(isMobile ? longPressBinder() : {})}
+    >
+      <NavItemContent onClick={handleNavItemClick}>
+        <Box as="span" grow="Yes" alignItems="Center" gap="200">
+          <Avatar size="200" radii="400">
+            {showAvatar ? (
+              <RoomAvatar
+                roomId={room.roomId}
+                src={
+                  direct
+                    ? getDirectRoomAvatarUrl(mx, room, 96, useAuthentication)
+                    : getRoomAvatarUrl(mx, room, 96, useAuthentication)
+                }
+                alt={room.name}
+                renderFallback={() => (
+                  <Text as="span" size="H6">
+                    {nameInitials(room.name)}
+                  </Text>
+                )}
+              />
+            ) : (
+              <RoomIcon
+                style={{ opacity: unread ? config.opacity.P500 : config.opacity.P300 }}
+                filled={selected}
+                size="100"
+                joinRule={room.getJoinRule()}
+                call={room.isCallRoom()}
+              />
             )}
-            {!optionsVisible && unread && (
-              <UnreadBadgeCenter>
-                <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
-              </UnreadBadgeCenter>
-            )}
-            {!optionsVisible && notificationMode !== RoomNotificationMode.Unset && (
-              <Icon size="50" src={getRoomNotificationModeIcon(notificationMode)} />
-            )}
+          </Avatar>
+          <Box as="span" grow="Yes">
+            <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+              {room.name}
+            </Text>
           </Box>
-        </NavItemContent>
-        {optionsVisible && (
-          <NavItemOptions>
-            <PopOut
-              anchor={menuAnchor}
-              offset={menuAnchor?.width === 0 ? 0 : undefined}
-              alignOffset={menuAnchor?.width === 0 ? 0 : -5}
-              position="Bottom"
-              align={menuAnchor?.width === 0 ? 'Start' : 'End'}
-              content={
-                <FocusTrap
-                  focusTrapOptions={{
-                    initialFocus: false,
-                    returnFocusOnDeactivate: false,
-                    onDeactivate: () => setMenuAnchor(undefined),
-                    clickOutsideDeactivates: true,
-                    isKeyForward: (evt) => evt.key === 'ArrowDown',
-                    isKeyBackward: (evt) => evt.key === 'ArrowUp',
-                    escapeDeactivates: stopPropagation,
-                  }}
-                >
-                  <RoomNavItemMenu
-                    room={room}
-                    requestClose={() => setMenuAnchor(undefined)}
-                    notificationMode={notificationMode}
-                  />
-                </FocusTrap>
-              }
-            >
-              {room.isCallRoom() && (
-                <TooltipProvider
-                  position="Bottom"
-                  offset={4}
-                  tooltip={
-                    <Tooltip>
-                      <Text>Open chat</Text>
-                    </Tooltip>
-                  }
-                >
-                  {(triggerRef) => (
-                    <IconButton
-                      ref={triggerRef}
-                      data-testid="chat-button"
-                      onClick={handleChatButtonClick}
-                      aria-pressed={isChatOpen}
-                      variant="Background"
-                      fill="None"
-                      size="300"
-                      radii="300"
-                    >
-                      <NavLink to={linkPath}>
-                        <Icon size="50" src={Icons.Message} />
-                      </NavLink>
-                    </IconButton>
-                  )}
-                </TooltipProvider>
-              )}
-              <IconButton
-                onClick={handleOpenMenu}
-                aria-pressed={!!menuAnchor}
-                variant="Background"
-                fill="None"
-                size="300"
-                radii="300"
+          {!optionsVisible && !unread && !selected && typingMember.length > 0 && (
+            <Badge size="300" variant="Secondary" fill="Soft" radii="Pill" outlined>
+              <TypingIndicator size="300" disableAnimation />
+            </Badge>
+          )}
+          {!optionsVisible && unread && (
+            <UnreadBadgeCenter>
+              <UnreadBadge highlight={unread.highlight > 0} count={unread.total} />
+            </UnreadBadgeCenter>
+          )}
+          {!optionsVisible && notificationMode !== RoomNotificationMode.Unset && (
+            <Icon size="50" src={getRoomNotificationModeIcon(notificationMode)} />
+          )}
+        </Box>
+      </NavItemContent>
+      {optionsVisible && (
+        <NavItemOptions>
+          <PopOut
+            anchor={menuAnchor}
+            offset={menuAnchor?.width === 0 ? 0 : undefined}
+            alignOffset={menuAnchor?.width === 0 ? 0 : -5}
+            position="Bottom"
+            align={menuAnchor?.width === 0 ? 'Start' : 'End'}
+            content={
+              <FocusTrap
+                focusTrapOptions={{
+                  initialFocus: false,
+                  returnFocusOnDeactivate: false,
+                  onDeactivate: () => setMenuAnchor(undefined),
+                  clickOutsideDeactivates: true,
+                  isKeyForward: (evt: KeyboardEvent) => evt.key === 'ArrowDown',
+                  isKeyBackward: (evt: KeyboardEvent) => evt.key === 'ArrowUp',
+                  escapeDeactivates: stopPropagation,
+                }}
               >
-                <Icon size="50" src={Icons.VerticalDots} />
-              </IconButton>
-            </PopOut>
-          </NavItemOptions>
-        )}
-      </NavItem>
-      {isMobile && (
-        <BottomSheetMenu isOpen={isMobileSheetOpen} onClose={() => setMobileSheetOpen(false)}>
-          <RoomNavItemMenu
-            room={room}
-            requestClose={() => setMobileSheetOpen(false)}
-            notificationMode={notificationMode}
-          />
-        </BottomSheetMenu>
+                {menuContent}
+              </FocusTrap>
+            }
+          >
+            {room.isCallRoom() && (
+              <TooltipProvider
+                position="Bottom"
+                offset={4}
+                tooltip={
+                  <Tooltip>
+                    <Text>Open chat</Text>
+                  </Tooltip>
+                }
+              >
+                {(triggerRef) => (
+                  <IconButton
+                    ref={triggerRef}
+                    data-testid="chat-button"
+                    onClick={handleChatButtonClick}
+                    aria-pressed={isChatOpen}
+                    variant="Background"
+                    fill="None"
+                    size="300"
+                    radii="300"
+                  >
+                    <NavLink to={linkPath}>
+                      <Icon size="50" src={Icons.Message} />
+                    </NavLink>
+                  </IconButton>
+                )}
+              </TooltipProvider>
+            )}
+            <IconButton
+              onClick={handleOpenMenu}
+              aria-pressed={!!menuAnchor}
+              variant="Background"
+              fill="None"
+              size="300"
+              radii="300"
+            >
+              <Icon size="50" src={Icons.VerticalDots} />
+            </IconButton>
+          </PopOut>
+        </NavItemOptions>
       )}
-    </>
+      {isMobile && (
+        <MobileContextMenu onClose={handleCloseMenu} isOpen={isMobileSheetOpen}>
+          {menuContent}
+        </MobileContextMenu>
+      )}
+    </NavItem>
   );
 }
