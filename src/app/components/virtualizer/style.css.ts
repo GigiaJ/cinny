@@ -4,6 +4,7 @@ import { DefaultReset } from 'folds';
 export const VirtualTile = style([
   DefaultReset,
   {
+    WebkitUserSelect: 'none',
     position: 'absolute',
     width: '100%',
     left: 0,
