@@ -430,8 +430,6 @@ function SpaceTab({
   const dropState = useDropTarget(spaceDraggable, targetRef);
   const dropType = dropState?.type;
 
-  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
-
   const handleContextMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     evt.preventDefault();
     const cords = evt.currentTarget.getBoundingClientRect();
