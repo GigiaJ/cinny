@@ -140,7 +140,6 @@ export function CallView({ room }: { room: Room }) {
         display: isCallViewVisible ? (isMobile && isChatOpen ? 'none' : 'flex') : 'none',
       }}
     >
-      <RoomViewHeader />
       <div
         ref={iframeHostRef}
         style={{
