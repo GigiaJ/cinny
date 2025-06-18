@@ -39,6 +39,8 @@ import {
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import FocusTrap from 'focus-trap-react';
+import { useLongPress } from 'use-long-press';
+import { createPortal } from 'react-dom';
 import {
   useOrphanSpaces,
   useRecursiveChildScopeFactory,
@@ -91,6 +93,7 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
+import { MobileContextMenu } from '../../../molecules/mobile-context-menu/MobileContextMenu';
 
 type SpaceMenuProps = {
   room: Room;
