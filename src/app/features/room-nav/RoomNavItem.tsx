@@ -19,6 +19,8 @@ import {
 } from 'folds';
 import { useFocusWithin, useHover } from 'react-aria';
 import FocusTrap from 'focus-trap-react';
+import { useParams } from 'react-router-dom';
+import { useLongPress } from 'use-long-press';
 import { NavItem, NavItemContent, NavItemOptions, NavLink } from '../../components/nav';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
@@ -49,6 +51,10 @@ import {
   RoomNotificationMode,
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
+import { useCallState } from '../../pages/client/call/CallProvider';
+import { useRoomNavigate } from '../../hooks/useRoomNavigate';
+import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { MobileContextMenu } from '../../molecules/mobile-context-menu/MobileContextMenu';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -89,7 +95,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     };
 
     return (
-      <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
+      <Menu ref={ref}>
         <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
           <MenuItem
             onClick={handleMarkAsRead}
@@ -220,6 +226,11 @@ export function RoomNavItem({
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
+  const { navigateRoom } = useRoomNavigate();
+  const { roomIdOrAlias: viewedRoomId } = useParams();
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
+  const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
     evt.preventDefault();
@@ -235,7 +246,68 @@ export function RoomNavItem({
     setMenuAnchor(evt.currentTarget.getBoundingClientRect());
   };
 
-  const optionsVisible = hover || !!menuAnchor;
+  const handleNavItemClick: MouseEventHandler<HTMLElement> = (evt) => {
+    const target = evt.target as HTMLElement;
+    const chatButton = (evt.currentTarget as HTMLElement).querySelector(
+      '[data-testid="chat-button"]'
+    );
+    if (chatButton && chatButton.contains(target)) {
+      return;
+    }
+    if (room.isCallRoom()) {
+      if (!isMobile) {
+        if (activeCallRoomId !== room.roomId) {
+          if (mx.getRoom(viewedRoomId)?.isCallRoom()) {
+            navigateRoom(room.roomId);
+          }
+          hangUp(room.roomId);
+          setActiveCallRoomId(room.roomId);
+        } else {
+          navigateRoom(room.roomId);
+        }
+      } else {
+        evt.stopPropagation();
+        if (isChatOpen) toggleChat();
+        setViewedCallRoomId(room.roomId);
+        navigateRoom(room.roomId);
+      }
+    } else {
+      navigateRoom(room.roomId);
+    }
+  };
+
+  const handleChatButtonClick = (evt: MouseEvent<HTMLButtonElement>) => {
+    evt.stopPropagation();
+    if (!isChatOpen) toggleChat();
+    setViewedCallRoomId(room.roomId);
+  };
+
+  const handleCloseMenu = () => {
+    setMenuAnchor(undefined);
+    setMobileSheetOpen(false);
+  };
+
+  const optionsVisible = !isMobile && (hover || !!menuAnchor);
+
+  const longPressBinder = useLongPress(
+    () => {
+      if (isMobile) {
+        setMobileSheetOpen(true);
+      }
+    },
+    {
+      threshold: 400,
+      cancelOnMovement: true,
+    }
+  );
+
+  const menuContent = (
+    <RoomNavItemMenu
+      room={room}
+      requestClose={handleCloseMenu}
+      notificationMode={notificationMode}
+    />
+  );
 
   return (
     <NavItem
@@ -247,6 +319,7 @@ export function RoomNavItem({
       onContextMenu={handleContextMenu}
       {...hoverProps}
       {...focusWithinProps}
+      {...(isMobile ? longPressBinder() : {})}
     >
       <NavLink to={linkPath}>
         <NavItemContent>
@@ -317,11 +390,7 @@ export function RoomNavItem({
                   escapeDeactivates: stopPropagation,
                 }}
               >
-                <RoomNavItemMenu
-                  room={room}
-                  requestClose={() => setMenuAnchor(undefined)}
-                  notificationMode={notificationMode}
-                />
+                {menuContent}
               </FocusTrap>
             }
           >
@@ -337,6 +406,11 @@ export function RoomNavItem({
             </IconButton>
           </PopOut>
         </NavItemOptions>
+      )}
+      {isMobile && (
+        <MobileContextMenu onClose={handleCloseMenu} isOpen={isMobileSheetOpen}>
+          {menuContent}
+        </MobileContextMenu>
       )}
     </NavItem>
   );
