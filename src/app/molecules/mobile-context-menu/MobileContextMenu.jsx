@@ -5,6 +5,14 @@ import './MobileContextMenu.scss';
 
 export function MobileContextMenu({ isOpen, onClose, children }) {
   const { innerHeight } = window;
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overscrollBehavior = 'contain';
+    }
+    return () => {
+      document.body.style.overscrollBehavior = 'auto';
+    };
+  }, [isOpen]);
 
   const [{ y }, api] = useSpring(() => ({
     y: innerHeight,
@@ -49,11 +57,13 @@ export function MobileContextMenu({ isOpen, onClose, children }) {
         {...bind()}
         style={{
           y,
-          touchAction: 'pan-y',
+          touchAction: 'none',
         }}
       >
         <div className="bottom-sheet-grabber" />
-        <div className="bottom-sheet-content">{children}</div>
+        <div className="bottom-sheet-content" style={{ overflow: 'visible' }}>
+          {children}
+        </div>
       </animated.div>
     </>
   );
