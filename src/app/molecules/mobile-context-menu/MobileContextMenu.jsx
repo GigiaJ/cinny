@@ -24,9 +24,11 @@ export function MobileContextMenu({ isOpen, onClose, children }) {
   }, [api, innerHeight, isOpen]);
 
   const bind = useDrag(
-    ({ last, movement: [, my], velocities: [, vy] }) => {
+    ({ last, movement: [, my], event }) => {
       if (last) {
         if (my > innerHeight / 4) {
+          event.preventDefault();
+          event.stopPropagation();
           onClose();
         } else {
           api.start({ y: 0 });
