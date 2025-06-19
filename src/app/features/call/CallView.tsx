@@ -2,7 +2,6 @@
 import { Room } from 'matrix-js-sdk';
 import React, { useContext, useMemo, useCallback, useEffect, useRef } from 'react';
 import { Box } from 'folds';
-import { RoomViewHeader } from '../room/RoomViewHeader';
 import { useCallState } from '../../pages/client/call/CallProvider';
 import {
   PrimaryRefContext,
@@ -33,7 +32,7 @@ type OriginalStyles = {
   border?: string;
 };
 
-export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
+export function CallView({ room }: { room: Room }) {
   const primaryIframeRef = useContext(PrimaryRefContext);
   const backupIframeRef = useContext(BackupRefContext);
   const iframeHostRef = useRef<HTMLDivElement>(null);
@@ -141,7 +140,6 @@ export function CallView({ room, eventId }: { room: Room; eventId?: string }) {
         display: isCallViewVisible ? (isMobile && isChatOpen ? 'none' : 'flex') : 'none',
       }}
     >
-      <RoomViewHeader />
       <div
         ref={iframeHostRef}
         style={{

@@ -1,6 +1,6 @@
-import { Avatar, Box, Icon, Icons } from 'folds';
+import { Avatar, Box, Icon, Icons, Text } from 'folds';
 import React from 'react';
-import { Room, RoomMember } from 'matrix-js-sdk';
+import { Room } from 'matrix-js-sdk';
 import { NavItem, NavItemContent } from '../../components/nav';
 import { UserAvatar } from '../../components/user-avatar';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -41,7 +41,9 @@ export function RoomNavUser({ room, space, sender }: RoomNavUserProps) {
               renderFallback={() => <Icon size="50" src={Icons.User} filled />}
             />
           </Avatar>
-          {getName}
+          <Text size="B400" priority="300" truncate>
+            {getName}
+          </Text>
         </Box>
       </NavItemContent>
     </NavItem>

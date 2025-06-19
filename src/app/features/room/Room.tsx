@@ -1,3 +1,4 @@
+/* eslint-disable no-nested-ternary */
 import React, { useCallback } from 'react';
 import { Box, Line } from 'folds';
 import { useParams } from 'react-router-dom';
@@ -15,6 +16,7 @@ import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRoomMembers } from '../../hooks/useRoomMembers';
 import { CallView } from '../call/CallView';
 import { useCallState } from '../../pages/client/call/CallProvider';
+import { RoomViewHeader } from './RoomViewHeader';
 
 export function Room() {
   const { eventId } = useParams();
@@ -48,31 +50,42 @@ export function Room() {
           width: '100%',
           height: '100%',
           display: 'flex',
-          flexDirection: 'row',
+          flexDirection: 'column',
         }}
       >
-        <CallView room={room} eventId={eventId} />
-        {(!room.isCallRoom() || isChatOpen) && (
-          <Box
-            grow="Yes"
-            style={{
-              width: room.isCallRoom() ? (isChatOpen ? '40%' : '0%') : '100%',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fff' }}>
-              <RoomView room={room} eventId={eventId} />
+        {room.isCallRoom() && <RoomViewHeader />}
+        <Box
+          grow="Yes"
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'row',
+          }}
+        >
+          <CallView room={room} />
+          {(!room.isCallRoom() || isChatOpen) && (
+            <Box
+              grow="Yes"
+              style={{
+                width: room.isCallRoom() ? (isChatOpen ? '40%' : '0%') : '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
+              <Box style={{ flex: 1, minHeight: 0, overflowY: 'auto', background: '#fff' }}>
+                <RoomView room={room} eventId={eventId} />
+              </Box>
             </Box>
-          </Box>
-        )}
-        {screenSize === ScreenSize.Desktop && !room.isCallRoom() && isDrawer && (
-          <>
-            <Line variant="Background" direction="Vertical" size="300" />
-            <MembersDrawer key={room.roomId} room={room} members={members} />
-          </>
-        )}
+          )}
+          {screenSize === ScreenSize.Desktop && !room.isCallRoom() && isDrawer && (
+            <>
+              <Line variant="Background" direction="Vertical" size="300" />
+              <MembersDrawer key={room.roomId} room={room} members={members} />
+            </>
+          )}
+        </Box>
       </Box>
     </PowerLevelsContextProvider>
   );

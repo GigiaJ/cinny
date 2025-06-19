@@ -22,20 +22,7 @@ export function CallNavStatus() {
     }
   };
   if (!isCallActive) {
-    return (
-      <Box
-        direction="Column"
-        gap="500"
-        style={{
-          flexShrink: 0,
-          borderTop: `1px solid #e0e0e0`,
-        }}
-      >
-        <Text size="T200" color="Muted" align="Center">
-          No active call
-        </Text>
-      </Box>
-    );
+    return null;
   }
 
   return (
@@ -69,7 +56,7 @@ export function CallNavStatus() {
           offset={4}
           tooltip={
             <Tooltip>
-              <Text>{!isVideoEnabled ? 'Video on' : 'Video off'}</Text>
+              <Text>{!isVideoEnabled ? 'Video On' : 'Video Off'}</Text>
             </Tooltip>
           }
         >
@@ -85,7 +72,7 @@ export function CallNavStatus() {
           offset={4}
           tooltip={
             <Tooltip>
-              <Text>Hang up</Text>
+              <Text>Hang Up</Text>
             </Tooltip>
           }
         >
@@ -96,27 +83,28 @@ export function CallNavStatus() {
           )}
         </TooltipProvider>
 
-        <Box grow="Yes">
+        <Box grow="Yes" justifyContent="Center" alignItems="Center">
           <TooltipProvider
             position="Top"
             offset={4}
             tooltip={
               <Tooltip>
-                <Text>Go to room</Text>
+                <Text>Go to Room</Text>
               </Tooltip>
             }
           >
             {(triggerRef) => (
               <Chip
                 variant="Background"
-                radii="Inherit"
                 size="500"
                 fill="Soft"
                 as="button"
                 onClick={handleGoToCallRoom}
                 ref={triggerRef}
               >
-                {mx.getRoom(activeCallRoomId)?.normalizedName}
+                <Text style={{ flexGrow: 1 }} size="B400" truncate>
+                  {mx.getRoom(activeCallRoomId)?.name}
+                </Text>
               </Chip>
             )}
           </TooltipProvider>

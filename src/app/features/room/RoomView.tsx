@@ -99,7 +99,7 @@ export function RoomView({ room, eventId }: { room: Room; eventId?: string }) {
 
   return (
     <Page ref={roomViewRef}>
-      <RoomViewHeader />
+      {!room.isCallRoom() && <RoomViewHeader />}
       <Box grow="Yes" direction="Column" style={{ flex: 1, overflow: 'hidden', minHeight: 0 }}>
         <RoomTimeline
           key={roomId}
