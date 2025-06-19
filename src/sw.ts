@@ -19,6 +19,45 @@ function sendAndWaitForReply(client: WindowClient, type: string, payload: object
   return promise;
 }
 
+async function fetchWithRetry(
+  url: string,
+  token: string,
+  retries = 3,
+  delay = 250
+): Promise<Response> {
+  let lastError: Error | undefined;
+
+  /*  eslint-disable no-await-in-loop */
+  for (let attempt = 1; attempt <= retries; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      return response;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < retries) {
+        console.warn(
+          `Fetch attempt ${attempt} failed: ${lastError.message}. Retrying in ${delay}ms...`
+        );
+        await new Promise((res) => {
+          setTimeout(res, delay);
+        });
+      }
+    }
+  }
+  /*  eslint-enable no-await-in-loop */
+  throw new Error(`Fetch failed after ${retries} retries. Last error: ${lastError?.message}`);
+}
+
 function fetchConfig(token?: string): RequestInit | undefined {
   if (!token) return undefined;
 
@@ -81,8 +120,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
       if (!client) throw new Error('Client not found');
       const token = await sendAndWaitForReply(client, 'token', {});
       if (!token) throw new Error('Failed to retrieve token');
-      const response = await fetch(url, fetchConfig(token));
-      if (!response.ok) throw new Error(`Fetch failed: ${response.statusText}`);
+      const response = await fetchWithRetry(url, token);
       return response;
     })()
   );
