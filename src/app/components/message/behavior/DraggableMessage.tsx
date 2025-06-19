@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useSpring, animated } from '@react-spring/web';
 import { useDrag } from 'react-use-gesture';
 import { Icon, Icons } from 'folds';
@@ -23,19 +23,20 @@ export function DraggableMessage({
   const isMobile = screenSize === ScreenSize.Mobile;
 
   const canEdit = mx.getUserId() === event.getSender();
-  const REPLY_THRESHOLD = 80;
-  const EDIT_THRESHOLD = canEdit ? 250 : Infinity;
+  const REPLY_THRESHOLD = 30;
+  const EDIT_THRESHOLD = canEdit ? 180 : Infinity;
 
-  const [{ x, replyOpacity, editOpacity, iconScale }, api] = useSpring(() => ({
+  const [isEditVisible, setEditVisible] = useState(false);
+
+  const [{ x, replyOpacity, iconScale }, api] = useSpring(() => ({
     x: 0,
     replyOpacity: 0,
-    editOpacity: 0,
     iconScale: 0.5,
     config: { tension: 250, friction: 25 },
   }));
 
   const bind = useDrag(
-    ({ down, movement: [mvx], vxvy: [vx] }) => {
+    ({ down, movement: [mvx] }) => {
       if (!down) {
         const finalDistance = Math.abs(mvx);
 
@@ -49,19 +50,18 @@ export function DraggableMessage({
       const xTarget = down ? Math.min(0, mvx) : 0;
       const distance = Math.abs(xTarget);
 
+      setEditVisible(canEdit && distance >= EDIT_THRESHOLD);
+
       let newReplyOpacity = 0;
-      let newEditOpacity = 0;
       let newScale = 1.0;
 
-      if (canEdit && distance > REPLY_THRESHOLD) {
+      if (canEdit && (distance < REPLY_THRESHOLD || distance >= EDIT_THRESHOLD)) {
         newReplyOpacity = 0;
-        newEditOpacity = 1;
         if (down && distance > EDIT_THRESHOLD) {
           newScale = 1.1;
         }
       } else {
         newReplyOpacity = 1;
-        newEditOpacity = 0;
         newScale = 0.5 + (distance / REPLY_THRESHOLD) * 0.5;
       }
 
@@ -72,7 +72,6 @@ export function DraggableMessage({
       api.start({
         x: xTarget,
         replyOpacity: newReplyOpacity,
-        editOpacity: newEditOpacity,
         iconScale: newScale,
       });
     },
@@ -82,6 +81,7 @@ export function DraggableMessage({
       threshold: 10,
     }
   );
+
   if (isMobile) {
     return (
       <div className={container}>
@@ -99,7 +99,7 @@ export function DraggableMessage({
           <animated.div
             className={icon}
             style={{
-              opacity: editOpacity,
+              opacity: isEditVisible ? 1 : 0,
               transform: iconScale.to((s) => `scale(${s})`),
             }}
           >
