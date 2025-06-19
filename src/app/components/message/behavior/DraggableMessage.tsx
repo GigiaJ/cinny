@@ -47,7 +47,7 @@ export function DraggableMessage({
         }
       }
 
-      const xTarget = down ? Math.min(0, mvx) : 0;
+      const xTarget = down ? mvx : 0;
       const distance = Math.abs(xTarget);
 
       setEditVisible(canEdit && distance >= EDIT_THRESHOLD);
@@ -79,6 +79,7 @@ export function DraggableMessage({
       axis: 'x',
       filterTaps: true,
       threshold: 10,
+      bounds: { right: 0 },
     }
   );
 
