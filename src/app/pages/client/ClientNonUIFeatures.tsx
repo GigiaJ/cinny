@@ -212,11 +212,6 @@ function MessageNotifications() {
       ) {
         return;
       }
-      try {
-        navigator.setAppBadge(unreadInfo.total);
-      } catch (e) {
-        // Likely Firefox/Gecko-based and doesn't support badging API
-      }
 
       if (showNotifications && notificationPermission('granted')) {
         const avatarMxc =
