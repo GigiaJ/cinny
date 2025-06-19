@@ -197,7 +197,6 @@ export function MessageOptionsMenu({
 }: ExtendedOptionsProps) {
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
-  const [view, setView] = useState('options');
 
   const eventId = mEvent.getId();
   if (!eventId) return null;
@@ -247,7 +246,7 @@ export function MessageOptionsMenu({
             }}
             isOpen={isEmojiBoardOpen}
           >
-            <Suspense fallback={<p>Loading</p>}>
+            <Suspense fallback={<p> </p>}>
               <EmojiBoard
                 imagePackRooms={imagePackRooms ?? []}
                 returnFocusOnDeactivate
@@ -287,20 +286,22 @@ export function MessageOptionsMenu({
               offset={emojiBoardAnchor?.width === 0 ? 0 : undefined}
               anchor={emojiBoardAnchor}
               content={
-                <EmojiBoard
-                  imagePackRooms={imagePackRooms ?? []}
-                  returnFocusOnDeactivate={false}
-                  allowTextCustomEmoji
-                  onEmojiSelect={(key) => {
-                    onReactionToggle(eventId, key);
-                    setEmojiBoardAnchor(undefined);
-                  }}
-                  onCustomEmojiSelect={(mxc, shortcode) => {
-                    onReactionToggle(eventId, mxc, shortcode);
-                    setEmojiBoardAnchor(undefined);
-                  }}
-                  requestClose={() => setEmojiBoardAnchor(undefined)}
-                />
+                <Suspense fallback={<p> </p>}>
+                  <EmojiBoard
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={false}
+                    allowTextCustomEmoji
+                    onEmojiSelect={(key) => {
+                      onReactionToggle(eventId, key);
+                      setEmojiBoardAnchor(undefined);
+                    }}
+                    onCustomEmojiSelect={(mxc, shortcode) => {
+                      onReactionToggle(eventId, mxc, shortcode);
+                      setEmojiBoardAnchor(undefined);
+                    }}
+                    requestClose={() => setEmojiBoardAnchor(undefined)}
+                  />
+                </Suspense>
               }
             >
               <IconButton
