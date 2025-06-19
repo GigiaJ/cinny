@@ -23,7 +23,7 @@ export function DraggableMessage({
   const isMobile = screenSize === ScreenSize.Mobile;
 
   const canEdit = mx.getUserId() === event.getSender();
-  const REPLY_THRESHOLD = 30;
+  const REPLY_THRESHOLD = 50;
   const EDIT_THRESHOLD = canEdit ? 180 : Infinity;
 
   const [isEditVisible, setEditVisible] = useState(false);
@@ -55,7 +55,7 @@ export function DraggableMessage({
       let newReplyOpacity = 0;
       let newScale = 1.0;
 
-      if (canEdit && (distance < REPLY_THRESHOLD || distance >= EDIT_THRESHOLD)) {
+      if (canEdit && (distance <= REPLY_THRESHOLD || distance >= EDIT_THRESHOLD)) {
         newReplyOpacity = 0;
         if (down && distance > EDIT_THRESHOLD) {
           newScale = 1.1;
