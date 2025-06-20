@@ -1,12 +1,22 @@
-import { Box, Icon, IconButton, Icons, Line, Menu, MenuItem, PopOut, RectCords, Text } from 'folds';
-import React, { forwardRef, MouseEventHandler, useEffect } from 'react';
+import {
+  Box,
+  Header,
+  Icon,
+  IconButton,
+  Icons,
+  Line,
+  Menu,
+  MenuItem,
+  PopOut,
+  RectCords,
+  Text,
+} from 'folds';
+import React, { forwardRef, lazy, MouseEventHandler, Suspense, useEffect, useState } from 'react';
 
 import FocusTrap from 'focus-trap-react';
-import classNames from 'classnames';
 import { MatrixClient, MatrixEvent, Relations, Room } from 'matrix-js-sdk';
-import { EmojiBoard } from '../../components/emoji-board';
-import { stopPropagation } from '../../utils/keyboard';
-import * as css from './message/styles.css';
+import { stopPropagation } from '../../../utils/keyboard';
+import * as css from './styles.css';
 
 import {
   MessageAllReactionItem,
@@ -17,7 +27,13 @@ import {
   MessageReadReceiptItem,
   MessageReportItem,
   MessageSourceCodeItem,
-} from './message/Message';
+} from './Message';
+import { ScreenSize, useScreenSizeContext } from '../../../hooks/useScreenSize';
+import MobileContextMenu from '../../../molecules/mobile-context-menu/MobileContextMenu';
+
+const EmojiBoard = lazy(() =>
+  import('../../../components/emoji-board').then((module) => ({ default: module.EmojiBoard }))
+);
 
 type BaseOptionProps = {
   mEvent: MatrixEvent;
@@ -71,7 +87,10 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
             size="300"
             after={<Icon size="100" src={Icons.SmilePlus} />}
             radii="300"
-            onClick={handleAddReactions}
+            onClick={(e) => {
+              handleAddReactions(e);
+              closeMenu();
+            }}
           >
             <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
               Add Reaction
@@ -79,7 +98,7 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
           </MenuItem>
         )}
         {relations && (
-          <MessageAllReactionItem room={room} relations={relations} onClose={closeMenu} />
+          <MessageAllReactionItem room={room} relations={relations} onClose={() => {}} />
         )}
         <MenuItem
           size="300"
@@ -137,13 +156,16 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
 
 type ExtendedOptionsProps = BaseOptionProps & {
   imagePackRooms: Room[] | undefined;
-  onActiveStateChange: React.Dispatch<React.SetStateAction<boolean>>;
   menuAnchor: RectCords | undefined;
   emojiBoardAnchor: RectCords | undefined;
   handleOpenEmojiBoard: MouseEventHandler<HTMLButtonElement>;
   handleOpenMenu: MouseEventHandler<HTMLButtonElement>;
   setMenuAnchor: React.Dispatch<React.SetStateAction<RectCords | undefined>>;
   setEmojiBoardAnchor: React.Dispatch<React.SetStateAction<RectCords | undefined>>;
+  isOptionsMenuOpen;
+  setOptionsMenuOpen;
+  isEmojiBoardOpen;
+  setEmojiBoardOpen;
 };
 
 export function MessageOptionsMenu({
@@ -160,7 +182,6 @@ export function MessageOptionsMenu({
   onReactionToggle,
   onReplyClick,
   onEditId,
-  onActiveStateChange,
   closeMenu,
   menuAnchor,
   emojiBoardAnchor,
@@ -169,13 +190,90 @@ export function MessageOptionsMenu({
   handleAddReactions,
   setMenuAnchor,
   setEmojiBoardAnchor,
+  isOptionsMenuOpen,
+  setOptionsMenuOpen,
+  isEmojiBoardOpen,
+  setEmojiBoardOpen,
 }: ExtendedOptionsProps) {
-  useEffect(() => {
-    onActiveStateChange?.(!!menuAnchor || !!emojiBoardAnchor);
-  }, [emojiBoardAnchor, menuAnchor, onActiveStateChange]);
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
 
   const eventId = mEvent.getId();
   if (!eventId) return null;
+
+  const optionProps: BaseOptionProps = {
+    mEvent,
+    room,
+    mx,
+    relations,
+    canSendReaction,
+    canEdit,
+    canDelete,
+    canPinEvent,
+    hideReadReceipts,
+    onReactionToggle,
+    onReplyClick,
+    onEditId,
+    handleAddReactions,
+    closeMenu,
+  };
+
+  if (isMobile) {
+    return (
+      <>
+        {isOptionsMenuOpen && (
+          <MobileContextMenu
+            onClose={() => {
+              closeMenu();
+            }}
+            isOpen={isOptionsMenuOpen}
+          >
+            <MessageDropdownMenu
+              {...optionProps}
+              closeMenu={() => {
+                closeMenu();
+              }}
+              handleAddReactions={handleAddReactions}
+            />
+          </MobileContextMenu>
+        )}
+
+        {isEmojiBoardOpen && (
+          <MobileContextMenu
+            onClose={() => {
+              closeMenu();
+              setEmojiBoardOpen(false);
+            }}
+            isOpen={isEmojiBoardOpen}
+          >
+            <Suspense fallback={<p> </p>}>
+              <EmojiBoard
+                imagePackRooms={imagePackRooms ?? []}
+                returnFocusOnDeactivate
+                allowTextCustomEmoji
+                onEmojiSelect={(key) => {
+                  onReactionToggle(mEvent.getId(), key);
+                  setEmojiBoardAnchor(undefined);
+                  setEmojiBoardOpen(false);
+                  (document.activeElement as HTMLElement)?.blur();
+                }}
+                onCustomEmojiSelect={(mxc, shortcode) => {
+                  onReactionToggle(mEvent.getId(), mxc, shortcode);
+                  setEmojiBoardAnchor(undefined);
+                  setEmojiBoardOpen(false);
+                  (document.activeElement as HTMLElement)?.blur();
+                }}
+                requestClose={() => {
+                  setEmojiBoardAnchor(undefined);
+                  setEmojiBoardOpen(false);
+                }}
+              />
+            </Suspense>
+          </MobileContextMenu>
+        )}
+      </>
+    );
+  }
 
   return (
     <div className={css.MessageOptionsBase}>
@@ -188,20 +286,22 @@ export function MessageOptionsMenu({
               offset={emojiBoardAnchor?.width === 0 ? 0 : undefined}
               anchor={emojiBoardAnchor}
               content={
-                <EmojiBoard
-                  imagePackRooms={imagePackRooms ?? []}
-                  returnFocusOnDeactivate={false}
-                  allowTextCustomEmoji
-                  onEmojiSelect={(key) => {
-                    onReactionToggle(eventId, key);
-                    setEmojiBoardAnchor(undefined);
-                  }}
-                  onCustomEmojiSelect={(mxc, shortcode) => {
-                    onReactionToggle(eventId, mxc, shortcode);
-                    setEmojiBoardAnchor(undefined);
-                  }}
-                  requestClose={() => setEmojiBoardAnchor(undefined)}
-                />
+                <Suspense fallback={<p> </p>}>
+                  <EmojiBoard
+                    imagePackRooms={imagePackRooms ?? []}
+                    returnFocusOnDeactivate={false}
+                    allowTextCustomEmoji
+                    onEmojiSelect={(key) => {
+                      onReactionToggle(eventId, key);
+                      setEmojiBoardAnchor(undefined);
+                    }}
+                    onCustomEmojiSelect={(mxc, shortcode) => {
+                      onReactionToggle(eventId, mxc, shortcode);
+                      setEmojiBoardAnchor(undefined);
+                    }}
+                    requestClose={() => setEmojiBoardAnchor(undefined)}
+                  />
+                </Suspense>
               }
             >
               <IconButton
@@ -250,22 +350,7 @@ export function MessageOptionsMenu({
                   escapeDeactivates: stopPropagation,
                 }}
               >
-                <MessageDropdownMenu
-                  mEvent={mEvent}
-                  room={room}
-                  mx={mx}
-                  relations={relations}
-                  canSendReaction={canSendReaction}
-                  canEdit={canEdit}
-                  canDelete={canDelete}
-                  canPinEvent={canPinEvent}
-                  hideReadReceipts={hideReadReceipts}
-                  onReactionToggle={onReactionToggle}
-                  onReplyClick={onReplyClick}
-                  onEditId={onEditId}
-                  handleAddReactions={handleAddReactions}
-                  closeMenu={closeMenu}
-                />
+                <MessageDropdownMenu {...optionProps} />
               </FocusTrap>
             }
           >
@@ -282,59 +367,5 @@ export function MessageOptionsMenu({
         </Box>
       </Menu>
     </div>
-  );
-}
-
-export function BottomSheetMenu({
-  isOpen,
-  onClose,
-  children,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, pointerEvents: isOpen ? 'auto' : 'none' }}
-    >
-      <div
-        className={classNames(css.menuBackdrop, { [css.menuBackdropOpen]: isOpen })}
-        onClick={onClose}
-        aria-hidden="true"
-      />
-      <div
-        className={classNames(css.menuSheet, { [css.menuSheetOpen]: isOpen })}
-        role="dialog"
-        aria-modal="true"
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-export function MenuItemButton({
-  label,
-  onClick,
-  destructive = false,
-}: {
-  label: string;
-  onClick: () => void;
-  destructive?: boolean;
-}) {
-  return (
-    <Box
-      as="button"
-      onClick={onClick}
-      alignItems="Center"
-      gap="400"
-      className={classNames(css.menuItem, { [css.menuItemDestructive]: destructive })}
-    >
-      <Icon src={Icons.Alphabet} size="100" />
-      <Text size="B300" style={{ color: 'inherit' }}>
-        {label}
-      </Text>
-    </Box>
   );
 }

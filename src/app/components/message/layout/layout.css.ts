@@ -183,17 +183,6 @@ export const MessageTextBody = recipe({
       },
     },
   },
-
-  '@media': {
-    'screen and (max-width: 768px)': {
-      base: {
-        userSelect: 'none',
-        WebkitUserSelect: 'none',
-        MozUserSelect: 'none',
-        msUserSelect: 'none',
-      },
-    },
-  },
 });
 
 export type MessageTextBodyVariants = RecipeVariants<typeof MessageTextBody>;
