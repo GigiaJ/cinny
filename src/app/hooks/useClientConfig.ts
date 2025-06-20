@@ -17,6 +17,12 @@ export type ClientConfig = {
     webPushAppID?: string;
   };
 
+  pushNotificationDetails?: {
+    pushNotifyUrl?: string;
+    vapidPublicKey?: string;
+    webPushAppID?: string;
+  };
+
   featuredCommunities?: {
     openAsDefault?: boolean;
     spaces?: string[];
