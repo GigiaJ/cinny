@@ -43,6 +43,7 @@ function CreateRoomContent({ isSpace, parentId, onRequestClose }) {
   const [isValidAddress, setIsValidAddress] = useState(null);
   const [addressValue, setAddressValue] = useState(undefined);
   const [roleIndex, setRoleIndex] = useState(0);
+  const [roomType, setRoomType] = useState(0);
 
   const addressRef = useRef(null);
 
@@ -75,6 +76,7 @@ function CreateRoomContent({ isSpace, parentId, onRequestClose }) {
         joinRule,
         alias: roomAlias,
         isEncrypted: isSpace || joinRule === 'public' ? false : isEncrypted,
+        roomType,
         powerLevel,
         isSpace,
         parentId,
@@ -218,6 +220,19 @@ function CreateRoomContent({ isSpace, parentId, onRequestClose }) {
             <Text variant="b3">Selecting Admin sets 100 power level whereas Founder sets 101.</Text>
           }
         />
+        {!isSpace && (
+          <SettingTile
+            title="Room type"
+            options={
+              <SegmentControl
+                selected={roomType}
+                segments={[{ text: 'Text' }, { text: 'Call' }]}
+                onSelect={setRoomType}
+              />
+            }
+            content={<Text variant="b3">Select the type of room.</Text>}
+          />
+        )}
         <Input name="topic" minHeight={174} resizable label="Topic (optional)" />
         <div className="create-room__name-wrapper">
           <Input name="name" label={`${isSpace ? 'Space' : 'Room'} name`} required />
