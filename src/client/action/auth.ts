@@ -1,4 +1,5 @@
-import cons from '../state/cons';
+import { setLocalStorageItem } from '../../app/state/utils/atomWithLocalStorage';
+import { Session } from '../../app/state/sessions';
 
 export function updateLocalStore(
   accessToken: string,
@@ -6,8 +7,13 @@ export function updateLocalStore(
   userId: string,
   baseUrl: string
 ) {
-  localStorage.setItem(cons.secretKey.ACCESS_TOKEN, accessToken);
-  localStorage.setItem(cons.secretKey.DEVICE_ID, deviceId);
-  localStorage.setItem(cons.secretKey.USER_ID, userId);
-  localStorage.setItem(cons.secretKey.BASE_URL, baseUrl);
+  const newSession: Session = {
+    accessToken,
+    deviceId,
+    userId,
+    baseUrl,
+    fallbackSdkStores: false,
+  };
+
+  setLocalStorageItem('matrixSessions', [newSession]);
 }
