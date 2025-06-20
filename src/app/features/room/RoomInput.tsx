@@ -112,6 +112,7 @@ import { GetPowerLevelTag } from '../../hooks/usePowerLevelTags';
 import { powerLevelAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import colorMXID from '../../../util/colorMXID';
 import { useIsDirectRoom } from '../../hooks/useRoom';
+import { useMessageDraft } from '../../hooks/useMessageDraft';
 
 interface RoomInputProps {
   editor: Editor;
@@ -135,7 +136,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
 
-    const [msgDraft, setMsgDraft] = useAtom(roomIdToMsgDraftAtomFamily(roomId));
+    const [msgDraft, setMsgDraft, clearMsgDraft] = useMessageDraft(roomId);
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
 
@@ -209,23 +210,28 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       useCallback((width) => setHideStickerBtn(width < 500), [])
     );
 
-    useEffect(() => {
-      Transforms.insertFragment(editor, msgDraft);
-    }, [editor, msgDraft]);
-
     useEffect(
       () => () => {
-        if (!isEmptyEditor(editor)) {
-          const parsedDraft = JSON.parse(JSON.stringify(editor.children));
-          setMsgDraft(parsedDraft);
-        } else {
-          setMsgDraft([]);
-        }
-        resetEditor(editor);
-        resetEditorHistory(editor);
+        setMsgDraft([...editor.children]);
       },
-      [roomId, editor, setMsgDraft]
+      [editor, setMsgDraft]
     );
+
+    useEffect(() => {
+      if (msgDraft && msgDraft.length > 0 && isEmptyEditor(editor)) {
+        resetEditor(editor);
+        Transforms.insertFragment(editor, msgDraft);
+        Transforms.select(editor, Editor.end(editor, []));
+      }
+    }, [editor, msgDraft]);
+
+    useEffect(() => {
+      if (msgDraft && msgDraft.length > 0 && isEmptyEditor(editor)) {
+        resetEditor(editor);
+        Transforms.insertFragment(editor, msgDraft);
+        Transforms.select(editor, Editor.end(editor, []));
+      }
+    }, [editor, msgDraft]);
 
     const handleFileMetadata = useCallback(
       (fileItem: TUploadItem, metadata: TUploadMetadata) => {
@@ -357,11 +363,22 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       }
       mx.sendMessage(roomId, content);
+      clearMsgDraft();
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands]);
+    }, [
+      editor,
+      isMarkdown,
+      mx,
+      roomId,
+      replyDraft,
+      clearMsgDraft,
+      setReplyDraft,
+      sendTypingStatus,
+      commands,
+    ]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
