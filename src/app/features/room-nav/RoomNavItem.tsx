@@ -22,6 +22,7 @@ import {
 import { useFocusWithin, useHover } from 'react-aria';
 import FocusTrap from 'focus-trap-react';
 import { useParams } from 'react-router-dom';
+import { useLongPress } from 'use-long-press';
 import { NavItem, NavItemContent, NavItemOptions, NavLink } from '../../components/nav';
 import { UnreadBadge, UnreadBadgeCenter } from '../../components/unread-badge';
 import { RoomAvatar, RoomIcon } from '../../components/room-avatar';
@@ -55,6 +56,7 @@ import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationS
 import { useCallState } from '../../pages/client/call/CallProvider';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
+import { MobileContextMenu } from '../../molecules/mobile-context-menu/MobileContextMenu';
 
 type RoomNavItemMenuProps = {
   room: Room;
@@ -71,6 +73,8 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     const canInvite = canDoAction('invite', getPowerLevel(mx.getUserId() ?? ''));
     const openRoomSettings = useOpenRoomSettings();
     const space = useSpaceOptionally();
+    const screenSize = useScreenSizeContext();
+    const isMobile = screenSize === ScreenSize.Mobile;
 
     const handleMarkAsRead = () => {
       markAsRead(mx, room.roomId, hideActivity);
@@ -95,7 +99,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     };
 
     return (
-      <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
+      <Menu ref={ref}>
         <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
           <MenuItem
             onClick={handleMarkAsRead}
@@ -236,14 +240,20 @@ export function RoomNavItem({
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
+
   const isActiveCall = isCallActive && activeCallRoomId === room.roomId;
   const { navigateRoom } = useRoomNavigate();
   const { roomIdOrAlias: viewedRoomId } = useParams();
   const screenSize = useScreenSizeContext();
   const isMobile = screenSize === ScreenSize.Mobile;
+  const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   const handleContextMenu: MouseEventHandler<HTMLElement> = (evt) => {
     evt.preventDefault();
+
+    if (isMobile) {
+      //  return;
+    }
     setMenuAnchor({
       x: evt.clientX,
       y: evt.clientY,
@@ -292,7 +302,32 @@ export function RoomNavItem({
     setViewedCallRoomId(room.roomId);
   };
 
-  const optionsVisible = hover || !!menuAnchor;
+  const handleCloseMenu = () => {
+    setMenuAnchor(undefined);
+    setMobileSheetOpen(false);
+  };
+
+  const optionsVisible = !isMobile && (hover || !!menuAnchor);
+
+  const longPressBinder = useLongPress(
+    () => {
+      if (isMobile) {
+        setMobileSheetOpen(true);
+      }
+    },
+    {
+      threshold: 400,
+      cancelOnMovement: true,
+    }
+  );
+
+  const menuContent = (
+    <RoomNavItemMenu
+      room={room}
+      requestClose={handleCloseMenu}
+      notificationMode={notificationMode}
+    />
+  );
 
   return (
     <NavItem
@@ -304,6 +339,7 @@ export function RoomNavItem({
       onContextMenu={handleContextMenu}
       {...hoverProps}
       {...focusWithinProps}
+      {...(isMobile ? longPressBinder() : {})}
     >
       <NavItemContent onClick={handleNavItemClick}>
         <Box as="span" grow="Yes" alignItems="Center" gap="200">
@@ -380,11 +416,7 @@ export function RoomNavItem({
                   escapeDeactivates: stopPropagation,
                 }}
               >
-                <RoomNavItemMenu
-                  room={room}
-                  requestClose={() => setMenuAnchor(undefined)}
-                  notificationMode={notificationMode}
-                />
+                {menuContent}
               </FocusTrap>
             }
           >
@@ -428,6 +460,11 @@ export function RoomNavItem({
             </IconButton>
           </PopOut>
         </NavItemOptions>
+      )}
+      {isMobile && (
+        <MobileContextMenu onClose={handleCloseMenu} isOpen={isMobileSheetOpen}>
+          {menuContent}
+        </MobileContextMenu>
       )}
     </NavItem>
   );
