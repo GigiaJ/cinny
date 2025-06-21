@@ -1,4 +1,4 @@
-import React, { MouseEventHandler, forwardRef, useState } from 'react';
+import React, { MouseEventHandler, forwardRef, useState, MouseEvent } from 'react';
 import { Room } from 'matrix-js-sdk';
 import {
   Avatar,
@@ -203,6 +203,7 @@ const RoomNavItemMenu = forwardRef<HTMLDivElement, RoomNavItemMenuProps>(
     );
   }
 );
+RoomNavItemMenu.displayName = 'RoomNavItemMenu';
 
 type RoomNavItemProps = {
   room: Room;
@@ -227,9 +228,19 @@ export function RoomNavItem({
   const { focusWithinProps } = useFocusWithin({ onFocusWithinChange: setHover });
   const [menuAnchor, setMenuAnchor] = useState<RectCords>();
   const unread = useRoomUnread(room.roomId, roomToUnreadAtom);
+  const {
+    isCallActive,
+    activeCallRoomId,
+    setActiveCallRoomId,
+    setViewedCallRoomId,
+    isChatOpen,
+    toggleChat,
+    hangUp,
+  } = useCallState();
   const typingMember = useRoomTypingMember(room.roomId).filter(
     (receipt) => receipt.userId !== mx.getUserId()
   );
+  const isActiveCall = isCallActive && activeCallRoomId === room.roomId;
   const { navigateRoom } = useRoomNavigate();
   const { roomIdOrAlias: viewedRoomId } = useParams();
   const screenSize = useScreenSizeContext();
@@ -349,8 +360,11 @@ export function RoomNavItem({
               />
             ) : (
               <RoomIcon
-                style={{ opacity: unread ? config.opacity.P500 : config.opacity.P300 }}
-                filled={selected}
+
+                style={{
+                  opacity: unread || isActiveCall ? config.opacity.P500 : config.opacity.P300,
+                }}
+                filled={selected || isActiveCall}
                 size="100"
                 joinRule={room.getJoinRule()}
                 call={room.isCallRoom()}
@@ -358,7 +372,12 @@ export function RoomNavItem({
             )}
           </Avatar>
           <Box as="span" grow="Yes">
-            <Text priority={unread ? '500' : '300'} as="span" size="Inherit" truncate>
+            <Text
+              priority={unread || isActiveCall ? '500' : '300'}
+              as="span"
+              size="Inherit"
+              truncate
+            >
               {room.name}
             </Text>
           </Box>
@@ -416,7 +435,7 @@ export function RoomNavItem({
                     ref={triggerRef}
                     data-testid="chat-button"
                     onClick={handleChatButtonClick}
-                    aria-pressed={isChatOpen}
+                    aria-pressed={isChatOpen && selected}
                     variant="Background"
                     fill="None"
                     size="300"
