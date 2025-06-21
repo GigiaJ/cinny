@@ -37,6 +37,8 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
+import { togglePusher } from '../../features/settings/notifications/PushNotifications';
+import { ClientConfig, useClientConfig } from '../../hooks/useClientConfig';
 
 function ClientRootLoading() {
   return (
@@ -124,6 +126,12 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   );
 }
 
+const pushNotificationListener = (mx: MatrixClient, clientConfig: ClientConfig) => {
+  document.addEventListener('visibilitychange', () => {
+    togglePusher(mx, clientConfig, document.visibilityState === 'visible');
+  });
+};
+
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
@@ -146,6 +154,7 @@ type ClientRootProps = {
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
   const { baseUrl } = getSecret();
+  const clientConfig = useClientConfig();
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(() => initClient(getSecret() as any), [])
@@ -171,13 +180,16 @@ export function ClientRoot({ children }: ClientRootProps) {
 
   useSyncState(
     mx,
-    useCallback((state) => {
-      if (state === 'PREPARED') {
-        setLoading(false);
-      }
-    }, [])
+    useCallback(
+      (state) => {
+        if (state === 'PREPARED') {
+          setLoading(false);
+          pushNotificationListener(mx, clientConfig);
+        }
+      },
+      [clientConfig, mx]
+    )
   );
-
   return (
     <SpecVersions baseUrl={baseUrl!}>
       {mx && <SyncStatus mx={mx} />}
