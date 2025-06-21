@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback, useTransition } from 'react';
 import { NavigateOptions, useNavigate } from 'react-router-dom';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { getCanonicalAliasOrRoomId } from '../utils/matrix';
 import {
   getDirectRoomPath,
@@ -15,6 +15,7 @@ import { mDirectAtom } from '../state/mDirectList';
 import { useSelectedSpace } from './router/useSelectedSpace';
 import { settingsAtom } from '../state/settings';
 import { useSetting } from '../state/hooks/settings';
+import { pendingRoomIdAtom } from '../state/room-list/roomList';
 
 export const useRoomNavigate = () => {
   const navigate = useNavigate();
@@ -23,50 +24,70 @@ export const useRoomNavigate = () => {
   const mDirects = useAtomValue(mDirectAtom);
   const spaceSelectedId = useSelectedSpace();
   const [developerTools] = useSetting(settingsAtom, 'developerTools');
+  const [isPending, startTransition] = useTransition();
+  const setPendingRoomId = useSetAtom(pendingRoomIdAtom);
 
   const navigateSpace = useCallback(
     (roomId: string) => {
-      const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
-      navigate(getSpacePath(roomIdOrAlias));
+      setPendingRoomId(roomId);
+      startTransition(() => {
+        const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
+        navigate(getSpacePath(roomIdOrAlias));
+      });
     },
-    [mx, navigate]
+    [mx, navigate, setPendingRoomId, startTransition] // Add new dependencies
   );
 
   const navigateRoom = useCallback(
     (roomId: string, eventId?: string, opts?: NavigateOptions) => {
-      const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
-      const openSpaceTimeline = developerTools && spaceSelectedId === roomId;
+      setPendingRoomId(roomId);
+      startTransition(() => {
+        const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
+        const openSpaceTimeline = developerTools && spaceSelectedId === roomId;
 
-      const orphanParents = openSpaceTimeline ? [roomId] : getOrphanParents(roomToParents, roomId);
-      if (orphanParents.length > 0) {
-        const pSpaceIdOrAlias = getCanonicalAliasOrRoomId(
-          mx,
-          spaceSelectedId && orphanParents.includes(spaceSelectedId)
-            ? spaceSelectedId
-            : orphanParents[0] // TODO: better orphan parent selection.
-        );
+        const orphanParents = openSpaceTimeline
+          ? [roomId]
+          : getOrphanParents(roomToParents, roomId);
+        if (orphanParents.length > 0) {
+          const pSpaceIdOrAlias = getCanonicalAliasOrRoomId(
+            mx,
+            spaceSelectedId && orphanParents.includes(spaceSelectedId)
+              ? spaceSelectedId
+              : orphanParents[0]
+          );
 
-        if (openSpaceTimeline) {
-          navigate(getSpaceRoomPath(pSpaceIdOrAlias, roomId, eventId), opts);
+          if (openSpaceTimeline) {
+            navigate(getSpaceRoomPath(pSpaceIdOrAlias, roomId, eventId), opts);
+            return;
+          }
+
+          navigate(getSpaceRoomPath(pSpaceIdOrAlias, roomIdOrAlias, eventId), opts);
           return;
         }
 
-        navigate(getSpaceRoomPath(pSpaceIdOrAlias, roomIdOrAlias, eventId), opts);
-        return;
-      }
+        if (mDirects.has(roomId)) {
+          navigate(getDirectRoomPath(roomIdOrAlias, eventId), opts);
+          return;
+        }
 
-      if (mDirects.has(roomId)) {
-        navigate(getDirectRoomPath(roomIdOrAlias, eventId), opts);
-        return;
-      }
-
-      navigate(getHomeRoomPath(roomIdOrAlias, eventId), opts);
+        navigate(getHomeRoomPath(roomIdOrAlias, eventId), opts);
+      });
     },
-    [mx, navigate, spaceSelectedId, roomToParents, mDirects, developerTools]
+    [
+      mx,
+      navigate,
+      spaceSelectedId,
+      roomToParents,
+      mDirects,
+      developerTools,
+      setPendingRoomId,
+      startTransition,
+    ]
   );
 
   return {
     navigateSpace,
     navigateRoom,
+    isPending,
   };
 };
