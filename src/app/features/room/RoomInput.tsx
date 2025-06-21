@@ -11,7 +11,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor } from 'slate';
+import { Transforms, Editor, Descendant } from 'slate';
 import {
   Box,
   Dialog,
@@ -139,6 +139,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const [msgDraft, setMsgDraft, clearMsgDraft] = useMessageDraft(roomId);
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
+    const lastLoadedDraft = useRef<Descendant[] | null>(null);
 
     const replyPowerTag = getPowerLevelTag(powerLevelAPI.getPowerLevel(powerLevels, replyUserID));
     const replyPowerColor = replyPowerTag.color
@@ -218,20 +219,27 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      if (msgDraft && msgDraft.length > 0 && isEmptyEditor(editor)) {
+      if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
-        Transforms.insertFragment(editor, msgDraft);
-        Transforms.select(editor, Editor.end(editor, []));
+        lastLoadedDraft.current = null;
+        return;
       }
-    }, [editor, msgDraft]);
 
-    useEffect(() => {
-      if (msgDraft && msgDraft.length > 0 && isEmptyEditor(editor)) {
+      const currentEditorContent = [...editor.children];
+      const currentContentStr = JSON.stringify(currentEditorContent);
+      const lastLoadedDraftStr = JSON.stringify(lastLoadedDraft.current);
+
+      if (isEmptyEditor(editor) || currentContentStr === lastLoadedDraftStr) {
+        console.debug('Applying new server draft to editor.');
         resetEditor(editor);
         Transforms.insertFragment(editor, msgDraft);
         Transforms.select(editor, Editor.end(editor, []));
+
+        lastLoadedDraft.current = msgDraft;
+      } else {
+        console.debug('New server draft received, but local draft is dirty. Ignoring.');
       }
-    }, [editor, msgDraft]);
+    }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
       (fileItem: TUploadItem, metadata: TUploadMetadata) => {
