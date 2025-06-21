@@ -113,6 +113,7 @@ import { powerLevelAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels
 import colorMXID from '../../../util/colorMXID';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useMessageDraft } from '../../hooks/useMessageDraft';
+import { appEvents } from '../../utils/appEvents';
 
 interface RoomInputProps {
   editor: Editor;
@@ -211,12 +212,20 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       useCallback((width) => setHideStickerBtn(width < 500), [])
     );
 
-    useEffect(
-      () => () => {
-        setMsgDraft([...editor.children]);
-      },
-      [editor, setMsgDraft]
-    );
+    useEffect(() => {
+      const saveCurrentDraft = () => {
+        if (editor.children) {
+          setMsgDraft([...editor.children]);
+        }
+      };
+
+      appEvents.onVisibilityHidden = saveCurrentDraft;
+
+      return () => {
+        saveCurrentDraft();
+        appEvents.onVisibilityHidden = null;
+      };
+    }, [editor, setMsgDraft, room.roomId]);
 
     useEffect(() => {
       if (!msgDraft || msgDraft.length === 0) {
