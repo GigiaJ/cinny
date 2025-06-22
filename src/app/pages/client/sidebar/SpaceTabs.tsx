@@ -433,10 +433,12 @@ function SpaceTab({
   const handleContextMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     evt.preventDefault();
     const cords = evt.currentTarget.getBoundingClientRect();
-    setMenuAnchor((currentState) => {
-      if (currentState) return undefined;
-      return cords;
-    });
+    if (!isMobile) {
+      setMenuAnchor((currentState) => {
+        if (currentState) return undefined;
+        return cords;
+      });
+    }
   };
 
   const longPressBinder = useLongPress(
