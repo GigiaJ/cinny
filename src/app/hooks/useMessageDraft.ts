@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { atomFamily } from 'jotai/utils';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Descendant } from 'slate';
 import { debounce } from 'lodash-es';
 import { MatrixClient, MatrixEvent, IEvent, IEncryptedContent, CryptoBackend } from 'matrix-js-sdk';
@@ -17,8 +17,7 @@ export interface SyncedDraft {
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
 /**
- * Encrypts a draft and returns the entire event's JSON structure for storage.
- * This version adds critical validation to ensure encryption actually succeeded.
+ * Encrypts a draft and returns the entire event for storage.
  */
 export async function encryptDraft(
   mx: MatrixClient,
@@ -131,6 +130,8 @@ export function useMessageDraft(roomId: string) {
 
   const lastSyncTimestamp = useRef(0);
 
+  const emptyDraft = useMemo(() => [], []);
+
   const syncDraftToServer = useCallback(
     debounce(async (newDraft: SyncedDraft | null) => {
       if (!userId) return;
@@ -227,7 +228,7 @@ export function useMessageDraft(roomId: string) {
     syncDraftToServer(null);
   }, [setDraft, syncDraftToServer]);
 
-  return [draft?.content ?? [], updateDraft, clearDraft] as const;
+  return [draft?.content ?? emptyDraft, updateDraft, clearDraft] as const;
 }
 
 function toPlainText(nodes: Descendant[]): string {
