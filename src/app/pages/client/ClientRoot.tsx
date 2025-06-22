@@ -37,6 +37,9 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
+import { togglePusher } from '../../features/settings/notifications/PushNotifications';
+import { ClientConfig, useClientConfig } from '../../hooks/useClientConfig';
+import { appEvents } from '../../utils/appEvents';
 
 function ClientRootLoading() {
   return (
@@ -124,6 +127,12 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   );
 }
 
+const pushNotificationListener = (mx: MatrixClient, clientConfig: ClientConfig) => {
+  document.addEventListener('visibilitychange', () => {
+    togglePusher(mx, clientConfig, document.visibilityState === 'visible');
+  });
+};
+
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
@@ -146,6 +155,7 @@ type ClientRootProps = {
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
   const { baseUrl } = getSecret();
+  const clientConfig = useClientConfig();
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(() => initClient(getSecret() as any), [])
@@ -169,6 +179,37 @@ export function ClientRoot({ children }: ClientRootProps) {
     }
   }, [mx, startMatrix]);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = document.visibilityState === 'visible';
+      appEvents.onVisibilityChange?.(isVisible);
+      if (!isVisible) {
+        appEvents.onVisibilityHidden?.();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (!mx) return;
+
+    const handleVisibilityForNotifications = (isVisible: boolean) => {
+      togglePusher(mx, clientConfig, isVisible);
+    };
+    
+    appEvents.onVisibilityChange = handleVisibilityForNotifications;
+    
+    return () => {
+      appEvents.onVisibilityChange = null;
+    };
+  }, [mx, clientConfig]);
+
   useSyncState(
     mx,
     useCallback((state) => {
@@ -177,7 +218,6 @@ export function ClientRoot({ children }: ClientRootProps) {
       }
     }, [])
   );
-
   return (
     <SpecVersions baseUrl={baseUrl!}>
       {mx && <SyncStatus mx={mx} />}
