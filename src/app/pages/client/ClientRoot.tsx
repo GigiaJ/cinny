@@ -39,6 +39,7 @@ import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
 import { togglePusher } from '../../features/settings/notifications/PushNotifications';
 import { ClientConfig, useClientConfig } from '../../hooks/useClientConfig';
+import { appEvents } from '../../utils/appEvents';
 
 function ClientRootLoading() {
   return (
@@ -178,17 +179,44 @@ export function ClientRoot({ children }: ClientRootProps) {
     }
   }, [mx, startMatrix]);
 
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      const isVisible = document.visibilityState === 'visible';
+      appEvents.onVisibilityChange?.(isVisible);
+      if (!isVisible) {
+        appEvents.onVisibilityHidden?.();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+
+  useEffect(() => {
+    if (!mx) return;
+
+    const handleVisibilityForNotifications = (isVisible: boolean) => {
+      togglePusher(mx, clientConfig, isVisible);
+    };
+    
+    appEvents.onVisibilityChange = handleVisibilityForNotifications;
+    
+    return () => {
+      appEvents.onVisibilityChange = null;
+    };
+  }, [mx, clientConfig]);
+
   useSyncState(
     mx,
-    useCallback(
-      (state) => {
-        if (state === 'PREPARED') {
-          setLoading(false);
-          pushNotificationListener(mx, clientConfig);
-        }
-      },
-      [clientConfig, mx]
-    )
+    useCallback((state) => {
+      if (state === 'PREPARED') {
+        setLoading(false);
+      }
+    }, [])
   );
   return (
     <SpecVersions baseUrl={baseUrl!}>
