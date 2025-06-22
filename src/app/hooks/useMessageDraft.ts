@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { atomFamily } from 'jotai/utils';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Descendant } from 'slate';
 import { debounce } from 'lodash-es';
 import { MatrixClient, MatrixEvent, IEvent, IEncryptedContent, CryptoBackend } from 'matrix-js-sdk';
@@ -131,6 +131,8 @@ export function useMessageDraft(roomId: string) {
 
   const lastSyncTimestamp = useRef(0);
 
+  const emptyDraft = useMemo(() => [], []);
+
   const syncDraftToServer = useCallback(
     debounce(async (newDraft: SyncedDraft | null) => {
       if (!userId) return;
@@ -227,7 +229,7 @@ export function useMessageDraft(roomId: string) {
     syncDraftToServer(null);
   }, [setDraft, syncDraftToServer]);
 
-  return [draft?.content ?? [], updateDraft, clearDraft] as const;
+  return [draft?.content ?? emptyDraft, updateDraft, clearDraft] as const;
 }
 
 function toPlainText(nodes: Descendant[]): string {
