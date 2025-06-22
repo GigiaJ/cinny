@@ -1,10 +1,21 @@
-import React, { useEffect } from 'react';
-import { useSpring, animated } from '@react-spring/web';
+import React, { useState, useEffect } from 'react';
 import { useDrag } from 'react-use-gesture';
 import './MobileContextMenu.scss';
 
 export function MobileContextMenu({ isOpen, onClose, children }) {
-  const { innerHeight } = window;
+  const getInnerHeight = () => (typeof window !== 'undefined' ? window.innerHeight : 0);
+  const [y, setY] = useState(getInnerHeight());
+  const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setY(isOpen ? 0 : getInnerHeight());
+    }, 10);
+
+    return () => clearTimeout(timer);
+  }, [isOpen]);
+
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overscrollBehavior = 'contain';
@@ -14,51 +25,53 @@ export function MobileContextMenu({ isOpen, onClose, children }) {
     };
   }, [isOpen]);
 
-  const [{ y }, api] = useSpring(() => ({
-    y: innerHeight,
-    config: { tension: 250, friction: 25 },
-  }));
-
-  useEffect(() => {
-    api.start({ y: isOpen ? 0 : innerHeight });
-  }, [api, innerHeight, isOpen]);
-
   const bind = useDrag(
-    ({ last, movement: [, my], event }) => {
+    ({ last, movement: [, my], down }) => {
+      if (down && !isDragging) {
+        setIsDragging(true);
+      }
+
+      const newY = Math.max(my, 0);
+      setY(newY);
+
       if (last) {
-        if (my > innerHeight / 4) {
-          event.preventDefault();
-          event.stopPropagation();
+        setIsDragging(false);
+        if (my > getInnerHeight() / 4) {
           onClose();
         } else {
-          api.start({ y: 0 });
+          setY(0);
         }
-      } else {
-        api.start({ y: Math.max(my, 0), immediate: true });
       }
     },
     {
-      from: () => [0, y.get()],
+      from: () => [0, y],
       filterTaps: true,
       bounds: { top: 0 },
       rubberband: true,
     }
   );
-  if (!isOpen) return null;
+
+  if (!isOpen && y >= getInnerHeight()) return null;
+  const containerClasses = [
+    'bottom-sheet-container',
+    !isDragging ? 'is-transitioning' : '',
+  ].join(' ');
+
+  const backdropOpacity = y > 0 ? 1 - y / getInnerHeight() : 1;
 
   return (
     <>
-      <animated.div
+      <div
         className="bottom-sheet-backdrop"
         onClick={onClose}
-        style={{ opacity: y.to([0, innerHeight], [1, 0], 'clamp') }}
+        style={{ opacity: Math.max(0, backdropOpacity) }}
       />
 
-      <animated.div
-        className="bottom-sheet-container"
+      <div
+        className={containerClasses}
         {...bind()}
         style={{
-          y,
+          transform: `translate3d(0, ${y}px, 0)`,
           touchAction: 'none',
         }}
       >
@@ -66,7 +79,7 @@ export function MobileContextMenu({ isOpen, onClose, children }) {
         <div className="bottom-sheet-content" style={{ overflow: 'visible' }}>
           {children}
         </div>
-      </animated.div>
+      </div>
     </>
   );
 }
