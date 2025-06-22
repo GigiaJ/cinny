@@ -11,7 +11,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor } from 'slate';
+import { Transforms, Editor, Descendant } from 'slate';
 import {
   Box,
   Dialog,
@@ -112,6 +112,8 @@ import { GetPowerLevelTag } from '../../hooks/usePowerLevelTags';
 import { powerLevelAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import colorMXID from '../../../util/colorMXID';
 import { useIsDirectRoom } from '../../hooks/useRoom';
+import { useMessageDraft } from '../../hooks/useMessageDraft';
+import { appEvents } from '../../utils/appEvents';
 
 interface RoomInputProps {
   editor: Editor;
@@ -135,9 +137,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
 
-    const [msgDraft, setMsgDraft] = useAtom(roomIdToMsgDraftAtomFamily(roomId));
+    const [msgDraft, setMsgDraft, clearMsgDraft] = useMessageDraft(roomId);
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
+    const lastLoadedDraft = useRef<Descendant[] | null>(null);
 
     const replyPowerTag = getPowerLevelTag(powerLevelAPI.getPowerLevel(powerLevels, replyUserID));
     const replyPowerColor = replyPowerTag.color
@@ -210,22 +213,42 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      Transforms.insertFragment(editor, msgDraft);
-    }, [editor, msgDraft]);
-
-    useEffect(
-      () => () => {
-        if (!isEmptyEditor(editor)) {
-          const parsedDraft = JSON.parse(JSON.stringify(editor.children));
-          setMsgDraft(parsedDraft);
-        } else {
-          setMsgDraft([]);
+      const saveCurrentDraft = () => {
+        if (editor.children) {
+          setMsgDraft([...editor.children]);
         }
+      };
+
+      appEvents.onVisibilityHidden = saveCurrentDraft;
+
+      return () => {
+        saveCurrentDraft();
+        appEvents.onVisibilityHidden = null;
+      };
+    }, [editor, setMsgDraft, room.roomId]);
+
+    useEffect(() => {
+      if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
-        resetEditorHistory(editor);
-      },
-      [roomId, editor, setMsgDraft]
-    );
+        lastLoadedDraft.current = null;
+        return;
+      }
+
+      const currentEditorContent = [...editor.children];
+      const currentContentStr = JSON.stringify(currentEditorContent);
+      const lastLoadedDraftStr = JSON.stringify(lastLoadedDraft.current);
+
+      if (isEmptyEditor(editor) || currentContentStr === lastLoadedDraftStr) {
+        console.debug('Applying new server draft to editor.');
+        resetEditor(editor);
+        Transforms.insertFragment(editor, msgDraft);
+        Transforms.select(editor, Editor.end(editor, []));
+
+        lastLoadedDraft.current = msgDraft;
+      } else {
+        console.debug('New server draft received, but local draft is dirty. Ignoring.');
+      }
+    }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
       (fileItem: TUploadItem, metadata: TUploadMetadata) => {
@@ -357,11 +380,22 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       }
       mx.sendMessage(roomId, content);
+      clearMsgDraft();
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands]);
+    }, [
+      editor,
+      isMarkdown,
+      mx,
+      roomId,
+      replyDraft,
+      clearMsgDraft,
+      setReplyDraft,
+      sendTypingStatus,
+      commands,
+    ]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
