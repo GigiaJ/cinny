@@ -17,8 +17,7 @@ export interface SyncedDraft {
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
 /**
- * Encrypts a draft and returns the entire event's JSON structure for storage.
- * This version adds critical validation to ensure encryption actually succeeded.
+ * Encrypts a draft and returns the entire event for storage.
  */
 export async function encryptDraft(
   mx: MatrixClient,
