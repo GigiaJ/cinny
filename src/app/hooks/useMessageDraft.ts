@@ -1,9 +1,9 @@
 import { useAtom } from 'jotai';
 import { atomFamily } from 'jotai/utils';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Descendant } from 'slate';
 import { debounce } from 'lodash-es';
-import { MatrixClient, MatrixEvent, IEvent, IEncryptedContent, CryptoBackend } from 'matrix-js-sdk';
+import { MatrixClient, MatrixEvent, IEvent, CryptoBackend, IContent } from 'matrix-js-sdk';
 
 import { useMatrixClient } from './useMatrixClient';
 import { atomWithIndexedDB } from '../state/utils/atomWithIndexedDB';
