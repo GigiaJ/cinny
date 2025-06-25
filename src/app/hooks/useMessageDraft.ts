@@ -124,14 +124,6 @@ export function useMessageDraft(roomId: string) {
     async (eventToSave: Partial<IEvent> | null) => {
       const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
 
-      if (!newDraft) {
-        delete existingData[roomId];
-        await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
-        return;
-      }
-
-      const eventToSave = await encryptDraft(mx, roomId, newDraft);
-
       if (!eventToSave) {
         if (existingData[roomId]) {
           delete existingData[roomId];
