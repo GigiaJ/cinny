@@ -365,7 +365,7 @@ export function RoomViewHeader() {
             </TooltipProvider>
           )}
 
-          {!ecryptedRoom && !room.isCallRoom() && (
+          {!ecryptedRoom && (!room.isCallRoom() || isChatOpen) && (
             <TooltipProvider
               position="Bottom"
               offset={4}
