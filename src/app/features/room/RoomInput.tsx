@@ -213,21 +213,6 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      const saveCurrentDraft = () => {
-        if (editor.children) {
-          setMsgDraft([...editor.children]);
-        }
-      };
-
-      appEvents.onVisibilityHidden = saveCurrentDraft;
-
-      return () => {
-        saveCurrentDraft();
-        appEvents.onVisibilityHidden = null;
-      };
-    }, [editor, setMsgDraft, room.roomId]);
-
-    useEffect(() => {
       if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
         lastLoadedDraft.current = null;
