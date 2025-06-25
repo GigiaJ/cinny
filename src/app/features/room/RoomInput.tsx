@@ -404,13 +404,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           sendTypingStatus(!isEmptyEditor(editor));
         }
 
+        setMsgDraft([...editor.children]);
+
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity]
+      [editor, sendTypingStatus, hideActivity, setMsgDraft] // Use `setMsgDraft` from the hook
     );
 
     const handleCloseAutocomplete = useCallback(() => {
