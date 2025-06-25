@@ -77,12 +77,7 @@ export async function encryptDraft(
 export async function decryptDraft(
   mx: MatrixClient,
   savedEventData: IEvent
-): Promise<SyncedDraft | null> {
-  if (!savedEventData?.content?.ciphertext) {
-    console.error(savedEventData);
-    return null;
-  }
-
+): Promise<IContent | null> {
   const cryptoApi = mx.getCrypto();
   if (!cryptoApi) {
     console.error('Cannot decrypt draft: E2EE is not enabled.');
@@ -94,21 +89,18 @@ export async function decryptDraft(
 
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
-
     const decryptedContent = eventToDecrypt.getClearContent();
-    console.warn(decryptedContent);
+    
     if (!decryptedContent) {
-      console.log(eventToDecrypt);
-      console.error(`Draft decryption completed without error, but clear content is null.`);
       return null;
     }
 
     delete decryptedContent.body;
     delete decryptedContent.msgtype;
 
-    return decryptedContent as SyncedDraft;
+    return decryptedContent;
   } catch (e) {
-    console.error(`An unexpected error was thrown during draft decryption:`, e);
+    console.error('An unexpected error was thrown during draft decryption:', e);
     return null;
   }
 }
