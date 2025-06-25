@@ -121,10 +121,7 @@ export function useMessageDraft(roomId: string) {
   }, [draftEvent, mx]);
 
   const syncDraftToServer = useCallback(
-    debounce(async (newDraft: SyncedDraft | null) => {
-      if (!userId) return;
-      if (newDraft && newDraft.ts === lastSyncTimestamp.current) return;
-
+    async (eventToSave: Partial<IEvent> | null) => {
       const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
 
       if (!newDraft) {
@@ -136,14 +133,16 @@ export function useMessageDraft(roomId: string) {
       const eventToSave = await encryptDraft(mx, roomId, newDraft);
 
       if (!eventToSave) {
-        console.error('Encryption failed, not saving draft to server.');
-        return;
+        if (existingData[roomId]) {
+          delete existingData[roomId];
+          await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
+        }
+      } else {
+        const newServerData = { ...existingData, [roomId]: eventToSave };
+        await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
       }
-
-      const newServerData = { ...existingData, [roomId]: eventToSave };
-      await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
-    }, 1500),
-    [mx, roomId, userId]
+    },
+    [mx, roomId]
   );
 
   useEffect(() => {
