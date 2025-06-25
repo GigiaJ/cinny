@@ -461,6 +461,24 @@ export function RoomViewHeader() {
             </TooltipProvider>
           )}
 
+          {room.isCallRoom() && !isDirectMessage() && (
+            <TooltipProvider
+              position="Bottom"
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>Chat</Text>
+                </Tooltip>
+              }
+            >
+              {(triggerRef) => (
+                <IconButton ref={triggerRef} onClick={toggleChat}>
+                  <Icon size="400" src={Icons.Message} filled={isChatOpen} />
+                </IconButton>
+              )}
+            </TooltipProvider>
+          )}
+
           <TooltipProvider
             position="Bottom"
             align="End"
