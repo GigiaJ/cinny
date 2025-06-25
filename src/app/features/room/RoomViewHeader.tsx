@@ -365,7 +365,7 @@ export function RoomViewHeader() {
             </TooltipProvider>
           )}
 
-          {!ecryptedRoom && !room.isCallRoom() && (
+          {!ecryptedRoom && (!room.isCallRoom() || isChatOpen) && (
             <TooltipProvider
               position="Bottom"
               offset={4}
@@ -382,7 +382,7 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
-          {!room.isCallRoom() && (
+          {(!room.isCallRoom() || isChatOpen) && (
             <TooltipProvider
               position="Bottom"
               offset={4}
@@ -421,7 +421,7 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
-          {!room.isCallRoom() && (
+          {(!room.isCallRoom() || isChatOpen) && (
             <PopOut
               anchor={pinMenuAnchor}
               position="Bottom"
@@ -456,6 +456,24 @@ export function RoomViewHeader() {
               {(triggerRef) => (
                 <IconButton ref={triggerRef} onClick={() => setPeopleDrawer((drawer) => !drawer)}>
                   <Icon size="400" src={Icons.User} />
+                </IconButton>
+              )}
+            </TooltipProvider>
+          )}
+
+          {room.isCallRoom() && !isDirectMessage() && (
+            <TooltipProvider
+              position="Bottom"
+              offset={4}
+              tooltip={
+                <Tooltip>
+                  <Text>Chat</Text>
+                </Tooltip>
+              }
+            >
+              {(triggerRef) => (
+                <IconButton ref={triggerRef} onClick={toggleChat}>
+                  <Icon size="400" src={Icons.Message} filled={isChatOpen} />
                 </IconButton>
               )}
             </TooltipProvider>
@@ -497,23 +515,6 @@ export function RoomViewHeader() {
               </FocusTrap>
             }
           />
-          {room.isCallRoom() && !isDirectMessage() && (
-            <TooltipProvider
-              position="Bottom"
-              offset={4}
-              tooltip={
-                <Tooltip>
-                  <Text>Chat</Text>
-                </Tooltip>
-              }
-            >
-              {(triggerRef) => (
-                <IconButton ref={triggerRef} onClick={toggleChat}>
-                  <Icon size="400" src={Icons.Message} />
-                </IconButton>
-              )}
-            </TooltipProvider>
-          )}
         </Box>
       </Box>
     </PageHeader>
