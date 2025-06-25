@@ -69,7 +69,7 @@ export async function decryptDraft(
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
     const decryptedContent = eventToDecrypt.getClearContent();
-    
+
     if (!decryptedContent) {
       return null;
     }
@@ -99,13 +99,26 @@ export function useMessageDraft(roomId: string) {
   const [sessions] = useAtom(sessionsAtom);
   const activeSession = sessions.find((s) => s.userId === mx.getUserId());
   const userId = activeSession?.userId;
-
   const atomKey = { userId: userId ?? '', roomId };
-  const [draft, setDraft] = useAtom(draftAtomFamily(atomKey));
+  const [draftEvent, setDraftEvent] = useAtom(draftEventAtomFamily(atomKey));
+  const [content, setContent] = useState<Descendant[] | null>(null);
+  const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
 
-  const lastSyncTimestamp = useRef(0);
-
-  const emptyDraft = useMemo(() => [], []);
+  useEffect(() => {
+    let isMounted = true;
+    if (draftEvent) {
+      decryptDraft(mx, draftEvent).then((decryptedEvent) => {
+        if (isMounted) {
+          setContent(decryptedEvent?.content ?? null);
+        }
+      });
+    } else {
+      setContent(null);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [draftEvent, mx]);
 
   const syncDraftToServer = useCallback(
     debounce(async (newDraft: SyncedDraft | null) => {
