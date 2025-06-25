@@ -148,33 +148,21 @@ export function useMessageDraft(roomId: string) {
   useEffect(() => {
     if (!mx) return;
 
-    const handleAccountData = async (event: MatrixEvent) => {
+    const handleAccountData = (event: MatrixEvent) => {
       if (event.getType() !== DRAFT_EVENT_TYPE) return;
 
       const allSyncedDrafts = event.getContent();
-      const eventDataToDecrypt = allSyncedDrafts[roomId];
+      const serverEvent = allSyncedDrafts[roomId] as IEvent | undefined;
 
-      if (!eventDataToDecrypt) {
-        setDraft((currentDraft) => {
-          if (currentDraft === null) return null;
-          console.debug('Draft deleted on another device, clearing local copy.');
-          return null;
-        });
+      // TODO: Fix but should never occur. If this does generate a new event.
+      if (!serverEvent) {
+       setDraftEvent(null);
         return;
       }
 
-      const serverDraft = await decryptDraft(mx, eventDataToDecrypt);
-      if (!serverDraft) return;
-
-      setDraft((currentDraft) => {
-        if (serverDraft.ts > (currentDraft?.ts ?? 0)) {
-          console.debug('Received newer draft from server.', serverDraft);
-          lastSyncTimestamp.current = serverDraft.ts;
-          return serverDraft;
-        }
-
-        return currentDraft;
-      });
+      if (serverEvent.origin_server_ts > (draftEvent?.origin_server_ts ?? 0)) {
+        setDraftEvent(serverEvent);
+      }
     };
 
     const accountDataEvent = mx.getAccountData(DRAFT_EVENT_TYPE);
@@ -186,7 +174,7 @@ export function useMessageDraft(roomId: string) {
     return () => {
       mx.off('accountData' as any, handleAccountData);
     };
-  }, [mx, roomId, setDraft]);
+  }, [mx, roomId, draftEvent, setDraftEvent]);
 
   const updateDraft = useCallback(
     (content: Descendant[]) => {
