@@ -218,21 +218,11 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         lastLoadedDraft.current = null;
         return;
       }
-
-      const currentEditorContent = [...editor.children];
-      const currentContentStr = JSON.stringify(currentEditorContent);
-      const lastLoadedDraftStr = JSON.stringify(lastLoadedDraft.current);
-
-      if (isEmptyEditor(editor) || currentContentStr === lastLoadedDraftStr) {
-        console.debug('Applying new server draft to editor.');
         resetEditor(editor);
         Transforms.insertFragment(editor, msgDraft);
         Transforms.select(editor, Editor.end(editor, []));
 
         lastLoadedDraft.current = msgDraft;
-      } else {
-        console.debug('New server draft received, but local draft is dirty. Ignoring.');
-      }
     }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
