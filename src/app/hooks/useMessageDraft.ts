@@ -1,18 +1,13 @@
 import { useAtom } from 'jotai';
 import { atomFamily } from 'jotai/utils';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Descendant } from 'slate';
 import { debounce } from 'lodash-es';
-import { MatrixClient, MatrixEvent, IEvent, IEncryptedContent, CryptoBackend } from 'matrix-js-sdk';
+import { MatrixClient, MatrixEvent, IEvent, CryptoBackend, IContent } from 'matrix-js-sdk';
 
 import { useMatrixClient } from './useMatrixClient';
 import { atomWithIndexedDB } from '../state/utils/atomWithIndexedDB';
 import { sessionsAtom } from '../state/sessions';
-
-export interface SyncedDraft {
-  content: Descendant[];
-  ts: number;
-}
 
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
@@ -22,8 +17,8 @@ const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 export async function encryptDraft(
   mx: MatrixClient,
   roomId: string,
-  draftData: SyncedDraft
-): Promise<IEvent | null> {
+  event: IEvent
+): Promise<Partial<IEvent> | null> {
   const cryptoApi = mx.getCrypto();
   const userId = mx.getUserId();
 
@@ -34,33 +29,17 @@ export async function encryptDraft(
   const cryptoBackend = cryptoApi as CryptoBackend;
 
   try {
-    const eventContent = {
-      msgtype: 'm.text',
-      body: 'draft',
-      ...draftData,
-    };
-
     const dummyEvent = new MatrixEvent({
-      type: DRAFT_EVENT_TYPE,
       room_id: roomId,
-      sender: userId,
-      event_id: `$${mx.makeTxnId()}`,
-      origin_server_ts: Date.now(),
-      content: eventContent,
+      ...event,
     });
 
     await cryptoBackend.encryptEvent(dummyEvent);
     if (!dummyEvent.isEncrypted()) {
-      const encryptionError = (dummyEvent as any).getEncryptionError?.();
-      if (encryptionError) {
-        console.error('Encryption failed with an error:', encryptionError);
-      } else {
-        console.error('Encryption failed silently. The event was not encrypted.');
-      }
+      console.error('Encryption failed silently. The event was not encrypted.');
       return null;
     }
 
-    console.error(dummyEvent);
     return dummyEvent.event;
   } catch (e) {
     console.error(
@@ -77,12 +56,7 @@ export async function encryptDraft(
 export async function decryptDraft(
   mx: MatrixClient,
   savedEventData: IEvent
-): Promise<SyncedDraft | null> {
-  if (!savedEventData?.content?.ciphertext) {
-    console.error(savedEventData);
-    return null;
-  }
-
+): Promise<IContent | null> {
   const cryptoApi = mx.getCrypto();
   if (!cryptoApi) {
     console.error('Cannot decrypt draft: E2EE is not enabled.');
@@ -94,28 +68,29 @@ export async function decryptDraft(
 
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
-
     const decryptedContent = eventToDecrypt.getClearContent();
-    console.warn(decryptedContent);
+
     if (!decryptedContent) {
-      console.log(eventToDecrypt);
-      console.error(`Draft decryption completed without error, but clear content is null.`);
       return null;
     }
 
     delete decryptedContent.body;
     delete decryptedContent.msgtype;
 
-    return decryptedContent as SyncedDraft;
+    return decryptedContent;
   } catch (e) {
-    console.error(`An unexpected error was thrown during draft decryption:`, e);
+    console.error('An unexpected error was thrown during draft decryption:', e);
     return null;
   }
 }
 
-const draftAtomFamily = atomFamily(
+function toPlainText(nodes: Descendant[]): string {
+  return nodes.map((n) => (n as any).children?.map((c: any) => c.text).join('') ?? '').join('\n');
+}
+
+const draftEventAtomFamily = atomFamily(
   ({ userId, roomId }: { userId: string; roomId: string }) =>
-    atomWithIndexedDB<SyncedDraft | null>(`draft-${userId}-${roomId}`, null),
+    atomWithIndexedDB<Partial<IEvent> | null>(`draft-event-${userId}-${roomId}`, null),
   (a, b) => a.userId === b.userId && a.roomId === b.roomId
 );
 
@@ -124,70 +99,62 @@ export function useMessageDraft(roomId: string) {
   const [sessions] = useAtom(sessionsAtom);
   const activeSession = sessions.find((s) => s.userId === mx.getUserId());
   const userId = activeSession?.userId;
-
   const atomKey = { userId: userId ?? '', roomId };
-  const [draft, setDraft] = useAtom(draftAtomFamily(atomKey));
+  const [draftEvent, setDraftEvent] = useAtom(draftEventAtomFamily(atomKey));
+  const [content, setContent] = useState<Descendant[] | null>(null);
+  const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
 
-  const lastSyncTimestamp = useRef(0);
-
-  const emptyDraft = useMemo(() => [], []);
+  useEffect(() => {
+    let isMounted = true;
+    if (draftEvent) {
+      decryptDraft(mx, draftEvent).then((decryptedEvent) => {
+        if (isMounted) {
+          setContent(decryptedEvent?.content ?? null);
+        }
+      });
+    } else {
+      setContent(null);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [draftEvent, mx]);
 
   const syncDraftToServer = useCallback(
-    debounce(async (newDraft: SyncedDraft | null) => {
-      if (!userId) return;
-      if (newDraft && newDraft.ts === lastSyncTimestamp.current) return;
-
+    async (eventToSave: Partial<IEvent> | null) => {
       const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
 
-      if (!newDraft) {
-        delete existingData[roomId];
-        await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
-        return;
-      }
-
-      const eventToSave = await encryptDraft(mx, roomId, newDraft);
-
       if (!eventToSave) {
-        console.error('Encryption failed, not saving draft to server.');
-        return;
+        if (existingData[roomId]) {
+          delete existingData[roomId];
+          await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
+        }
+      } else {
+        const newServerData = { ...existingData, [roomId]: eventToSave };
+        await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
       }
-
-      const newServerData = { ...existingData, [roomId]: eventToSave };
-      await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
-    }, 1500),
-    [mx, roomId, userId]
+    },
+    [mx, roomId]
   );
 
   useEffect(() => {
     if (!mx) return;
 
-    const handleAccountData = async (event: MatrixEvent) => {
+    const handleAccountData = (event: MatrixEvent) => {
       if (event.getType() !== DRAFT_EVENT_TYPE) return;
 
       const allSyncedDrafts = event.getContent();
-      const eventDataToDecrypt = allSyncedDrafts[roomId];
+      const serverEvent = allSyncedDrafts[roomId] as IEvent | undefined;
 
-      if (!eventDataToDecrypt) {
-        setDraft((currentDraft) => {
-          if (currentDraft === null) return null;
-          console.debug('Draft deleted on another device, clearing local copy.');
-          return null;
-        });
+      // TODO: Fix but should never occur. If this does generate a new event.
+      if (!serverEvent) {
+       setDraftEvent(null);
         return;
       }
 
-      const serverDraft = await decryptDraft(mx, eventDataToDecrypt);
-      if (!serverDraft) return;
-
-      setDraft((currentDraft) => {
-        if (serverDraft.ts > (currentDraft?.ts ?? 0)) {
-          console.debug('Received newer draft from server.', serverDraft);
-          lastSyncTimestamp.current = serverDraft.ts;
-          return serverDraft;
-        }
-
-        return currentDraft;
-      });
+      if (serverEvent.origin_server_ts > (draftEvent?.origin_server_ts ?? 0)) {
+        setDraftEvent(serverEvent);
+      }
     };
 
     const accountDataEvent = mx.getAccountData(DRAFT_EVENT_TYPE);
@@ -199,38 +166,47 @@ export function useMessageDraft(roomId: string) {
     return () => {
       mx.off('accountData' as any, handleAccountData);
     };
-  }, [mx, roomId, setDraft]);
+  }, [mx, roomId, draftEvent, setDraftEvent]);
 
-  const updateDraft = useCallback(
-    (content: Descendant[]) => {
-      const isEmpty = content.length <= 1 && toPlainText(content).trim() === '';
+  const clearDraft = useCallback(async () => {
+    const newEvent = await encryptDraft(mx, roomId, {
+      type: DRAFT_EVENT_TYPE,
+      sender: userId ?? '',
+      content: { msgtype: 'm.text', body: 'draft', content: [] },
+      origin_server_ts: Date.now(),
+      event_id: `$${mx.makeTxnId()}`,
+    });
+    if (newEvent) {
+      setDraftEvent(newEvent);
+      await syncDraftToServer(newEvent);
+    }
+  }, [mx, roomId, setDraftEvent, syncDraftToServer, userId]);
 
-      if (isEmpty) {
-        setDraft((currentDraft) => {
-          if (currentDraft !== null) {
-            syncDraftToServer(null);
-            return null;
-          }
-          return null;
+  const updateDraft = useMemo(
+    () =>
+      debounce(async (newContent: Descendant[]) => {
+        const isEmpty = newContent.length <= 1 && toPlainText(newContent).trim() === '';
+
+        if (isEmpty || !draftEvent?.event_id) {
+          clearDraft();
+          return;
+        }
+
+        const newEvent = await encryptDraft(mx, roomId, {
+          type: DRAFT_EVENT_TYPE,
+          sender: userId,
+          content: { msgtype: 'm.text', body: 'draft', content: newContent },
+          origin_server_ts: Date.now(),
+          event_id: draftEvent?.event_id,
         });
-      } else {
-        const newDraft: SyncedDraft = { content, ts: Date.now() };
-        setDraft(newDraft);
-        syncDraftToServer(newDraft);
-      }
-    },
 
-    [setDraft, syncDraftToServer]
+        if (newEvent) {
+          setDraftEvent(newEvent);
+          await syncDraftToServer(newEvent);
+        }
+      }, 500),
+    [clearDraft, draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
   );
 
-  const clearDraft = useCallback(() => {
-    setDraft(null);
-    syncDraftToServer(null);
-  }, [setDraft, syncDraftToServer]);
-
-  return [draft?.content ?? emptyDraft, updateDraft, clearDraft] as const;
-}
-
-function toPlainText(nodes: Descendant[]): string {
-  return nodes.map((n) => (n as any).children.map((c: any) => c.text).join('')).join('\n');
+  return [content ?? emptyDraft, updateDraft, clearDraft] as const;
 }

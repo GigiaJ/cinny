@@ -213,41 +213,16 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      const saveCurrentDraft = () => {
-        if (editor.children) {
-          setMsgDraft([...editor.children]);
-        }
-      };
-
-      appEvents.onVisibilityHidden = saveCurrentDraft;
-
-      return () => {
-        saveCurrentDraft();
-        appEvents.onVisibilityHidden = null;
-      };
-    }, [editor, setMsgDraft, room.roomId]);
-
-    useEffect(() => {
       if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
         lastLoadedDraft.current = null;
         return;
       }
-
-      const currentEditorContent = [...editor.children];
-      const currentContentStr = JSON.stringify(currentEditorContent);
-      const lastLoadedDraftStr = JSON.stringify(lastLoadedDraft.current);
-
-      if (isEmptyEditor(editor) || currentContentStr === lastLoadedDraftStr) {
-        console.debug('Applying new server draft to editor.');
         resetEditor(editor);
         Transforms.insertFragment(editor, msgDraft);
         Transforms.select(editor, Editor.end(editor, []));
 
         lastLoadedDraft.current = msgDraft;
-      } else {
-        console.debug('New server draft received, but local draft is dirty. Ignoring.');
-      }
     }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
@@ -429,13 +404,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           sendTypingStatus(!isEmptyEditor(editor));
         }
 
+        setMsgDraft([...editor.children]);
+
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity]
+      [editor, sendTypingStatus, hideActivity, setMsgDraft] // Use `setMsgDraft` from the hook
     );
 
     const handleCloseAutocomplete = useCallback(() => {
