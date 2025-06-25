@@ -515,23 +515,6 @@ export function RoomViewHeader() {
               </FocusTrap>
             }
           />
-          {room.isCallRoom() && !isDirectMessage() && (
-            <TooltipProvider
-              position="Bottom"
-              offset={4}
-              tooltip={
-                <Tooltip>
-                  <Text>Chat</Text>
-                </Tooltip>
-              }
-            >
-              {(triggerRef) => (
-                <IconButton ref={triggerRef} onClick={toggleChat}>
-                  <Icon size="400" src={Icons.Message} />
-                </IconButton>
-              )}
-            </TooltipProvider>
-          )}
         </Box>
       </Box>
     </PageHeader>
