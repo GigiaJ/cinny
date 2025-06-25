@@ -9,11 +9,6 @@ import { useMatrixClient } from './useMatrixClient';
 import { atomWithIndexedDB } from '../state/utils/atomWithIndexedDB';
 import { sessionsAtom } from '../state/sessions';
 
-export interface SyncedDraft {
-  content: Descendant[];
-  ts: number;
-}
-
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
 /**
