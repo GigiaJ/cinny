@@ -17,8 +17,8 @@ const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 export async function encryptDraft(
   mx: MatrixClient,
   roomId: string,
-  draftData: SyncedDraft
-): Promise<IEvent | null> {
+  event: IEvent
+): Promise<Partial<IEvent> | null> {
   const cryptoApi = mx.getCrypto();
   const userId = mx.getUserId();
 
@@ -29,33 +29,17 @@ export async function encryptDraft(
   const cryptoBackend = cryptoApi as CryptoBackend;
 
   try {
-    const eventContent = {
-      msgtype: 'm.text',
-      body: 'draft',
-      ...draftData,
-    };
-
     const dummyEvent = new MatrixEvent({
-      type: DRAFT_EVENT_TYPE,
       room_id: roomId,
-      sender: userId,
-      event_id: `$${mx.makeTxnId()}`,
-      origin_server_ts: Date.now(),
-      content: eventContent,
+      ...event,
     });
 
     await cryptoBackend.encryptEvent(dummyEvent);
     if (!dummyEvent.isEncrypted()) {
-      const encryptionError = (dummyEvent as any).getEncryptionError?.();
-      if (encryptionError) {
-        console.error('Encryption failed with an error:', encryptionError);
-      } else {
-        console.error('Encryption failed silently. The event was not encrypted.');
-      }
+      console.error('Encryption failed silently. The event was not encrypted.');
       return null;
     }
 
-    console.error(dummyEvent);
     return dummyEvent.event;
   } catch (e) {
     console.error(
