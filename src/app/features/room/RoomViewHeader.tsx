@@ -421,7 +421,7 @@ export function RoomViewHeader() {
               )}
             </TooltipProvider>
           )}
-          {!room.isCallRoom() && (
+          {(!room.isCallRoom() || isChatOpen) && (
             <PopOut
               anchor={pinMenuAnchor}
               position="Bottom"
