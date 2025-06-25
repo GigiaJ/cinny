@@ -84,9 +84,13 @@ export async function decryptDraft(
   }
 }
 
-const draftAtomFamily = atomFamily(
+function toPlainText(nodes: Descendant[]): string {
+  return nodes.map((n) => (n as any).children?.map((c: any) => c.text).join('') ?? '').join('\n');
+}
+
+const draftEventAtomFamily = atomFamily(
   ({ userId, roomId }: { userId: string; roomId: string }) =>
-    atomWithIndexedDB<SyncedDraft | null>(`draft-${userId}-${roomId}`, null),
+    atomWithIndexedDB<Partial<IEvent> | null>(`draft-event-${userId}-${roomId}`, null),
   (a, b) => a.userId === b.userId && a.roomId === b.roomId
 );
 
@@ -199,9 +203,5 @@ export function useMessageDraft(roomId: string) {
     syncDraftToServer(null);
   }, [setDraft, syncDraftToServer]);
 
-  return [draft?.content ?? emptyDraft, updateDraft, clearDraft] as const;
-}
-
-function toPlainText(nodes: Descendant[]): string {
-  return nodes.map((n) => (n as any).children.map((c: any) => c.text).join('')).join('\n');
+  return [content ?? emptyDraft, updateDraft, clearDraft] as const;
 }
