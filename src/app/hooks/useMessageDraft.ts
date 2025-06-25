@@ -176,32 +176,45 @@ export function useMessageDraft(roomId: string) {
     };
   }, [mx, roomId, draftEvent, setDraftEvent]);
 
-  const updateDraft = useCallback(
-    (content: Descendant[]) => {
-      const isEmpty = content.length <= 1 && toPlainText(content).trim() === '';
+  const clearDraft = useCallback(async () => {
+    const newEvent = await encryptDraft(mx, roomId, {
+      type: DRAFT_EVENT_TYPE,
+      sender: userId ?? '',
+      content: { msgtype: 'm.text', body: 'draft', content: [] },
+      origin_server_ts: Date.now(),
+      event_id: `$${mx.makeTxnId()}`,
+    });
+    if (newEvent) {
+      setDraftEvent(newEvent);
+      await syncDraftToServer(newEvent);
+    }
+  }, [mx, roomId, setDraftEvent, syncDraftToServer, userId]);
 
-      if (isEmpty) {
-        setDraft((currentDraft) => {
-          if (currentDraft !== null) {
-            syncDraftToServer(null);
-            return null;
-          }
-          return null;
+  const updateDraft = useMemo(
+    () =>
+      debounce(async (newContent: Descendant[]) => {
+        const isEmpty = newContent.length <= 1 && toPlainText(newContent).trim() === '';
+
+        if (isEmpty || !draftEvent?.event_id) {
+          clearDraft();
+          return;
+        }
+
+        const newEvent = await encryptDraft(mx, roomId, {
+          type: DRAFT_EVENT_TYPE,
+          sender: userId,
+          content: { msgtype: 'm.text', body: 'draft', content: newContent },
+          origin_server_ts: Date.now(),
+          event_id: draftEvent?.event_id,
         });
-      } else {
-        const newDraft: SyncedDraft = { content, ts: Date.now() };
-        setDraft(newDraft);
-        syncDraftToServer(newDraft);
-      }
-    },
 
-    [setDraft, syncDraftToServer]
+        if (newEvent) {
+          setDraftEvent(newEvent);
+          await syncDraftToServer(newEvent);
+        }
+      }, 500),
+    [clearDraft, draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
   );
-
-  const clearDraft = useCallback(() => {
-    setDraft(null);
-    syncDraftToServer(null);
-  }, [setDraft, syncDraftToServer]);
 
   return [content ?? emptyDraft, updateDraft, clearDraft] as const;
 }
