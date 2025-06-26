@@ -182,16 +182,18 @@ export function useMessageDraft(roomId: string) {
   }, [mx, roomId, draftEvent, setDraftEvent]);
 
   const clearDraft = useCallback(async () => {
-    const newEvent = await encryptDraft(mx, roomId, {
-      type: DRAFT_EVENT_TYPE,
+    const partial = {
+      type: mx.getRoom(roomId)?.hasEncryptionStateEvent() ? 'm.room.encryption' : 'm.room.message',
       sender: userId ?? '',
       content: { msgtype: 'm.text', body: 'draft', content: [] },
+      room_id: roomId,
       origin_server_ts: Date.now(),
       event_id: `$${mx.makeTxnId()}`,
-    });
-    if (newEvent) {
-      setDraftEvent(newEvent);
-      await syncDraftToServer(newEvent);
+    };
+
+    if (partial) {
+      setDraftEvent(partial);
+      await syncDraftToServer(partial);
     }
   }, [mx, roomId, setDraftEvent, syncDraftToServer, userId]);
 
