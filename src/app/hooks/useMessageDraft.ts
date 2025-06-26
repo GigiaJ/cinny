@@ -8,7 +8,6 @@ import { MatrixClient, MatrixEvent, IEvent, CryptoBackend, IContent } from 'matr
 import { useMatrixClient } from './useMatrixClient';
 import { atomWithIndexedDB } from '../state/utils/atomWithIndexedDB';
 import { sessionsAtom } from '../state/sessions';
-import { M } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
@@ -110,12 +109,12 @@ export function useMessageDraft(roomId: string) {
     let isMounted = true;
     if (draftEvent) {
       if (draftEvent?.type === 'm.room.encrypted') {
-      decryptDraft(mx, draftEvent).then((decryptedEvent) => {
-        if (isMounted) {
-          setContent(decryptedEvent?.content ?? null);
-        }
-      });
-    } else {
+        decryptDraft(mx, draftEvent).then((decryptedEvent) => {
+          if (isMounted) {
+            setContent(decryptedEvent?.content ?? null);
+          }
+        });
+      } else {
         const event = new MatrixEvent(draftEvent);
         setContent(getContentFromEvent(event) ?? null);
       }
@@ -129,7 +128,7 @@ export function useMessageDraft(roomId: string) {
 
   const syncDraftToServer = useMemo(
     () => debounce(async (eventToSave: Partial<IEvent> | null) => {
-      const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
+        const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
         let event;
         if (eventToSave?.type === 'm.room.encryption') {
           event = await encryptEventAtRest(mx, eventToSave);
@@ -138,14 +137,14 @@ export function useMessageDraft(roomId: string) {
         }
 
         if (!event) {
-        if (existingData[roomId]) {
-          delete existingData[roomId];
-          await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
-        }
-      } else {
+          if (existingData[roomId]) {
+            delete existingData[roomId];
+            await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
+          }
+        } else {
           const newServerData = { ...existingData, [roomId]: event };
-        await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
-      }
+          await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
+        }
       }, 500),
     [mx, roomId]
   );
@@ -161,7 +160,7 @@ export function useMessageDraft(roomId: string) {
 
       // TODO: Fix but should never occur. If this does generate a new event.
       if (!serverEvent) {
-       setDraftEvent(null);
+        setDraftEvent(null);
         return;
       }
 
