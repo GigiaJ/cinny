@@ -8,6 +8,7 @@ import { MatrixClient, MatrixEvent, IEvent, CryptoBackend, IContent } from 'matr
 import { useMatrixClient } from './useMatrixClient';
 import { atomWithIndexedDB } from '../state/utils/atomWithIndexedDB';
 import { sessionsAtom } from '../state/sessions';
+import { M } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
