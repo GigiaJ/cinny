@@ -207,17 +207,20 @@ export function useMessageDraft(roomId: string) {
           return;
         }
 
-        const newEvent = await encryptDraft(mx, roomId, {
-          type: DRAFT_EVENT_TYPE,
+        const partial = {
+          type: mx.getRoom(roomId)?.hasEncryptionStateEvent()
+            ? 'm.room.encryption'
+            : 'm.room.message',
           sender: userId,
+          room_id: roomId,
           content: { msgtype: 'm.text', body: 'draft', content: newContent },
           origin_server_ts: Date.now(),
           event_id: draftEvent?.event_id,
-        });
+        };
 
-        if (newEvent) {
-          setDraftEvent(newEvent);
-          await syncDraftToServer(newEvent);
+        if (partial) {
+          setDraftEvent(partial);
+          await syncDraftToServer(partial);
         }
       }, 500),
     [clearDraft, draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
