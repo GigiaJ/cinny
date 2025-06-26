@@ -11,12 +11,21 @@ import { sessionsAtom } from '../state/sessions';
 
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
-/**
- * Encrypts a draft and returns the entire event for storage.
- */
+const getContentFromEvent = (event: MatrixEvent) => {
+  const decryptedContent = event.getClearContent();
+
+  if (!decryptedContent) {
+    return null;
+  }
+
+  delete decryptedContent.body;
+  delete decryptedContent.msgtype;
+
+  return decryptedContent;
+};
+
 export async function encryptDraft(
   mx: MatrixClient,
-  roomId: string,
   event: IEvent
 ): Promise<Partial<IEvent> | null> {
   const cryptoApi = mx.getCrypto();
@@ -30,7 +39,6 @@ export async function encryptDraft(
 
   try {
     const dummyEvent = new MatrixEvent({
-      room_id: roomId,
       ...event,
     });
 
@@ -43,16 +51,13 @@ export async function encryptDraft(
     return dummyEvent.event;
   } catch (e) {
     console.error(
-      `An unexpected error was thrown while trying to encrypt draft for room ${roomId}:`,
+      `An unexpected error was thrown while trying to encrypt draft for room ${event?.room_id}:`,
       e
     );
     return null;
   }
 }
 
-/**
- * Decrypts a draft using the full, saved event data object.
- */
 export async function decryptDraft(
   mx: MatrixClient,
   savedEventData: IEvent
@@ -68,16 +73,7 @@ export async function decryptDraft(
 
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
-    const decryptedContent = eventToDecrypt.getClearContent();
-
-    if (!decryptedContent) {
-      return null;
-    }
-
-    delete decryptedContent.body;
-    delete decryptedContent.msgtype;
-
-    return decryptedContent;
+    return getContentFromEvent(eventToDecrypt);
   } catch (e) {
     console.error('An unexpected error was thrown during draft decryption:', e);
     return null;
@@ -94,6 +90,11 @@ const draftEventAtomFamily = atomFamily(
   (a, b) => a.userId === b.userId && a.roomId === b.roomId
 );
 
+const encryptEventAtRest = async (
+  mx: MatrixClient,
+  event: Partial<IEvent>
+): Promise<Partial<IEvent> | null> => await encryptDraft(mx, event);
+
 export function useMessageDraft(roomId: string) {
   const mx = useMatrixClient();
   const [sessions] = useAtom(sessionsAtom);
@@ -107,11 +108,16 @@ export function useMessageDraft(roomId: string) {
   useEffect(() => {
     let isMounted = true;
     if (draftEvent) {
-      decryptDraft(mx, draftEvent).then((decryptedEvent) => {
-        if (isMounted) {
-          setContent(decryptedEvent?.content ?? null);
-        }
-      });
+      if (draftEvent?.type === 'm.room.encrypted') {
+        decryptDraft(mx, draftEvent).then((decryptedEvent) => {
+          if (isMounted) {
+            setContent(decryptedEvent?.content ?? null);
+          }
+        });
+      } else {
+        const event = new MatrixEvent(draftEvent);
+        setContent(getContentFromEvent(event) ?? null);
+      }
     } else {
       setContent(null);
     }
@@ -120,20 +126,26 @@ export function useMessageDraft(roomId: string) {
     };
   }, [draftEvent, mx]);
 
-  const syncDraftToServer = useCallback(
-    async (eventToSave: Partial<IEvent> | null) => {
-      const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
-
-      if (!eventToSave) {
-        if (existingData[roomId]) {
-          delete existingData[roomId];
-          await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
+  const syncDraftToServer = useMemo(
+    () => debounce(async (eventToSave: Partial<IEvent> | null) => {
+        const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
+        let event;
+        if (eventToSave?.type === 'm.room.encryption') {
+          event = await encryptEventAtRest(mx, eventToSave);
+        } else {
+          event = eventToSave;
         }
-      } else {
-        const newServerData = { ...existingData, [roomId]: eventToSave };
-        await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
-      }
-    },
+
+        if (!event) {
+          if (existingData[roomId]) {
+            delete existingData[roomId];
+            await mx.setAccountData(DRAFT_EVENT_TYPE, existingData);
+          }
+        } else {
+          const newServerData = { ...existingData, [roomId]: event };
+          await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
+        }
+      }, 500),
     [mx, roomId]
   );
 
@@ -148,7 +160,7 @@ export function useMessageDraft(roomId: string) {
 
       // TODO: Fix but should never occur. If this does generate a new event.
       if (!serverEvent) {
-       setDraftEvent(null);
+        setDraftEvent(null);
         return;
       }
 
@@ -169,16 +181,18 @@ export function useMessageDraft(roomId: string) {
   }, [mx, roomId, draftEvent, setDraftEvent]);
 
   const clearDraft = useCallback(async () => {
-    const newEvent = await encryptDraft(mx, roomId, {
-      type: DRAFT_EVENT_TYPE,
+    const partial = {
+      type: mx.getRoom(roomId)?.hasEncryptionStateEvent() ? 'm.room.encryption' : 'm.room.message',
       sender: userId ?? '',
       content: { msgtype: 'm.text', body: 'draft', content: [] },
+      room_id: roomId,
       origin_server_ts: Date.now(),
       event_id: `$${mx.makeTxnId()}`,
-    });
-    if (newEvent) {
-      setDraftEvent(newEvent);
-      await syncDraftToServer(newEvent);
+    };
+
+    if (partial) {
+      setDraftEvent(partial);
+      await syncDraftToServer(partial);
     }
   }, [mx, roomId, setDraftEvent, syncDraftToServer, userId]);
 
@@ -192,17 +206,20 @@ export function useMessageDraft(roomId: string) {
           return;
         }
 
-        const newEvent = await encryptDraft(mx, roomId, {
-          type: DRAFT_EVENT_TYPE,
+        const partial = {
+          type: mx.getRoom(roomId)?.hasEncryptionStateEvent()
+            ? 'm.room.encryption'
+            : 'm.room.message',
           sender: userId,
+          room_id: roomId,
           content: { msgtype: 'm.text', body: 'draft', content: newContent },
           origin_server_ts: Date.now(),
           event_id: draftEvent?.event_id,
-        });
+        };
 
-        if (newEvent) {
-          setDraftEvent(newEvent);
-          await syncDraftToServer(newEvent);
+        if (partial) {
+          setDraftEvent(partial);
+          await syncDraftToServer(partial);
         }
       }, 500),
     [clearDraft, draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
