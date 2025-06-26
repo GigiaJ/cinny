@@ -12,9 +12,19 @@ import { M } from 'vite/dist/node/types.d-aGj9QkWt';
 
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
-/**
- * Encrypts a draft and returns the entire event for storage.
- */
+const getContentFromEvent = (event: MatrixEvent) => {
+  const decryptedContent = event.getClearContent();
+
+  if (!decryptedContent) {
+    return null;
+  }
+
+  delete decryptedContent.body;
+  delete decryptedContent.msgtype;
+
+  return decryptedContent;
+};
+
 export async function encryptDraft(
   mx: MatrixClient,
   roomId: string,
