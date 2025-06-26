@@ -109,11 +109,16 @@ export function useMessageDraft(roomId: string) {
   useEffect(() => {
     let isMounted = true;
     if (draftEvent) {
+      if (draftEvent?.type === 'm.room.encrypted') {
       decryptDraft(mx, draftEvent).then((decryptedEvent) => {
         if (isMounted) {
           setContent(decryptedEvent?.content ?? null);
         }
       });
+    } else {
+        const event = new MatrixEvent(draftEvent);
+        setContent(getContentFromEvent(event) ?? null);
+      }
     } else {
       setContent(null);
     }
