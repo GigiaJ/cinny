@@ -91,6 +91,14 @@ const draftEventAtomFamily = atomFamily(
   (a, b) => a.userId === b.userId && a.roomId === b.roomId
 );
 
+const encryptEventAtRest = async (
+  mx: MatrixClient,
+  event: Partial<IEvent>
+): Promise<Partial<IEvent> | null> => {
+  const newEvent = await encryptDraft(mx, event);
+  return newEvent;
+};
+
 export function useMessageDraft(roomId: string) {
   const mx = useMatrixClient();
   const [sessions] = useAtom(sessionsAtom);
