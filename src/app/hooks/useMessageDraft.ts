@@ -59,9 +59,6 @@ export async function encryptDraft(
   }
 }
 
-/**
- * Decrypts a draft using the full, saved event data object.
- */
 export async function decryptDraft(
   mx: MatrixClient,
   savedEventData: IEvent
