@@ -127,8 +127,8 @@ export function useMessageDraft(roomId: string) {
     };
   }, [draftEvent, mx]);
 
-  const syncDraftToServer = useCallback(
-    async (eventToSave: Partial<IEvent> | null) => {
+  const syncDraftToServer = useMemo(
+    () => debounce(async (eventToSave: Partial<IEvent> | null) => {
       const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
 
       if (!eventToSave) {
@@ -140,7 +140,7 @@ export function useMessageDraft(roomId: string) {
         const newServerData = { ...existingData, [roomId]: eventToSave };
         await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
       }
-    },
+      }, 500),
     [mx, roomId]
   );
 
