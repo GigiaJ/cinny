@@ -27,7 +27,6 @@ const getContentFromEvent = (event: MatrixEvent) => {
 
 export async function encryptDraft(
   mx: MatrixClient,
-  roomId: string,
   event: IEvent
 ): Promise<Partial<IEvent> | null> {
   const cryptoApi = mx.getCrypto();
@@ -41,7 +40,6 @@ export async function encryptDraft(
 
   try {
     const dummyEvent = new MatrixEvent({
-      room_id: roomId,
       ...event,
     });
 
@@ -54,7 +52,7 @@ export async function encryptDraft(
     return dummyEvent.event;
   } catch (e) {
     console.error(
-      `An unexpected error was thrown while trying to encrypt draft for room ${roomId}:`,
+      `An unexpected error was thrown while trying to encrypt draft for room ${event?.room_id}:`,
       e
     );
     return null;
