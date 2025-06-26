@@ -74,16 +74,7 @@ export async function decryptDraft(
 
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
-    const decryptedContent = eventToDecrypt.getClearContent();
-
-    if (!decryptedContent) {
-      return null;
-    }
-
-    delete decryptedContent.body;
-    delete decryptedContent.msgtype;
-
-    return decryptedContent;
+    return getContentFromEvent(eventToDecrypt);
   } catch (e) {
     console.error('An unexpected error was thrown during draft decryption:', e);
     return null;
