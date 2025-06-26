@@ -94,10 +94,7 @@ const draftEventAtomFamily = atomFamily(
 const encryptEventAtRest = async (
   mx: MatrixClient,
   event: Partial<IEvent>
-): Promise<Partial<IEvent> | null> => {
-  const newEvent = await encryptDraft(mx, event);
-  return newEvent;
-};
+): Promise<Partial<IEvent> | null> => await encryptDraft(mx, event);
 
 export function useMessageDraft(roomId: string) {
   const mx = useMatrixClient();
