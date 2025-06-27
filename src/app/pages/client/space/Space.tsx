@@ -77,6 +77,7 @@ import {
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
 import { useRoomNavigate } from '../../../hooks/useRoomNavigate';
 import { CallNavStatus } from '../../../features/room-nav/RoomCallNavStatus';
+import { useCallState } from '../call/CallProvider';
 
 type SpaceMenuProps = {
   room: Room;
@@ -299,6 +300,7 @@ export function Space() {
   const selectedRoomId = useSelectedRoom();
   const lobbySelected = useSpaceLobbySelected(spaceIdOrAlias);
   const searchSelected = useSpaceSearchSelected(spaceIdOrAlias);
+  const { isCallActive, activeCallRoomId } = useCallState();
 
   const [closedCategories, setClosedCategories] = useAtom(useClosedNavCategoriesAtom());
 
@@ -320,10 +322,13 @@ export function Space() {
         if (!closedCategories.has(makeNavCategoryId(space.roomId, parentId))) {
           return false;
         }
-        const showRoomAnyway = roomToUnread.has(roomId) || roomId === selectedRoomId;
+        const showRoomAnyway =
+          roomToUnread.has(roomId) ||
+          roomId === selectedRoomId ||
+          (isCallActive && activeCallRoomId === roomId);
         return !showRoomAnyway;
       },
-      [space.roomId, closedCategories, roomToUnread, selectedRoomId]
+      [space.roomId, closedCategories, roomToUnread, selectedRoomId, activeCallRoomId, isCallActive]
     ),
     useCallback(
       (sId) => closedCategories.has(makeNavCategoryId(space.roomId, sId)),
