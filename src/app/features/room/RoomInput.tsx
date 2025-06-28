@@ -113,7 +113,6 @@ import { powerLevelAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels
 import colorMXID from '../../../util/colorMXID';
 import { useIsDirectRoom } from '../../hooks/useRoom';
 import { useMessageDraft } from '../../hooks/useMessageDraft';
-import { appEvents } from '../../utils/appEvents';
 
 interface RoomInputProps {
   editor: Editor;
@@ -218,11 +217,10 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         lastLoadedDraft.current = null;
         return;
       }
-        resetEditor(editor);
-        Transforms.insertFragment(editor, msgDraft);
-        Transforms.select(editor, Editor.end(editor, []));
+      Transforms.insertFragment(editor, msgDraft);
+      Transforms.select(editor, Editor.end(editor, []));
 
-        lastLoadedDraft.current = msgDraft;
+      lastLoadedDraft.current = msgDraft;
     }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
