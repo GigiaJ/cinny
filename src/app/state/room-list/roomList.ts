@@ -4,8 +4,6 @@ import { useMemo } from 'react';
 import { Membership } from '../../../types/matrix/room';
 import { RoomsAction, useBindRoomsWithMembershipsAtom } from './utils';
 
-export const pendingRoomIdAtom = atom<string | null>(null);
-
 const baseRoomsAtom = atom<string[]>([]);
 export const allRoomsAtom = atom<string[], [RoomsAction], undefined>(
   (get) => get(baseRoomsAtom),
