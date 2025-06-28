@@ -15,7 +15,6 @@ import { mDirectAtom } from '../state/mDirectList';
 import { useSelectedSpace } from './router/useSelectedSpace';
 import { settingsAtom } from '../state/settings';
 import { useSetting } from '../state/hooks/settings';
-import { pendingRoomIdAtom } from '../state/room-list/roomList';
 
 export const useRoomNavigate = () => {
   const navigate = useNavigate();
@@ -25,22 +24,19 @@ export const useRoomNavigate = () => {
   const spaceSelectedId = useSelectedSpace();
   const [developerTools] = useSetting(settingsAtom, 'developerTools');
   const [isPending, startTransition] = useTransition();
-  const setPendingRoomId = useSetAtom(pendingRoomIdAtom);
 
   const navigateSpace = useCallback(
     (roomId: string) => {
-      setPendingRoomId(roomId);
       startTransition(() => {
         const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
         navigate(getSpacePath(roomIdOrAlias));
       });
     },
-    [mx, navigate, setPendingRoomId, startTransition] // Add new dependencies
+    [mx, navigate, startTransition] // Add new dependencies
   );
 
   const navigateRoom = useCallback(
     (roomId: string, eventId?: string, opts?: NavigateOptions) => {
-      setPendingRoomId(roomId);
       startTransition(() => {
         const roomIdOrAlias = getCanonicalAliasOrRoomId(mx, roomId);
         const openSpaceTimeline = developerTools && spaceSelectedId === roomId;
@@ -80,7 +76,6 @@ export const useRoomNavigate = () => {
       roomToParents,
       mDirects,
       developerTools,
-      setPendingRoomId,
       startTransition,
     ]
   );
