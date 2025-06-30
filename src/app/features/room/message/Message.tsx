@@ -912,6 +912,7 @@ export const Message = as<'div', MessageProps>(
               canDelete={canDelete}
               canPinEvent={canPinEvent}
               hideReadReceipts={hideReadReceipts}
+              showDeveloperTools={showDeveloperTools}
               onReactionToggle={onReactionToggle}
               onReplyClick={onReplyClick}
               onEditId={onEditId}
