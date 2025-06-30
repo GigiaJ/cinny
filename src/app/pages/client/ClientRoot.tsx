@@ -37,9 +37,7 @@ import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { useSyncState } from '../../hooks/useSyncState';
 import { stopPropagation } from '../../utils/keyboard';
 import { SyncStatus } from './SyncStatus';
-import { togglePusher } from '../../features/settings/notifications/PushNotifications';
-import { ClientConfig, useClientConfig } from '../../hooks/useClientConfig';
-import { appEvents } from '../../utils/appEvents';
+import { useAppVisibility } from '../../hooks/useAppVisibility';
 
 function ClientRootLoading() {
   return (
