@@ -273,7 +273,7 @@ function InviteUser({ isOpen, roomId, searchTerm, onRequestClose }) {
             searchUser(usernameRef.current.value);
           }}
         >
-          <Input value={searchTerm} forwardRef={usernameRef} label="Name or userId" />
+          <Input value={searchTerm} forwardRef={usernameRef} label="Name or userId" autoFocus />
           <Button disabled={isSearching} iconSrc={UserIC} variant="primary" type="submit">
             Search
           </Button>
