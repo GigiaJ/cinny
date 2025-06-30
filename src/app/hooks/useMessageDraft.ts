@@ -198,10 +198,13 @@ export function useMessageDraft(roomId: string) {
     () =>
       debounce(async (newContent: Descendant[]) => {
         const isEmpty = newContent.length <= 1 && toPlainText(newContent).trim() === '';
+
+
         if (isEmpty || !draftEvent?.event_id) {
           clearDraft();
           return;
         }
+        
         const partial = {
           sender: userId,
           type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
