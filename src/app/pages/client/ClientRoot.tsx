@@ -127,12 +127,6 @@ function ClientRootOptions({ mx }: { mx?: MatrixClient }) {
   );
 }
 
-const pushNotificationListener = (mx: MatrixClient, clientConfig: ClientConfig) => {
-  document.addEventListener('visibilitychange', () => {
-    togglePusher(mx, clientConfig, document.visibilityState === 'visible');
-  });
-};
-
 const useLogoutListener = (mx?: MatrixClient) => {
   useEffect(() => {
     const handleLogout: HttpApiEventHandlerMap[HttpApiEvent.SessionLoggedOut] = async () => {
