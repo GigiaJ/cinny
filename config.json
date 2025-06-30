@@ -9,6 +9,7 @@
     "xmr.se"
   ],
   "allowCustomHomeservers": true,
+  "elementCallUrl": null,
 
   "pushNotificationDetails": {
     "pushNotifyUrl": "https://cinny.cc/_matrix/push/v1/notify",

@@ -11,7 +11,7 @@ import { useAtom, useAtomValue } from 'jotai';
 import { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor } from 'slate';
+import { Transforms, Editor, Descendant } from 'slate';
 import {
   Box,
   Dialog,
@@ -112,6 +112,7 @@ import { GetPowerLevelTag } from '../../hooks/usePowerLevelTags';
 import { powerLevelAPI, usePowerLevelsContext } from '../../hooks/usePowerLevels';
 import colorMXID from '../../../util/colorMXID';
 import { useIsDirectRoom } from '../../hooks/useRoom';
+import { useMessageDraft } from '../../hooks/useMessageDraft';
 
 interface RoomInputProps {
   editor: Editor;
@@ -135,7 +136,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
 
-    const [msgDraft, setMsgDraft] = useAtom(roomIdToMsgDraftAtomFamily(roomId));
+    const [msgDraft, setMsgDraft, clearMsgDraft] = useMessageDraft(roomId);
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
 
@@ -210,22 +211,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     );
 
     useEffect(() => {
-      Transforms.insertFragment(editor, msgDraft);
-    }, [editor, msgDraft]);
-
-    useEffect(
-      () => () => {
-        if (!isEmptyEditor(editor)) {
-          const parsedDraft = JSON.parse(JSON.stringify(editor.children));
-          setMsgDraft(parsedDraft);
-        } else {
-          setMsgDraft([]);
-        }
+      if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
-        resetEditorHistory(editor);
-      },
-      [roomId, editor, setMsgDraft]
-    );
+        return;
+      }
+
+      resetEditor(editor);
+      Transforms.insertFragment(editor, msgDraft);
+      Transforms.select(editor, Editor.end(editor, []));
+    }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
       (fileItem: TUploadItem, metadata: TUploadMetadata) => {
@@ -357,11 +351,22 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       }
       mx.sendMessage(roomId, content);
+      clearMsgDraft();
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [mx, roomId, editor, replyDraft, sendTypingStatus, setReplyDraft, isMarkdown, commands]);
+    }, [
+      editor,
+      isMarkdown,
+      mx,
+      roomId,
+      replyDraft,
+      clearMsgDraft,
+      setReplyDraft,
+      sendTypingStatus,
+      commands,
+    ]);
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
@@ -395,13 +400,15 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           sendTypingStatus(!isEmptyEditor(editor));
         }
 
+        setMsgDraft([...editor.children]);
+
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity]
+      [editor, sendTypingStatus, hideActivity, setMsgDraft] // Use `setMsgDraft` from the hook
     );
 
     const handleCloseAutocomplete = useCallback(() => {
