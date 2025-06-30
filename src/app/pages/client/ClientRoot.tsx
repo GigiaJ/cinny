@@ -149,7 +149,6 @@ type ClientRootProps = {
 export function ClientRoot({ children }: ClientRootProps) {
   const [loading, setLoading] = useState(true);
   const { baseUrl } = getSecret();
-  const clientConfig = useClientConfig();
 
   const [loadState, loadMatrix] = useAsyncCallback<MatrixClient, Error, []>(
     useCallback(() => initClient(getSecret() as any), [])
@@ -160,6 +159,7 @@ export function ClientRoot({ children }: ClientRootProps) {
   );
 
   useLogoutListener(mx);
+  useAppVisibility(mx);
 
   useEffect(() => {
     if (loadState.status === AsyncStatus.Idle) {
@@ -172,37 +172,6 @@ export function ClientRoot({ children }: ClientRootProps) {
       startMatrix(mx);
     }
   }, [mx, startMatrix]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      const isVisible = document.visibilityState === 'visible';
-      appEvents.onVisibilityChange?.(isVisible);
-      if (!isVisible) {
-        appEvents.onVisibilityHidden?.();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-
-  useEffect(() => {
-    if (!mx) return;
-
-    const handleVisibilityForNotifications = (isVisible: boolean) => {
-      togglePusher(mx, clientConfig, isVisible);
-    };
-    
-    appEvents.onVisibilityChange = handleVisibilityForNotifications;
-    
-    return () => {
-      appEvents.onVisibilityChange = null;
-    };
-  }, [mx, clientConfig]);
 
   useSyncState(
     mx,
