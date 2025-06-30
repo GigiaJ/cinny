@@ -9,157 +9,130 @@ export async function requestBrowserNotificationPermission(): Promise<Notificati
     const permission: NotificationPermission = await Notification.requestPermission();
     return permission;
   } catch (error) {
+    console.error('Error requesting notification permission:', error);
     return 'denied';
   }
 }
 
 export async function enablePushNotifications(
   mx: MatrixClient,
-  clientConfig: ClientConfig
+  clientConfig: ClientConfig,
+  pushSubscriptionAtom: Atom<PushSubscriptionJSON | null, [PushSubscription | null], void>
 ): Promise<void> {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     throw new Error('Push messaging is not supported in this browser.');
   }
-  if (!mx || !mx.getHomeserverUrl() || !mx.getAccessToken()) {
-    throw new Error('Matrix client is not properly initialized or authenticated.');
-  }
-
-  if (
-    !clientConfig.pushNotificationDetails?.vapidPublicKey ||
-    !clientConfig.pushNotificationDetails?.webPushAppID ||
-    !clientConfig.pushNotificationDetails?.pushNotifyUrl
-  ) {
-    throw new Error('One or more push configuration constants are missing.');
-  }
-
+  const [pushSubAtom, setPushSubscription] = pushSubscriptionAtom;
   const registration = await navigator.serviceWorker.ready;
+  const currentBrowserSub = await registration.pushManager.getSubscription();
 
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    try {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: clientConfig.pushNotificationDetails?.vapidPublicKey,
-      });
-    } catch (subscribeError: any) {
-      if (Notification.permission === 'denied') {
-        throw new Error('Notification permission denied. Please enable in browser settings.');
-      }
-      throw new Error(`Failed to subscribe: ${subscribeError.message || String(subscribeError)}`);
-    }
+  /* Self-Healing Check. Effectively checks if the browser has invalidated our subscription and recreates it 
+     only when necessary. This prevents us from needing an external call to get back the web push info. 
+  */
+  if (currentBrowserSub && pushSubAtom && currentBrowserSub.endpoint === pushSubAtom.endpoint) {
+    console.error('Valid saved subscription found. Ensuring pusher is enabled on homeserver...');
+    const pusherData = {
+      kind: 'http' as const,
+      app_id: clientConfig.pushNotificationDetails?.webPushAppID,
+      pushkey: pushSubAtom.keys!.p256dh!,
+      app_display_name: 'Cinny',
+      device_display_name: 'This Browser',
+      lang: navigator.language || 'en',
+      data: {
+        url: clientConfig.pushNotificationDetails?.pushNotifyUrl,
+        format: 'event_id_only' as const,
+        endpoint: pushSubAtom.endpoint,
+        p256dh: pushSubAtom.keys!.p256dh!,
+        auth: pushSubAtom.keys!.auth!,
+      },
+      append: false,
+    };
+    navigator.serviceWorker.controller?.postMessage({
+      url: mx.baseUrl,
+      type: 'togglePush',
+      pusherData,
+      token: mx.getAccessToken(),
+    });
+    return;
   }
 
-  const pwaAppIdForPlatform = clientConfig.pushNotificationDetails?.webPushAppID;
-  if (!pwaAppIdForPlatform) {
-    await subscription.unsubscribe();
-    throw new Error('Could not determine PWA App ID for push endpoint.');
+  console.error('No valid saved subscription. Performing full, new subscription...');
+
+  if (currentBrowserSub) {
+    await currentBrowserSub.unsubscribe();
   }
 
-  const subJson = subscription.toJSON();
-  const p256dhKey = subJson.keys?.p256dh;
-  const authKey = subJson.keys?.auth;
+  const newSubscription = await registration.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: clientConfig.pushNotificationDetails?.vapidPublicKey,
+  });
 
-  if (!p256dhKey || !authKey) {
-    await subscription.unsubscribe();
-    throw new Error('Push subscription keys (p256dh, auth) are missing.');
-  }
+  setPushSubscription(newSubscription);
 
+  const subJson = newSubscription.toJSON();
   const pusherData = {
     kind: 'http' as const,
-    app_id: pwaAppIdForPlatform,
-    pushkey: p256dhKey,
+    app_id: clientConfig.pushNotificationDetails?.webPushAppID,
+    pushkey: subJson.keys!.p256dh!,
     app_display_name: 'Cinny',
     device_display_name:
-      (await mx.getDevice(mx.getDeviceId() ?? '')).display_name ?? 'Unknown device',
+      (await mx.getDevice(mx.getDeviceId() ?? '')).display_name ?? 'Unknown Device',
     lang: navigator.language || 'en',
     data: {
       url: clientConfig.pushNotificationDetails?.pushNotifyUrl,
       format: 'event_id_only' as const,
-      endpoint: subscription.endpoint,
-      p256dh: p256dhKey,
-      auth: authKey,
+      endpoint: newSubscription.endpoint,
+      p256dh: subJson.keys!.p256dh!,
+      auth: subJson.keys!.auth!,
     },
-    enabled: false,
-    'org.matrix.msc3881.enabled': false,
-    'org.matrix.msc3881.device_id': mx.getDeviceId(),
     append: false,
   };
 
-  try {
-    navigator.serviceWorker.controller?.postMessage({
-      url: mx.baseUrl,
-      type: 'togglePush',
-      pusherData,
-      token: mx.getAccessToken(),
-    });
-  } catch (pusherError: any) {
-    await subscription.unsubscribe();
-    throw new Error(
-      `Failed to set up push with Matrix server: ${pusherError.message || String(pusherError)}`
-    );
-  }
+  navigator.serviceWorker.controller?.postMessage({
+    url: mx.baseUrl,
+    type: 'togglePush',
+    pusherData,
+    token: mx.getAccessToken(),
+  });
 }
 
+/**
+ * Disables push notifications by telling the homeserver to delete the pusher,
+ * but keeps the browser subscription locally for a fast re-enable.
+ */
 export async function disablePushNotifications(
   mx: MatrixClient,
-  clientConfig: ClientConfig
+  clientConfig: ClientConfig,
+  pushSubscriptionAtom: Atom<PushSubscriptionJSON | null, [PushSubscription | null], void>
 ): Promise<void> {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    return;
-  }
+  const [pushSubAtom] = pushSubscriptionAtom;
 
-  const registration = await navigator.serviceWorker.ready;
-  const subscription = await registration.pushManager.getSubscription();
+  const pusherData = {
+    kind: null,
+    app_id: clientConfig.pushNotificationDetails?.webPushAppID,
+    pushkey: pushSubAtom?.keys?.p256dh,
+  };
 
-  if (!subscription) {
-    return;
-  }
-
-  const pwaAppIdForPlatform = clientConfig.pushNotificationDetails?.webPushAppID;
-
-  await subscription.unsubscribe();
-
-  const subJson = subscription.toJSON();
-  const p256dhKey = subJson.keys?.p256dh;
-  const authKey = subJson.keys?.auth;
-
-  if (mx && mx.getAccessToken() && pwaAppIdForPlatform) {
-    const pusherData = {
-      kind: null,
-      app_id: pwaAppIdForPlatform,
-      pushkey: p256dhKey,
-    };
-
-    navigator.serviceWorker.controller?.postMessage({
-      url: mx.baseUrl,
-      type: 'togglePush',
-      pusherData,
-      token: mx.getAccessToken(),
-    });
-  }
+  navigator.serviceWorker.controller?.postMessage({
+    url: mx.baseUrl,
+    type: 'togglePush',
+    pusherData,
+    token: mx.getAccessToken(),
+  });
 }
 
 export async function deRegisterAllPushers(mx: MatrixClient): Promise<void> {
   const response = await mx.getPushers();
   const pushers = response.pushers || [];
-
-  if (pushers.length === 0) {
-    return;
-  }
+  if (pushers.length === 0) return;
 
   const deletionPromises = pushers.map((pusher) => {
-    const pusherToDelete: Partial<IPusher> & { kind: null; app_id: string; pushkey: string } = {
+    const pusherToDelete = {
       kind: null,
       app_id: pusher.app_id,
       pushkey: pusher.pushkey,
-      ...(pusher.data && { data: pusher.data }),
-      ...(pusher.profile_tag && { profile_tag: pusher.profile_tag }),
     };
-
-    return mx
-      .setPusher(pusherToDelete as any)
-      .then(() => ({ status: 'fulfilled', app_id: pusher.app_id }))
-      .catch((err) => ({ status: 'rejected', app_id: pusher.app_id, error: err }));
+    return mx.setPusher(pusherToDelete as any);
   });
 
   await Promise.allSettled(deletionPromises);
@@ -168,11 +141,15 @@ export async function deRegisterAllPushers(mx: MatrixClient): Promise<void> {
 export async function togglePusher(
   mx: MatrixClient,
   clientConfig: ClientConfig,
-  visible: boolean
+  visible: boolean,
+  usePushNotifications: boolean,
+  pushSubscriptionAtom: Atom<PushSubscriptionJSON | null, [PushSubscription | null], void>
 ): Promise<void> {
-  if (visible) {
-    disablePushNotifications(mx, clientConfig);
-  } else {
-    enablePushNotifications(mx, clientConfig);
+  if (usePushNotifications) {
+    if (visible) {
+      await disablePushNotifications(mx, clientConfig, pushSubscriptionAtom);
+    } else {
+      await enablePushNotifications(mx, clientConfig, pushSubscriptionAtom);
+    }
   }
 }

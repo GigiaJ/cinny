@@ -1,6 +1,8 @@
+/* eslint-disable no-nested-ternary */
 import React, { useCallback, useEffect, useState } from 'react';
 import { Box, Text, Switch, Button, color, Spinner } from 'folds';
 import { IPusherRequest } from 'matrix-js-sdk';
+import { useAtom } from 'jotai';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
 import { SettingTile } from '../../../components/setting-tile';
@@ -16,6 +18,8 @@ import {
   disablePushNotifications,
 } from './PushNotifications';
 import { useClientConfig } from '../../../hooks/useClientConfig';
+import { pushSubscriptionAtom } from '../../../state/pushSubscription';
+import { DeregisterAllPushersSetting } from './DeregisterPushNotifications';
 
 function EmailNotification() {
   const mx = useMatrixClient();
@@ -93,12 +97,15 @@ function EmailNotification() {
 function WebPushNotificationSetting() {
   const mx = useMatrixClient();
   const clientConfig = useClientConfig();
-  const [userPushPreference, setUserPushPreference] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [usePushNotifications, setPushNotifications] = useSetting(
+    settingsAtom,
+    'usePushNotifications'
+  );
+  const pushSubAtom = useAtom(pushSubscriptionAtom);
+
   const browserPermission = usePermissionState('notifications', getNotificationState());
   useEffect(() => {
-    const storedPreference = localStorage.getItem('cinny_web_push_enabled');
-    setUserPushPreference(storedPreference === 'true');
     setIsLoading(false);
   }, []);
   const handleRequestPermissionAndEnable = async () => {
@@ -106,9 +113,8 @@ function WebPushNotificationSetting() {
     try {
       const permissionResult = await requestBrowserNotificationPermission();
       if (permissionResult === 'granted') {
-        await enablePushNotifications(mx, clientConfig);
-        localStorage.setItem('cinny_web_push_enabled', 'true');
-        setUserPushPreference(true);
+        await enablePushNotifications(mx, clientConfig, pushSubAtom);
+        setPushNotifications(true);
       }
     } finally {
       setIsLoading(false);
@@ -120,12 +126,11 @@ function WebPushNotificationSetting() {
 
     try {
       if (wantsPush) {
-        await enablePushNotifications(mx, clientConfig);
+        await enablePushNotifications(mx, clientConfig, pushSubAtom);
       } else {
-        await disablePushNotifications(mx, clientConfig);
+        await disablePushNotifications(mx, clientConfig, pushSubAtom);
       }
-      localStorage.setItem('cinny_web_push_enabled', String(wantsPush));
-      setUserPushPreference(wantsPush);
+      setPushNotifications(wantsPush);
     } finally {
       setIsLoading(false);
     }
@@ -151,10 +156,7 @@ function WebPushNotificationSetting() {
             <Text size="B300">Enable</Text>
           </Button>
         ) : browserPermission === 'granted' ? (
-          <Switch
-            value={userPushPreference}
-            onChange={handlePushSwitchChange}
-          />
+          <Switch value={usePushNotifications} onChange={handlePushSwitchChange} />
         ) : null
       }
     />
@@ -162,7 +164,7 @@ function WebPushNotificationSetting() {
 }
 
 export function SystemNotification() {
-  const [showInAppNotifs, setShowInAppNotifs] = useSetting(settingsAtom, 'showNotifications');
+  const [showInAppNotifs, setShowInAppNotifs] = useSetting(settingsAtom, 'useInAppNotifications');
   const [isNotificationSounds, setIsNotificationSounds] = useSetting(
     settingsAtom,
     'isNotificationSounds'
@@ -210,6 +212,15 @@ export function SystemNotification() {
         gap="400"
       >
         <EmailNotification />
+      </SequenceCard>
+
+      <SequenceCard
+        className={SequenceCardStyle}
+        variant="SurfaceVariant"
+        direction="Column"
+        gap="400"
+      >
+        <DeregisterAllPushersSetting />
       </SequenceCard>
     </Box>
   );
