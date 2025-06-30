@@ -151,10 +151,7 @@ function WebPushNotificationSetting() {
             <Text size="B300">Enable</Text>
           </Button>
         ) : browserPermission === 'granted' ? (
-          <Switch
-            value={userPushPreference}
-            onChange={handlePushSwitchChange}
-          />
+          <Switch value={usePushNotifications} onChange={handlePushSwitchChange} />
         ) : null
       }
     />
