@@ -15,7 +15,7 @@ const getContentFromEvent = (event: MatrixEvent) => {
   const decryptedContent = event.getClearContent();
 
   if (!decryptedContent) {
-    return null;
+    return event?.event?.content?.content;
   }
 
   delete decryptedContent.body;
