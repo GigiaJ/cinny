@@ -162,7 +162,7 @@ function WebPushNotificationSetting() {
 }
 
 export function SystemNotification() {
-  const [showInAppNotifs, setShowInAppNotifs] = useSetting(settingsAtom, 'showNotifications');
+  const [showInAppNotifs, setShowInAppNotifs] = useSetting(settingsAtom, 'useInAppNotifications');
   const [isNotificationSounds, setIsNotificationSounds] = useSetting(
     settingsAtom,
     'isNotificationSounds'
