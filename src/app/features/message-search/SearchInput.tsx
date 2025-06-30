@@ -29,6 +29,7 @@ export function SearchInput({ active, loading, searchInputRef, onSearch, onReset
         ref={searchInputRef}
         style={{ paddingRight: config.space.S300 }}
         name="searchInput"
+        autoFocus
         size="500"
         variant="Background"
         placeholder="Search for keyword"
