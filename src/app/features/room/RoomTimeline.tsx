@@ -448,6 +448,7 @@ export function RoomTimeline({
   const [encUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const showUrlPreview = room.hasEncryptionStateEvent() ? encUrlPreview : urlPreview;
   const [showHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
+  const [showDeveloperTools] = useSetting(settingsAtom, 'developerTools');
 
   const ignoredUsersList = useIgnoredUsers();
   const ignoredUsersSet = useMemo(() => new Set(ignoredUsersList), [ignoredUsersList]);
@@ -1065,6 +1066,7 @@ export function RoomTimeline({
               )
             }
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
             powerLevelTag={getPowerLevelTag(senderPowerLevel)}
             accessibleTagColors={accessibleTagColors}
             legacyUsernameColor={legacyUsernameColor || direct}
@@ -1146,6 +1148,7 @@ export function RoomTimeline({
               )
             }
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
             powerLevelTag={getPowerLevelTag(senderPowerLevel)}
             accessibleTagColors={accessibleTagColors}
             legacyUsernameColor={legacyUsernameColor || direct}
@@ -1247,6 +1250,7 @@ export function RoomTimeline({
               )
             }
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
             powerLevelTag={getPowerLevelTag(senderPowerLevel)}
             accessibleTagColors={accessibleTagColors}
             legacyUsernameColor={legacyUsernameColor || direct}
@@ -1292,6 +1296,7 @@ export function RoomTimeline({
             messageSpacing={messageSpacing}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
           >
             <EventContent
               messageLayout={messageLayout}
@@ -1328,6 +1333,7 @@ export function RoomTimeline({
             messageSpacing={messageSpacing}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
           >
             <EventContent
               messageLayout={messageLayout}
@@ -1365,6 +1371,7 @@ export function RoomTimeline({
             messageSpacing={messageSpacing}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
           >
             <EventContent
               messageLayout={messageLayout}
@@ -1402,6 +1409,7 @@ export function RoomTimeline({
             messageSpacing={messageSpacing}
             canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
             hideReadReceipts={hideActivity}
+            showDeveloperTools={showDeveloperTools}
           >
             <EventContent
               messageLayout={messageLayout}
@@ -1441,6 +1449,7 @@ export function RoomTimeline({
           messageSpacing={messageSpacing}
           canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
           hideReadReceipts={hideActivity}
+          showDeveloperTools={showDeveloperTools}
         >
           <EventContent
             messageLayout={messageLayout}
@@ -1485,6 +1494,7 @@ export function RoomTimeline({
           messageSpacing={messageSpacing}
           canDelete={canRedact || mEvent.getSender() === mx.getUserId()}
           hideReadReceipts={hideActivity}
+          showDeveloperTools={showDeveloperTools}
         >
           <EventContent
             messageLayout={messageLayout}
