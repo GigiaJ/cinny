@@ -106,13 +106,10 @@ export function useMessageDraft(roomId: string) {
   const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
 
   useEffect(() => {
-    let isMounted = true;
     if (draftEvent) {
       if (draftEvent?.type === 'm.room.encrypted') {
         decryptDraft(mx, draftEvent).then((decryptedEvent) => {
-          if (isMounted) {
-            setContent(decryptedEvent?.content ?? null);
-          }
+          setContent(decryptedEvent.content);
         });
       } else {
         const event = new MatrixEvent(draftEvent);
@@ -121,9 +118,6 @@ export function useMessageDraft(roomId: string) {
     } else {
       setContent(null);
     }
-    return () => {
-      isMounted = false;
-    };
   }, [draftEvent, mx]);
 
   const syncDraftToServer = useMemo(
