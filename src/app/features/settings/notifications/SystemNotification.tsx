@@ -93,12 +93,15 @@ function EmailNotification() {
 function WebPushNotificationSetting() {
   const mx = useMatrixClient();
   const clientConfig = useClientConfig();
-  const [userPushPreference, setUserPushPreference] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [usePushNotifications, setPushNotifications] = useSetting(
+    settingsAtom,
+    'usePushNotifications'
+  );
+  const pushSubAtom = useAtom(pushSubscriptionAtom);
+
   const browserPermission = usePermissionState('notifications', getNotificationState());
   useEffect(() => {
-    const storedPreference = localStorage.getItem('cinny_web_push_enabled');
-    setUserPushPreference(storedPreference === 'true');
     setIsLoading(false);
   }, []);
   const handleRequestPermissionAndEnable = async () => {
@@ -106,9 +109,8 @@ function WebPushNotificationSetting() {
     try {
       const permissionResult = await requestBrowserNotificationPermission();
       if (permissionResult === 'granted') {
-        await enablePushNotifications(mx, clientConfig);
-        localStorage.setItem('cinny_web_push_enabled', 'true');
-        setUserPushPreference(true);
+        await enablePushNotifications(mx, clientConfig, pushSubAtom);
+        setPushNotifications(true);
       }
     } finally {
       setIsLoading(false);
@@ -120,12 +122,11 @@ function WebPushNotificationSetting() {
 
     try {
       if (wantsPush) {
-        await enablePushNotifications(mx, clientConfig);
+        await enablePushNotifications(mx, clientConfig, pushSubAtom);
       } else {
-        await disablePushNotifications(mx, clientConfig);
+        await disablePushNotifications(mx, clientConfig, pushSubAtom);
       }
-      localStorage.setItem('cinny_web_push_enabled', String(wantsPush));
-      setUserPushPreference(wantsPush);
+      setPushNotifications(wantsPush);
     } finally {
       setIsLoading(false);
     }
