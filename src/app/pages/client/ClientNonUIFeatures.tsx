@@ -57,7 +57,11 @@ function FaviconUpdater() {
   useEffect(() => {
     let notification = false;
     let highlight = false;
+    let total = 0;
     roomToUnread.forEach((unread) => {
+      if (unread.from === null) {
+        total += unread.total;
+      }
       if (unread.total > 0) {
         notification = true;
       }
@@ -70,6 +74,11 @@ function FaviconUpdater() {
       setFavicon(highlight ? LogoHighlightSVG : LogoUnreadSVG);
     } else {
       setFavicon(LogoSVG);
+    }
+    try {
+      navigator.setAppBadge(total);
+    } catch (e) {
+      // Likely Firefox/Gecko-based and doesn't support badging API
     }
   }, [roomToUnread]);
 
@@ -187,6 +196,7 @@ function MessageNotifications() {
     ) => {
       if (mx.getSyncState() !== 'SYNCING') return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
+
       if (
         !room ||
         !data.liveEvent ||
