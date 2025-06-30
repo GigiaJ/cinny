@@ -45,6 +45,7 @@ type BaseOptionProps = {
   canDelete: boolean | undefined;
   canPinEvent: boolean | undefined;
   hideReadReceipts: boolean | undefined;
+  showDeveloperTools: boolean | undefined;
   onReactionToggle: (targetEventId: string, key: string, shortcode?: string | undefined) => void;
   onReplyClick: MouseEventHandler<HTMLButtonElement>;
   onEditId: ((eventId?: string | undefined) => void) | undefined;
@@ -64,6 +65,7 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
       canDelete,
       canPinEvent,
       hideReadReceipts,
+      showDeveloperTools,
       onReactionToggle,
       onReplyClick,
       onEditId,
@@ -130,10 +132,27 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
             </Text>
           </MenuItem>
         )}
+
+        <MenuItem
+          size="300"
+          after={<Icon size="100" src={Icons.Bookmark} />}
+          radii="300"
+          data-event-id={mEvent.getId()}
+          onClick={async () => {
+            await navigator.clipboard.writeText(mEvent.getContent().body);
+            closeMenu();
+          }}
+        >
+          <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
+            Copy Message
+          </Text>
+        </MenuItem>
         {!hideReadReceipts && (
           <MessageReadReceiptItem room={room} eventId={mEvent.getId() ?? ''} onClose={closeMenu} />
         )}
-        <MessageSourceCodeItem room={room} mEvent={mEvent} onClose={closeMenu} />
+        {showDeveloperTools && (
+          <MessageSourceCodeItem room={room} mEvent={mEvent} onClose={closeMenu} />
+        )}
         <MessageCopyLinkItem room={room} mEvent={mEvent} onClose={closeMenu} />
         {canPinEvent && <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />}
       </Box>
@@ -179,6 +198,7 @@ export function MessageOptionsMenu({
   canDelete,
   canPinEvent,
   hideReadReceipts,
+  showDeveloperTools,
   onReactionToggle,
   onReplyClick,
   onEditId,
@@ -211,6 +231,7 @@ export function MessageOptionsMenu({
     canDelete,
     canPinEvent,
     hideReadReceipts,
+    showDeveloperTools,
     onReactionToggle,
     onReplyClick,
     onEditId,
