@@ -211,6 +211,15 @@ export function SystemNotification() {
       >
         <EmailNotification />
       </SequenceCard>
+
+      <SequenceCard
+        className={SequenceCardStyle}
+        variant="SurfaceVariant"
+        direction="Column"
+        gap="400"
+      >
+        <DeregisterAllPushersSetting />
+      </SequenceCard>
     </Box>
   );
 }
