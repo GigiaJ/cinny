@@ -15,7 +15,7 @@ const getContentFromEvent = (event: MatrixEvent) => {
   const decryptedContent = event.getClearContent();
 
   if (!decryptedContent) {
-    return null;
+    return event?.event?.content?.content;
   }
 
   delete decryptedContent.body;
@@ -106,13 +106,10 @@ export function useMessageDraft(roomId: string) {
   const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
 
   useEffect(() => {
-    let isMounted = true;
     if (draftEvent) {
       if (draftEvent?.type === 'm.room.encrypted') {
         decryptDraft(mx, draftEvent).then((decryptedEvent) => {
-          if (isMounted) {
-            setContent(decryptedEvent?.content ?? null);
-          }
+          setContent(decryptedEvent.content);
         });
       } else {
         const event = new MatrixEvent(draftEvent);
@@ -121,16 +118,17 @@ export function useMessageDraft(roomId: string) {
     } else {
       setContent(null);
     }
-    return () => {
-      isMounted = false;
-    };
   }, [draftEvent, mx]);
 
   const syncDraftToServer = useMemo(
-    () => debounce(async (eventToSave: Partial<IEvent> | null) => {
+    () =>
+      debounce(async (eventToSave: Partial<IEvent> | null) => {
+        eventToSave.type = mx.getRoom(roomId)?.hasEncryptionStateEvent()
+          ? 'm.room.encrypted'
+          : 'm.room.message';
         const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
         let event;
-        if (eventToSave?.type === 'm.room.encryption') {
+        if (eventToSave?.type === 'm.room.encrypted') {
           event = await encryptEventAtRest(mx, eventToSave);
         } else {
           event = eventToSave;
@@ -182,8 +180,8 @@ export function useMessageDraft(roomId: string) {
 
   const clearDraft = useCallback(async () => {
     const partial = {
-      type: mx.getRoom(roomId)?.hasEncryptionStateEvent() ? 'm.room.encryption' : 'm.room.message',
       sender: userId ?? '',
+      type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
       content: { msgtype: 'm.text', body: 'draft', content: [] },
       room_id: roomId,
       origin_server_ts: Date.now(),
@@ -201,16 +199,15 @@ export function useMessageDraft(roomId: string) {
       debounce(async (newContent: Descendant[]) => {
         const isEmpty = newContent.length <= 1 && toPlainText(newContent).trim() === '';
 
+
         if (isEmpty || !draftEvent?.event_id) {
           clearDraft();
           return;
         }
-
+        
         const partial = {
-          type: mx.getRoom(roomId)?.hasEncryptionStateEvent()
-            ? 'm.room.encryption'
-            : 'm.room.message',
           sender: userId,
+          type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
           room_id: roomId,
           content: { msgtype: 'm.text', body: 'draft', content: newContent },
           origin_server_ts: Date.now(),
@@ -222,7 +219,7 @@ export function useMessageDraft(roomId: string) {
           await syncDraftToServer(partial);
         }
       }, 500),
-    [clearDraft, draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
+    [clearDraft, draftEvent?.event_id, roomId, setDraftEvent, syncDraftToServer, userId]
   );
 
   return [content ?? emptyDraft, updateDraft, clearDraft] as const;

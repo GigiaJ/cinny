@@ -214,13 +214,12 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     useEffect(() => {
       if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
-        lastLoadedDraft.current = null;
         return;
       }
+
+      resetEditor(editor);
       Transforms.insertFragment(editor, msgDraft);
       Transforms.select(editor, Editor.end(editor, []));
-
-      lastLoadedDraft.current = msgDraft;
     }, [msgDraft, editor]);
 
     const handleFileMetadata = useCallback(
