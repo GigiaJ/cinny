@@ -132,6 +132,21 @@ export const MessageDropdownMenu = forwardRef<HTMLDivElement, BaseOptionProps>(
             </Text>
           </MenuItem>
         )}
+
+        <MenuItem
+          size="300"
+          after={<Icon size="100" src={Icons.Bookmark} />}
+          radii="300"
+          data-event-id={mEvent.getId()}
+          onClick={async () => {
+            await navigator.clipboard.writeText(mEvent.getContent().body);
+            closeMenu();
+          }}
+        >
+          <Text className={css.MessageMenuItemText} as="span" size="T300" truncate>
+            Copy Message
+          </Text>
+        </MenuItem>
         {!hideReadReceipts && (
           <MessageReadReceiptItem room={room} eventId={mEvent.getId() ?? ''} onClose={closeMenu} />
         )}
