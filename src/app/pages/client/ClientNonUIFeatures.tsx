@@ -92,7 +92,7 @@ function InviteNotifications() {
   const mx = useMatrixClient();
 
   const navigate = useNavigate();
-  const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
+  const [showNotifications] = useSetting(settingsAtom, 'useInAppNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
 
   const notify = useCallback(
@@ -143,7 +143,7 @@ function MessageNotifications() {
   const unreadCacheRef = useRef<Map<string, UnreadInfo>>(new Map());
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
-  const [showNotifications] = useSetting(settingsAtom, 'showNotifications');
+  const [showNotifications] = useSetting(settingsAtom, 'useInAppNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
 
   const navigate = useNavigate();
