@@ -59,7 +59,10 @@ export async function decryptDraft(
   }
 }
 
-function toPlainText(nodes: Descendant[]): string {
+function toPlainText(nodes: Descendant[] | null | undefined): string {
+  if (!Array.isArray(nodes)) {
+    return '';
+  }
   return nodes.map((n) => (n as any).children?.map((c: any) => c.text).join('') ?? '').join('\n');
 }
 
