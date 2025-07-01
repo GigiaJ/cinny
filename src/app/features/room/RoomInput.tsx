@@ -552,6 +552,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           onPaste={handlePaste}
+          onChange={handleOnChange}
+          onDOMBeforeInput={handleDOMBeforeInput}
           top={
             replyDraft && (
               <div>
