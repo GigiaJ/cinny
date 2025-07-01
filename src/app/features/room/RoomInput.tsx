@@ -215,6 +215,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         resetEditor(editor);
         return;
       }
+      if (JSON.stringify(msgDraft) === JSON.stringify(editor.children)) {
+        return;
+      }
 
       resetEditor(editor);
       Transforms.insertFragment(editor, msgDraft);
