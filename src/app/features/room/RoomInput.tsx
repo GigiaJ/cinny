@@ -8,10 +8,10 @@ import React, {
   useState,
 } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { isKeyHotkey } from 'is-hotkey';
+import isHotkey, { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor, Descendant } from 'slate';
+import { Transforms, Editor } from 'slate';
 import {
   Box,
   Dialog,
@@ -136,7 +136,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
 
-    const [msgDraft, setMsgDraft, clearMsgDraft] = useMessageDraft(roomId);
+    const [msgDraft, setMsgDraft] = useMessageDraft(roomId);
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
     const lastLoadedDraft = useRef<Descendant[] | null>(null);
@@ -214,6 +214,9 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     useEffect(() => {
       if (!msgDraft || msgDraft.length === 0) {
         resetEditor(editor);
+        return;
+      }
+      if (JSON.stringify(msgDraft) === JSON.stringify(editor.children)) {
         return;
       }
 
@@ -352,22 +355,26 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       }
       mx.sendMessage(roomId, content);
-      clearMsgDraft();
+
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [
-      editor,
-      isMarkdown,
-      mx,
-      roomId,
-      replyDraft,
-      clearMsgDraft,
-      setReplyDraft,
-      sendTypingStatus,
-      commands,
-    ]);
+    }, [editor, isMarkdown, mx, roomId, replyDraft, setReplyDraft, sendTypingStatus, commands]);
+
+    const handleDOMBeforeInput = useCallback(
+      (event: DOMBeforeInputEvent) => {
+        if (event.isComposing || editor.selection == null) {
+          return;
+        }
+
+        if (event.inputType === 'insertText' && event.data) {
+          event.preventDefault();
+          Editor.insertText(editor, event.data);
+        }
+      },
+      [editor]
+    );
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
@@ -387,7 +394,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           setReplyDraft(undefined);
         }
       },
-      [submit, setReplyDraft, enterForNewline, autocompleteQuery]
+      [enterForNewline, submit, autocompleteQuery, setReplyDraft]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
@@ -401,15 +408,26 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           sendTypingStatus(!isEmptyEditor(editor));
         }
 
-        setMsgDraft([...editor.children]);
-
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity, setMsgDraft] // Use `setMsgDraft` from the hook
+
+      [hideActivity, editor, sendTypingStatus]
+    );
+
+    const handleOnChange = useCallback(
+      (evt) => {
+        if (isHotkey('enter', evt)) {
+          console.error('HIT ENTER');
+          evt.preventDefault();
+          return;
+        }
+        setMsgDraft([...editor.children]);
+      },
+      [setMsgDraft, editor]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
@@ -535,6 +553,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
           onPaste={handlePaste}
+          onChange={handleOnChange}
+          onDOMBeforeInput={handleDOMBeforeInput}
           top={
             replyDraft && (
               <div>
