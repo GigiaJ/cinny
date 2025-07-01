@@ -151,7 +151,7 @@ export function useMessageDraft(roomId: string) {
           const newServerData = { ...existingData, [roomId]: event };
           await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
         }
-      }, 500),
+      }, 1000),
     [mx, roomId]
   );
 
@@ -200,7 +200,6 @@ export function useMessageDraft(roomId: string) {
       const serverEvent = allSyncedDrafts[roomId] as IEvent | undefined;
 
       if (!serverEvent) {
-        setDraftEvent(null);
         return;
       }
 
