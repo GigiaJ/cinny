@@ -229,5 +229,5 @@ export function useMessageDraft(roomId: string) {
     };
   }, [mx, roomId, draftEvent, setDraftEvent, debouncedUpdate]);
 
-  return [content ?? emptyDraft, updateDraft, clearDraft] as const;
+  return [content ?? emptyDraft, updateDraft] as const;
 }
