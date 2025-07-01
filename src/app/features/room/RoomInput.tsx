@@ -393,7 +393,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           setReplyDraft(undefined);
         }
       },
-      [submit, setReplyDraft, enterForNewline, autocompleteQuery]
+      [enterForNewline, submit, autocompleteQuery, setReplyDraft]
     );
 
     const handleKeyUp: KeyboardEventHandler = useCallback(
