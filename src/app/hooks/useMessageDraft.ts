@@ -13,15 +13,14 @@ const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
 const getContentFromEvent = (event: MatrixEvent) => {
   const decryptedContent = event.getClearContent();
-
-  if (!decryptedContent) {
+  if (!decryptedContent || decryptedContent.msgtype === 'm.bad.encrypted') {
     return event?.event?.content?.content;
   }
 
   delete decryptedContent.body;
   delete decryptedContent.msgtype;
 
-  return decryptedContent;
+  return decryptedContent.content;
 };
 
 export async function encryptDraft(
