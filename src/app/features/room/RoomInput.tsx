@@ -407,15 +407,26 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           sendTypingStatus(!isEmptyEditor(editor));
         }
 
-        setMsgDraft([...editor.children]);
-
         const prevWordRange = getPrevWorldRange(editor);
         const query = prevWordRange
           ? getAutocompleteQuery<AutocompletePrefix>(editor, prevWordRange, AUTOCOMPLETE_PREFIXES)
           : undefined;
         setAutocompleteQuery(query);
       },
-      [editor, sendTypingStatus, hideActivity, setMsgDraft] // Use `setMsgDraft` from the hook
+
+      [hideActivity, editor, sendTypingStatus]
+    );
+
+    const handleOnChange = useCallback(
+      (evt) => {
+        if (isHotkey('enter', evt)) {
+          console.error('HIT ENTER');
+          evt.preventDefault();
+          return;
+        }
+        setMsgDraft([...editor.children]);
+      },
+      [setMsgDraft, editor]
     );
 
     const handleCloseAutocomplete = useCallback(() => {
