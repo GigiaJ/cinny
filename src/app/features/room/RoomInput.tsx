@@ -8,10 +8,10 @@ import React, {
   useState,
 } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { isKeyHotkey } from 'is-hotkey';
+import isHotkey, { isKeyHotkey } from 'is-hotkey';
 import { EventType, IContent, MsgType, RelationType, Room } from 'matrix-js-sdk';
 import { ReactEditor } from 'slate-react';
-import { Transforms, Editor, Descendant } from 'slate';
+import { Transforms, Editor } from 'slate';
 import {
   Box,
   Dialog,
