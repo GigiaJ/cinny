@@ -77,6 +77,7 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
+  onDOMBeforeInput?: (event: DOMBeforeInputEvent) => void;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
@@ -93,6 +94,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onKeyUp,
       onChange,
       onPaste,
+      onDOMBeforeInput,
     },
     ref
   ) => {
@@ -157,6 +159,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyDown={handleKeydown}
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
+                onDOMBeforeInput={onDOMBeforeInput}
               />
             </Scroll>
             {after && (
