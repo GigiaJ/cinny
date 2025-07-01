@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { atomFamily } from 'jotai/utils';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Descendant } from 'slate';
 import { debounce } from 'lodash-es';
 import { MatrixClient, MatrixEvent, IEvent, CryptoBackend, IContent } from 'matrix-js-sdk';
@@ -31,29 +31,14 @@ export async function encryptDraft(
   const cryptoApi = mx.getCrypto();
   const userId = mx.getUserId();
 
-  if (!cryptoApi || !userId) {
-    console.error('Cannot encrypt draft: E2EE or userId is not available.');
-    return null;
-  }
+  if (!cryptoApi || !userId) return null;
   const cryptoBackend = cryptoApi as CryptoBackend;
-
   try {
-    const dummyEvent = new MatrixEvent({
-      ...event,
-    });
-
+    const dummyEvent = new MatrixEvent({ ...event });
     await cryptoBackend.encryptEvent(dummyEvent);
-    if (!dummyEvent.isEncrypted()) {
-      console.error('Encryption failed silently. The event was not encrypted.');
-      return null;
-    }
-
+    if (!dummyEvent.isEncrypted()) return null;
     return dummyEvent.event;
   } catch (e) {
-    console.error(
-      `An unexpected error was thrown while trying to encrypt draft for room ${event?.room_id}:`,
-      e
-    );
     return null;
   }
 }
@@ -63,24 +48,21 @@ export async function decryptDraft(
   savedEventData: IEvent
 ): Promise<IContent | null> {
   const cryptoApi = mx.getCrypto();
-  if (!cryptoApi) {
-    console.error('Cannot decrypt draft: E2EE is not enabled.');
-    return null;
-  }
+  if (!cryptoApi) return null;
   const cryptoBackend = cryptoApi as CryptoBackend;
-
   const eventToDecrypt = new MatrixEvent(savedEventData);
-
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
     return getContentFromEvent(eventToDecrypt);
   } catch (e) {
-    console.error('An unexpected error was thrown during draft decryption:', e);
     return null;
   }
 }
 
-function toPlainText(nodes: Descendant[]): string {
+function toPlainText(nodes: Descendant[] | null | undefined): string {
+  if (!Array.isArray(nodes)) {
+    return '';
+  }
   return nodes.map((n) => (n as any).children?.map((c: any) => c.text).join('') ?? '').join('\n');
 }
 
@@ -89,6 +71,22 @@ const draftEventAtomFamily = atomFamily(
     atomWithIndexedDB<Partial<IEvent> | null>(`draft-event-${userId}-${roomId}`, null),
   (a, b) => a.userId === b.userId && a.roomId === b.roomId
 );
+
+const handleDraftContent = async (
+  event: Partial<IEvent> | null,
+  mx: MatrixClient
+): Promise<Descendant[] | null> => {
+  if (!event) return null;
+
+  if (event.type === 'm.room.encrypted') {
+    const decryptedContent = (await decryptDraft(mx, event)) as Descendant[] | null;
+    return decryptedContent && decryptedContent.length > 0 ? decryptedContent : null;
+  }
+
+  const mEvent = new MatrixEvent(event);
+  const eventContent = getContentFromEvent(mEvent);
+  return eventContent && eventContent.length > 0 ? eventContent : null;
+};
 
 const encryptEventAtRest = async (
   mx: MatrixClient,
@@ -105,37 +103,38 @@ export function useMessageDraft(roomId: string) {
   const [content, setContent] = useState<Descendant[] | null>(null);
   const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
   const { isPending } = useRoomNavigate();
+  const isServerUpdate = useRef(false);
 
   useEffect(() => {
-    if (!isPending && draftEvent) {
-      if (draftEvent?.type === 'm.room.encrypted') {
-        decryptDraft(mx, draftEvent).then((decryptedContent) => {
-          if (decryptedContent && decryptedContent.length > 0) {
-            setContent(decryptedContent);
-          } else {
-            setContent(null);
-          }
-        });
-      } else {
-        const event = new MatrixEvent(draftEvent);
-        const eventContent = getContentFromEvent(event);
-        if (eventContent && eventContent.length > 0) {
-          setContent(eventContent ?? null);
-        } else {
-          setContent(null);
-        }
-      }
-    } else {
+    let isMounted = true;
+    if (isPending) {
       setContent(null);
+      return;
     }
+
+    const updateContent = async () => {
+      const newContent = await handleDraftContent(draftEvent, mx);
+      if (isMounted) {
+        setContent(newContent);
+      }
+    };
+
+    updateContent();
+
+    return () => {
+      isMounted = false;
+    };
   }, [draftEvent, isPending, mx]);
 
   const syncDraftToServer = useMemo(
     () =>
       debounce(async (eventToSave: Partial<IEvent> | null) => {
+        if (eventToSave) {
         eventToSave.type = mx.getRoom(roomId)?.hasEncryptionStateEvent()
           ? 'm.room.encrypted'
           : 'm.room.message';
+        }
+
         const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
         let event;
         if (eventToSave?.type === 'm.room.encrypted') {
@@ -156,22 +155,64 @@ export function useMessageDraft(roomId: string) {
     [mx, roomId]
   );
 
+  const debouncedUpdate = useMemo(
+    () =>
+      debounce(async (newContent: Descendant[]) => {
+        const isEmpty = newContent.length <= 1 && toPlainText(newContent) === '';
+
+        const partial = {
+          sender: userId,
+          type: 'm.room.message',
+          room_id: roomId,
+          content: {
+            msgtype: 'm.text',
+            body: 'draft',
+            content: isEmpty ? [] : newContent,
+          },
+          origin_server_ts: Date.now(),
+          event_id: isEmpty || !draftEvent?.event_id ? `$${mx.makeTxnId()}` : draftEvent?.event_id,
+        };
+
+        setDraftEvent(partial as Partial<IEvent>);
+        await syncDraftToServer(partial);
+      }, 250),
+    [draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
+  );
+
+  const updateDraft = useCallback(
+    (newContent: Descendant[]) => {
+      if (isServerUpdate.current) {
+        isServerUpdate.current = false;
+        return;
+      }
+      debouncedUpdate(newContent);
+    },
+    [debouncedUpdate]
+  );
+
   useEffect(() => {
     if (!mx) return;
 
-    const handleAccountData = (event: MatrixEvent) => {
+    const handleAccountData = async (event: MatrixEvent) => {
       if (event.getType() !== DRAFT_EVENT_TYPE) return;
 
       const allSyncedDrafts = event.getContent();
       const serverEvent = allSyncedDrafts[roomId] as IEvent | undefined;
 
-      // TODO: Fix but should never occur. If this does generate a new event.
       if (!serverEvent) {
         return;
       }
 
-      if (serverEvent.origin_server_ts > (draftEvent?.origin_server_ts ?? 0)) {
+      const isServerNewer = serverEvent.origin_server_ts > (draftEvent?.origin_server_ts ?? 0);
+
+      if (isServerNewer) {
+        const serverContent = await handleDraftContent(serverEvent, mx);
+        const localContent = await handleDraftContent(draftEvent, mx);
+
+        if (toPlainText(serverContent) !== toPlainText(localContent)) {
+          isServerUpdate.current = true;
         setDraftEvent(serverEvent);
+        }
       }
     };
 
@@ -183,49 +224,9 @@ export function useMessageDraft(roomId: string) {
     mx.on('accountData' as any, handleAccountData);
     return () => {
       mx.off('accountData' as any, handleAccountData);
+      debouncedUpdate.cancel();
     };
-  }, [mx, roomId, draftEvent, setDraftEvent]);
+  }, [mx, roomId, draftEvent, setDraftEvent, debouncedUpdate]);
 
-  const clearDraft = useCallback(async () => {
-    const partial = {
-      sender: userId,
-      type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
-      content: { msgtype: 'm.text', body: 'draft', content: null },
-      room_id: roomId,
-      origin_server_ts: Date.now(),
-      event_id: `$${mx.makeTxnId()}`,
-    };
-
-    if (partial) {
-      setDraftEvent(partial);
-      await syncDraftToServer(partial);
-    }
-  }, [mx, roomId, setDraftEvent, syncDraftToServer, userId]);
-
-  const updateDraft = useMemo(
-    () =>
-      debounce(async (newContent: Descendant[]) => {
-        const isEmpty = newContent.length <= 1 && toPlainText(newContent).trim() === '';
-        if (isEmpty || !draftEvent?.event_id) {
-          clearDraft();
-          return;
-        }
-        const partial = {
-          sender: userId,
-          type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
-          room_id: roomId,
-          content: { msgtype: 'm.text', body: 'draft', content: newContent },
-          origin_server_ts: Date.now(),
-          event_id: draftEvent?.event_id,
-        };
-
-        if (partial) {
-          setDraftEvent(partial);
-          await syncDraftToServer(partial);
-        }
-      }, 250),
-    [clearDraft, draftEvent?.event_id, roomId, setDraftEvent, syncDraftToServer, userId]
-  );
-
-  return [content ?? emptyDraft, updateDraft, clearDraft] as const;
+  return [content ?? emptyDraft, updateDraft] as const;
 }
