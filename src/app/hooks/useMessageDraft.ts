@@ -155,6 +155,41 @@ export function useMessageDraft(roomId: string) {
     [mx, roomId]
   );
 
+  const debouncedUpdate = useMemo(
+    () =>
+      debounce(async (newContent: Descendant[]) => {
+        const isEmpty = newContent.length <= 1 && toPlainText(newContent) === '';
+
+        const partial = {
+          sender: userId,
+          type: 'm.room.message',
+          room_id: roomId,
+          content: {
+            msgtype: 'm.text',
+            body: 'draft',
+            content: isEmpty ? [] : newContent,
+          },
+          origin_server_ts: Date.now(),
+          event_id: isEmpty || !draftEvent?.event_id ? `$${mx.makeTxnId()}` : draftEvent?.event_id,
+        };
+
+        setDraftEvent(partial as Partial<IEvent>);
+        await syncDraftToServer(partial);
+      }, 250),
+    [draftEvent?.event_id, mx, roomId, setDraftEvent, syncDraftToServer, userId]
+  );
+
+  const updateDraft = useCallback(
+    (newContent: Descendant[]) => {
+      if (isServerUpdate.current) {
+        isServerUpdate.current = false;
+        return;
+      }
+      debouncedUpdate(newContent);
+    },
+    [debouncedUpdate]
+  );
+
   useEffect(() => {
     if (!mx) return;
 
