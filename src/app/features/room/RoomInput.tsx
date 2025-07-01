@@ -359,17 +359,21 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
       resetEditorHistory(editor);
       setReplyDraft(undefined);
       sendTypingStatus(false);
-    }, [
-      editor,
-      isMarkdown,
-      mx,
-      roomId,
-      replyDraft,
-      clearMsgDraft,
-      setReplyDraft,
-      sendTypingStatus,
-      commands,
-    ]);
+    }, [editor, isMarkdown, mx, roomId, replyDraft, setReplyDraft, sendTypingStatus, commands]);
+
+    const handleDOMBeforeInput = useCallback(
+      (event: DOMBeforeInputEvent) => {
+        if (event.isComposing || editor.selection == null) {
+          return;
+        }
+
+        if (event.inputType === 'insertText' && event.data) {
+          event.preventDefault();
+          Editor.insertText(editor, event.data); 
+        }
+      },
+      [editor]
+    );
 
     const handleKeyDown: KeyboardEventHandler = useCallback(
       (evt) => {
