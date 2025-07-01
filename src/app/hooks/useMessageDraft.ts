@@ -129,9 +129,12 @@ export function useMessageDraft(roomId: string) {
   const syncDraftToServer = useMemo(
     () =>
       debounce(async (eventToSave: Partial<IEvent> | null) => {
+        if (eventToSave) {
         eventToSave.type = mx.getRoom(roomId)?.hasEncryptionStateEvent()
           ? 'm.room.encrypted'
           : 'm.room.message';
+        }
+
         const existingData = mx.getAccountData(DRAFT_EVENT_TYPE)?.getContent() ?? {};
         let event;
         if (eventToSave?.type === 'm.room.encrypted') {
