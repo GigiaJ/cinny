@@ -136,7 +136,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
     const roomToParents = useAtomValue(roomToParentsAtom);
     const powerLevels = usePowerLevelsContext();
 
-    const [msgDraft, setMsgDraft, clearMsgDraft] = useMessageDraft(roomId);
+    const [msgDraft, setMsgDraft] = useMessageDraft(roomId);
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
     const replyUserID = replyDraft?.userId;
 
@@ -354,7 +354,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       }
       mx.sendMessage(roomId, content);
-      
+
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
@@ -369,7 +369,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
         if (event.inputType === 'insertText' && event.data) {
           event.preventDefault();
-          Editor.insertText(editor, event.data); 
+          Editor.insertText(editor, event.data);
         }
       },
       [editor]
