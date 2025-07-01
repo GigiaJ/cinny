@@ -8,20 +8,20 @@ import { MatrixClient, MatrixEvent, IEvent, CryptoBackend, IContent } from 'matr
 import { useMatrixClient } from './useMatrixClient';
 import { atomWithIndexedDB } from '../state/utils/atomWithIndexedDB';
 import { sessionsAtom } from '../state/sessions';
+import { useRoomNavigate } from './useRoomNavigate';
 
 const DRAFT_EVENT_TYPE = 'org.cinny.draft.v1';
 
 const getContentFromEvent = (event: MatrixEvent) => {
   const decryptedContent = event.getClearContent();
-
-  if (!decryptedContent) {
+  if (!decryptedContent || decryptedContent.msgtype === 'm.bad.encrypted') {
     return event?.event?.content?.content;
   }
 
   delete decryptedContent.body;
   delete decryptedContent.msgtype;
 
-  return decryptedContent;
+  return decryptedContent.content;
 };
 
 export async function encryptDraft(
@@ -104,21 +104,31 @@ export function useMessageDraft(roomId: string) {
   const [draftEvent, setDraftEvent] = useAtom(draftEventAtomFamily(atomKey));
   const [content, setContent] = useState<Descendant[] | null>(null);
   const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
+  const { isPending } = useRoomNavigate();
 
   useEffect(() => {
-    if (draftEvent) {
+    if (!isPending && draftEvent) {
       if (draftEvent?.type === 'm.room.encrypted') {
-        decryptDraft(mx, draftEvent).then((decryptedEvent) => {
-          setContent(decryptedEvent.content);
+        decryptDraft(mx, draftEvent).then((decryptedContent) => {
+          if (decryptedContent && decryptedContent.length > 0) {
+            setContent(decryptedContent);
+          } else {
+            setContent(null);
+          }
         });
       } else {
         const event = new MatrixEvent(draftEvent);
-        setContent(getContentFromEvent(event) ?? null);
+        const eventContent = getContentFromEvent(event);
+        if (eventContent && eventContent.length > 0) {
+          setContent(eventContent ?? null);
+        } else {
+          setContent(null);
+        }
       }
     } else {
       setContent(null);
     }
-  }, [draftEvent, mx]);
+  }, [draftEvent, isPending, mx]);
 
   const syncDraftToServer = useMemo(
     () =>
@@ -133,7 +143,6 @@ export function useMessageDraft(roomId: string) {
         } else {
           event = eventToSave;
         }
-
         if (!event) {
           if (existingData[roomId]) {
             delete existingData[roomId];
@@ -143,7 +152,7 @@ export function useMessageDraft(roomId: string) {
           const newServerData = { ...existingData, [roomId]: event };
           await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
         }
-      }, 500),
+      }, 1000),
     [mx, roomId]
   );
 
@@ -158,7 +167,6 @@ export function useMessageDraft(roomId: string) {
 
       // TODO: Fix but should never occur. If this does generate a new event.
       if (!serverEvent) {
-        setDraftEvent(null);
         return;
       }
 
@@ -180,9 +188,9 @@ export function useMessageDraft(roomId: string) {
 
   const clearDraft = useCallback(async () => {
     const partial = {
-      sender: userId ?? '',
+      sender: userId,
       type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
-      content: { msgtype: 'm.text', body: 'draft', content: [] },
+      content: { msgtype: 'm.text', body: 'draft', content: null },
       room_id: roomId,
       origin_server_ts: Date.now(),
       event_id: `$${mx.makeTxnId()}`,
@@ -215,7 +223,7 @@ export function useMessageDraft(roomId: string) {
           setDraftEvent(partial);
           await syncDraftToServer(partial);
         }
-      }, 500),
+      }, 250),
     [clearDraft, draftEvent?.event_id, roomId, setDraftEvent, syncDraftToServer, userId]
   );
 
