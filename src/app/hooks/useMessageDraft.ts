@@ -106,27 +106,24 @@ export function useMessageDraft(roomId: string) {
   const isServerUpdate = useRef(false);
 
   useEffect(() => {
-    if (!isPending && draftEvent) {
-      if (draftEvent?.type === 'm.room.encrypted') {
-        decryptDraft(mx, draftEvent).then((decryptedContent) => {
-          if (decryptedContent && decryptedContent.length > 0) {
-            setContent(decryptedContent);
-          } else {
-            setContent(null);
-          }
-        });
-      } else {
-        const event = new MatrixEvent(draftEvent);
-        const eventContent = getContentFromEvent(event);
-        if (eventContent && eventContent.length > 0) {
-          setContent(eventContent ?? null);
-        } else {
-          setContent(null);
-        }
-      }
-    } else {
+    let isMounted = true;
+    if (isPending) {
       setContent(null);
+      return;
     }
+
+    const updateContent = async () => {
+      const newContent = await handleDraftContent(draftEvent, mx);
+      if (isMounted) {
+        setContent(newContent);
+      }
+    };
+
+    updateContent();
+
+    return () => {
+      isMounted = false;
+    };
   }, [draftEvent, isPending, mx]);
 
   const syncDraftToServer = useMemo(
