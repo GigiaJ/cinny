@@ -143,7 +143,6 @@ export function useMessageDraft(roomId: string) {
         } else {
           event = eventToSave;
         }
-
         if (!event) {
           if (existingData[roomId]) {
             delete existingData[roomId];
@@ -168,7 +167,6 @@ export function useMessageDraft(roomId: string) {
 
       // TODO: Fix but should never occur. If this does generate a new event.
       if (!serverEvent) {
-        setDraftEvent(null);
         return;
       }
 
