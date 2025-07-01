@@ -351,7 +351,7 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         }
       }
       mx.sendMessage(roomId, content);
-      clearMsgDraft();
+      
       resetEditor(editor);
       resetEditorHistory(editor);
       setReplyDraft(undefined);
