@@ -104,21 +104,31 @@ export function useMessageDraft(roomId: string) {
   const [draftEvent, setDraftEvent] = useAtom(draftEventAtomFamily(atomKey));
   const [content, setContent] = useState<Descendant[] | null>(null);
   const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
+  const { isPending } = useRoomNavigate();
 
   useEffect(() => {
-    if (draftEvent) {
+    if (!isPending && draftEvent) {
       if (draftEvent?.type === 'm.room.encrypted') {
-        decryptDraft(mx, draftEvent).then((decryptedEvent) => {
-          setContent(decryptedEvent.content);
+        decryptDraft(mx, draftEvent).then((decryptedContent) => {
+          if (decryptedContent && decryptedContent.length > 0) {
+            setContent(decryptedContent);
+          } else {
+            setContent(null);
+          }
         });
       } else {
         const event = new MatrixEvent(draftEvent);
-        setContent(getContentFromEvent(event) ?? null);
+        const eventContent = getContentFromEvent(event);
+        if (eventContent && eventContent.length > 0) {
+          setContent(eventContent ?? null);
+        } else {
+          setContent(null);
+        }
       }
     } else {
       setContent(null);
     }
-  }, [draftEvent, mx]);
+  }, [draftEvent, isPending, mx]);
 
   const syncDraftToServer = useMemo(
     () =>
