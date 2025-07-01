@@ -57,6 +57,12 @@ export const useEditor = (): Editor => {
   return editor;
 };
 
+type DOMBeforeInputEvent = React.FormEvent<HTMLDivElement> & {
+  inputType: string;
+  data: string | null;
+  isComposing: boolean;
+};
+
 export type EditorChangeHandler = (value: Descendant[]) => void;
 type CustomEditorProps = {
   editableName?: string;
