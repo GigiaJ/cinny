@@ -48,19 +48,13 @@ export async function decryptDraft(
   savedEventData: IEvent
 ): Promise<IContent | null> {
   const cryptoApi = mx.getCrypto();
-  if (!cryptoApi) {
-    console.error('Cannot decrypt draft: E2EE is not enabled.');
-    return null;
-  }
+  if (!cryptoApi) return null;
   const cryptoBackend = cryptoApi as CryptoBackend;
-
   const eventToDecrypt = new MatrixEvent(savedEventData);
-
   try {
     await eventToDecrypt.attemptDecryption(cryptoBackend);
     return getContentFromEvent(eventToDecrypt);
   } catch (e) {
-    console.error('An unexpected error was thrown during draft decryption:', e);
     return null;
   }
 }
