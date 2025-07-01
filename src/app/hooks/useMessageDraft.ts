@@ -151,7 +151,7 @@ export function useMessageDraft(roomId: string) {
           const newServerData = { ...existingData, [roomId]: event };
           await mx.setAccountData(DRAFT_EVENT_TYPE, newServerData);
         }
-      }, 1000),
+      }, 500),
     [mx, roomId]
   );
 
