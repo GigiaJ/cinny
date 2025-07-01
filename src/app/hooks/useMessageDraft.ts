@@ -31,29 +31,14 @@ export async function encryptDraft(
   const cryptoApi = mx.getCrypto();
   const userId = mx.getUserId();
 
-  if (!cryptoApi || !userId) {
-    console.error('Cannot encrypt draft: E2EE or userId is not available.');
-    return null;
-  }
+  if (!cryptoApi || !userId) return null;
   const cryptoBackend = cryptoApi as CryptoBackend;
-
   try {
-    const dummyEvent = new MatrixEvent({
-      ...event,
-    });
-
+    const dummyEvent = new MatrixEvent({ ...event });
     await cryptoBackend.encryptEvent(dummyEvent);
-    if (!dummyEvent.isEncrypted()) {
-      console.error('Encryption failed silently. The event was not encrypted.');
-      return null;
-    }
-
+    if (!dummyEvent.isEncrypted()) return null;
     return dummyEvent.event;
   } catch (e) {
-    console.error(
-      `An unexpected error was thrown while trying to encrypt draft for room ${event?.room_id}:`,
-      e
-    );
     return null;
   }
 }
