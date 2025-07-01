@@ -72,6 +72,22 @@ const draftEventAtomFamily = atomFamily(
   (a, b) => a.userId === b.userId && a.roomId === b.roomId
 );
 
+const handleDraftContent = async (
+  event: Partial<IEvent> | null,
+  mx: MatrixClient
+): Promise<Descendant[] | null> => {
+  if (!event) return null;
+
+  if (event.type === 'm.room.encrypted') {
+    const decryptedContent = (await decryptDraft(mx, event)) as Descendant[] | null;
+    return decryptedContent && decryptedContent.length > 0 ? decryptedContent : null;
+  }
+
+  const mEvent = new MatrixEvent(event);
+  const eventContent = getContentFromEvent(mEvent);
+  return eventContent && eventContent.length > 0 ? eventContent : null;
+};
+
 const encryptEventAtRest = async (
   mx: MatrixClient,
   event: Partial<IEvent>
