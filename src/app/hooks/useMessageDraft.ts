@@ -193,19 +193,27 @@ export function useMessageDraft(roomId: string) {
   useEffect(() => {
     if (!mx) return;
 
-    const handleAccountData = (event: MatrixEvent) => {
+    const handleAccountData = async (event: MatrixEvent) => {
       if (event.getType() !== DRAFT_EVENT_TYPE) return;
 
       const allSyncedDrafts = event.getContent();
       const serverEvent = allSyncedDrafts[roomId] as IEvent | undefined;
 
-      // TODO: Fix but should never occur. If this does generate a new event.
       if (!serverEvent) {
+        setDraftEvent(null);
         return;
       }
 
-      if (serverEvent.origin_server_ts > (draftEvent?.origin_server_ts ?? 0)) {
+      const isServerNewer = serverEvent.origin_server_ts > (draftEvent?.origin_server_ts ?? 0);
+
+      if (isServerNewer) {
+        const serverContent = await handleDraftContent(serverEvent, mx);
+        const localContent = await handleDraftContent(draftEvent, mx);
+
+        if (toPlainText(serverContent) !== toPlainText(localContent)) {
+          isServerUpdate.current = true;
         setDraftEvent(serverEvent);
+        }
       }
     };
 
@@ -217,49 +225,9 @@ export function useMessageDraft(roomId: string) {
     mx.on('accountData' as any, handleAccountData);
     return () => {
       mx.off('accountData' as any, handleAccountData);
+      debouncedUpdate.cancel();
     };
-  }, [mx, roomId, draftEvent, setDraftEvent]);
-
-  const clearDraft = useCallback(async () => {
-    const partial = {
-      sender: userId,
-      type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
-      content: { msgtype: 'm.text', body: 'draft', content: null },
-      room_id: roomId,
-      origin_server_ts: Date.now(),
-      event_id: `$${mx.makeTxnId()}`,
-    };
-
-    if (partial) {
-      setDraftEvent(partial);
-      await syncDraftToServer(partial);
-    }
-  }, [mx, roomId, setDraftEvent, syncDraftToServer, userId]);
-
-  const updateDraft = useMemo(
-    () =>
-      debounce(async (newContent: Descendant[]) => {
-        const isEmpty = newContent.length <= 1 && toPlainText(newContent).trim() === '';
-        if (isEmpty || !draftEvent?.event_id) {
-          clearDraft();
-          return;
-        }
-        const partial = {
-          sender: userId,
-          type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
-          room_id: roomId,
-          content: { msgtype: 'm.text', body: 'draft', content: newContent },
-          origin_server_ts: Date.now(),
-          event_id: draftEvent?.event_id,
-        };
-
-        if (partial) {
-          setDraftEvent(partial);
-          await syncDraftToServer(partial);
-        }
-      }, 250),
-    [clearDraft, draftEvent?.event_id, roomId, setDraftEvent, syncDraftToServer, userId]
-  );
+  }, [mx, roomId, draftEvent, setDraftEvent, debouncedUpdate]);
 
   return [content ?? emptyDraft, updateDraft, clearDraft] as const;
 }
