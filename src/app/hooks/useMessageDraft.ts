@@ -103,6 +103,7 @@ export function useMessageDraft(roomId: string) {
   const [content, setContent] = useState<Descendant[] | null>(null);
   const emptyDraft = useMemo(() => [{ type: 'paragraph', children: [{ text: '' }] }], []);
   const { isPending } = useRoomNavigate();
+  const isServerUpdate = useRef(false);
 
   useEffect(() => {
     if (!isPending && draftEvent) {
