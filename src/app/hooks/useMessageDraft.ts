@@ -180,9 +180,9 @@ export function useMessageDraft(roomId: string) {
 
   const clearDraft = useCallback(async () => {
     const partial = {
-      sender: userId ?? '',
+      sender: userId,
       type: 'm.room.message', // If encryption at rest for rooms that support it is desired this can be shifted to be a ternary too
-      content: { msgtype: 'm.text', body: 'draft', content: [] },
+      content: { msgtype: 'm.text', body: 'draft', content: null },
       room_id: roomId,
       origin_server_ts: Date.now(),
       event_id: `$${mx.makeTxnId()}`,
