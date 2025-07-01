@@ -1,30 +1,25 @@
 import { createClient, MatrixClient, IndexedDBStore, IndexedDBCryptoStore } from 'matrix-js-sdk';
-
 import { cryptoCallbacks } from './state/secretStorageKeys';
 import { clearNavToActivePathStore } from '../app/state/navToActivePath';
-
-type Session = {
-  baseUrl: string;
-  accessToken: string;
-  userId: string;
-  deviceId: string;
-};
+import { Session, getSessionStoreName } from '../app/state/sessions';
 
 export const initClient = async (session: Session): Promise<MatrixClient> => {
+  const storeName = getSessionStoreName(session);
+
   const indexedDBStore = new IndexedDBStore({
     indexedDB: global.indexedDB,
     localStorage: global.localStorage,
-    dbName: 'web-sync-store',
+    dbName: storeName.sync,
   });
 
-  const legacyCryptoStore = new IndexedDBCryptoStore(global.indexedDB, 'crypto-store');
+  const cryptoStore = new IndexedDBCryptoStore(global.indexedDB, storeName.crypto); // 4. USE THE DYNAMIC NAME
 
   const mx = createClient({
     baseUrl: session.baseUrl,
     accessToken: session.accessToken,
     userId: session.userId,
     store: indexedDBStore,
-    cryptoStore: legacyCryptoStore,
+    cryptoStore,
     deviceId: session.deviceId,
     timelineSupport: true,
     cryptoCallbacks: cryptoCallbacks as any,
