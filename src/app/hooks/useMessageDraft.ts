@@ -215,7 +215,7 @@ export function useMessageDraft(roomId: string) {
           setDraftEvent(partial);
           await syncDraftToServer(partial);
         }
-      }, 500),
+      }, 250),
     [clearDraft, draftEvent?.event_id, roomId, setDraftEvent, syncDraftToServer, userId]
   );
 
