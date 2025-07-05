@@ -53,7 +53,7 @@ import {
 } from '../../hooks/useRoomsNotificationPreferences';
 import { RoomNotificationModeSwitcher } from '../../components/RoomNotificationSwitcher';
 import { useCallState } from '../../pages/client/call/CallProvider';
-import { useCallMembers } from '../../hooks/useCallMembers';
+import { useCallMembers } from '../../hooks/useCallMemberships';
 import { useRoomNavigate } from '../../hooks/useRoomNavigate';
 import { ScreenSize, useScreenSizeContext } from '../../hooks/useScreenSize';
 import { RoomNavUser } from './RoomNavUser';
@@ -239,7 +239,7 @@ export function RoomNavItem({
     (receipt) => receipt.userId !== mx.getUserId()
   );
   const isActiveCall = isCallActive && activeCallRoomId === room.roomId;
-  const callMembers = useCallMembers(mx, room.roomId);
+  const callMemberships = useCallMembers(mx, room.roomId);
   const { navigateRoom } = useRoomNavigate();
   const { roomIdOrAlias: viewedRoomId } = useParams();
   const screenSize = useScreenSizeContext();
@@ -302,7 +302,7 @@ export function RoomNavItem({
       ? [
           'Call Room',
           isActiveCall && 'Currently in Call',
-          callMembers.length && `${callMembers.length} in Call`,
+          callMemberships.length && `${callMemberships.length} in Call`,
         ]
       : 'Text Room',
     unread?.total && `${unread.total} Messages`,
@@ -461,8 +461,8 @@ export function RoomNavItem({
       </NavItem>
       {room.isCallRoom() && (
         <Box direction="Column" style={{ paddingLeft: config.space.S200 }}>
-          {callMembers.map((userId) => (
-            <RoomNavUser room={room} userId={userId} />
+          {callMemberships.map((callMembership) => (
+            <RoomNavUser room={room} callMembership={callMembership} />
           ))}
         </Box>
       )}
