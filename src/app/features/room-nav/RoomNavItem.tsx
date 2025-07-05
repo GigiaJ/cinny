@@ -488,19 +488,19 @@ export function RoomNavItem({
             </NavItemOptions>
           )}
         </NavButton>
-        {room.isCallRoom() && (
-          <Box direction="Column" style={{ paddingLeft: config.space.S200 }}>
-            {callMemberships.map((callMembership: CallMembership) => (
-              <RoomNavUser room={room} callMembership={callMembership} />
-            ))}
-          </Box>
-        )}
-        {isMobile && (
-          <MobileContextMenu onClose={handleCloseMenu} isOpen={isMobileSheetOpen}>
-            {menuContent}
-          </MobileContextMenu>
-        )}
       </NavItem>
+      {room.isCallRoom() && (
+        <Box direction="Column" style={{ paddingLeft: config.space.S200 }}>
+          {callMemberships.map((callMembership: CallMembership) => (
+            <RoomNavUser room={room} callMembership={callMembership} />
+          ))}
+        </Box>
+      )}
+      {isMobile && (
+        <MobileContextMenu onClose={handleCloseMenu} isOpen={isMobileSheetOpen}>
+          {menuContent}
+        </MobileContextMenu>
+      )}
     </Box>
   );
 }
