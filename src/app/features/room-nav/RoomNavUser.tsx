@@ -12,6 +12,7 @@ import {
 import React, { useState } from 'react';
 import { Room } from 'matrix-js-sdk';
 import { useFocusWithin, useHover } from 'react-aria';
+import { CallMembership } from 'matrix-js-sdk/lib/matrixrtc/CallMembership';
 import { NavItem, NavItemContent, NavItemOptions } from '../../components/nav';
 import { UserAvatar } from '../../components/user-avatar';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
@@ -23,9 +24,9 @@ import { openProfileViewer } from '../../../client/action/navigation';
 
 type RoomNavUserProps = {
   room: Room;
-  userId: string;
+  callMembership: CallMembership;
 };
-export function RoomNavUser({ room, userId }: RoomNavUserProps) {
+export function RoomNavUser({ room, callMembership }: RoomNavUserProps) {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [navUserExpanded, setNavUserExpanded] = useState(false);
@@ -39,11 +40,12 @@ export function RoomNavUser({ room, userId }: RoomNavUserProps) {
   });
   const { isCallActive, activeCallRoomId } = useCallState();
   const isActiveCall = isCallActive && activeCallRoomId === room.roomId;
+  const userId = callMembership.sender ?? '';
   const avatarMxcUrl = getMemberAvatarMxc(room, userId);
   const avatarUrl = avatarMxcUrl
     ? mx.mxcUrlToHttp(avatarMxcUrl, 32, 32, 'crop', undefined, false, useAuthentication)
     : undefined;
-  const getName = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId) ?? userId;
+  const getName = getMemberDisplayName(room, userId) ?? getMxIdLocalPart(userId);
   const isCallParticipant = isActiveCall && userId !== mx.getUserId();
 
   const handleNavUserClick = () => {
