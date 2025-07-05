@@ -11,6 +11,12 @@ export type ClientConfig = {
   allowCustomHomeservers?: boolean;
   elementCallUrl?: string;
 
+  pushNotificationDetails?: {
+    pushNotifyUrl?: string;
+    vapidPublicKey?: string;
+    webPushAppID?: string;
+  };
+
   featuredCommunities?: {
     openAsDefault?: boolean;
     spaces?: string[];

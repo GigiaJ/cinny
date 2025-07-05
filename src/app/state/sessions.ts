@@ -1,4 +1,3 @@
-import { atom } from 'jotai';
 import {
   atomWithLocalStorage,
   getLocalStorageItem,
@@ -71,22 +70,19 @@ export const getSessionStoreName = (session: Session): SessionStoreName => {
 };
 
 export const MATRIX_SESSIONS_KEY = 'matrixSessions';
-const baseSessionsAtom = atomWithLocalStorage<Sessions>(
+export const sessionsAtom = atomWithLocalStorage<Sessions>(
   MATRIX_SESSIONS_KEY,
   (key) => {
-    const defaultSessions: Sessions = [];
-    const sessions = getLocalStorageItem(key, defaultSessions);
-
-    // Before multi account support session was stored
-    // as multiple item in local storage.
-    // So we need these migration code.
     const fallbackSession = getFallbackSession();
     if (fallbackSession) {
+      console.warn('Migrating from a fallback session...');
+      const newSessions: Sessions = [fallbackSession];
+      setLocalStorageItem(key, newSessions);
       removeFallbackSession();
-      sessions.push(fallbackSession);
-      setLocalStorageItem(key, sessions);
+      return newSessions;
     }
-    return sessions;
+
+    return getLocalStorageItem(key, []);
   },
   (key, value) => {
     setLocalStorageItem(key, value);
@@ -102,28 +98,3 @@ export type SessionsAction =
       type: 'DELETE';
       session: Session;
     };
-
-export const sessionsAtom = atom<Sessions, [SessionsAction], undefined>(
-  (get) => get(baseSessionsAtom),
-  (get, set, action) => {
-    if (action.type === 'PUT') {
-      const sessions = [...get(baseSessionsAtom)];
-      const sessionIndex = sessions.findIndex(
-        (session) => session.userId === action.session.userId
-      );
-      if (sessionIndex === -1) {
-        sessions.push(action.session);
-      } else {
-        sessions.splice(sessionIndex, 1, action.session);
-      }
-      set(baseSessionsAtom, sessions);
-      return;
-    }
-    if (action.type === 'DELETE') {
-      const sessions = get(baseSessionsAtom).filter(
-        (session) => session.userId !== action.session.userId
-      );
-      set(baseSessionsAtom, sessions);
-    }
-  }
-);
