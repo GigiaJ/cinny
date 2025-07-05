@@ -39,6 +39,8 @@ import {
 import { autoScrollForElements } from '@atlaskit/pragmatic-drag-and-drop-auto-scroll/element';
 import { combine } from '@atlaskit/pragmatic-drag-and-drop/combine';
 import FocusTrap from 'focus-trap-react';
+import { useLongPress } from 'use-long-press';
+import { createPortal } from 'react-dom';
 import {
   useOrphanSpaces,
   useRecursiveChildScopeFactory,
@@ -91,6 +93,7 @@ import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
 import { useSetting } from '../../../state/hooks/settings';
 import { settingsAtom } from '../../../state/settings';
 import { useOpenSpaceSettings } from '../../../state/hooks/spaceSettings';
+import { MobileContextMenu } from '../../../molecules/mobile-context-menu/MobileContextMenu';
 
 type SpaceMenuProps = {
   room: Room;
@@ -142,7 +145,7 @@ const SpaceMenu = forwardRef<HTMLDivElement, SpaceMenuProps>(
     };
 
     return (
-      <Menu ref={ref} style={{ maxWidth: toRem(160), width: '100vw' }}>
+      <Menu ref={ref}>
         <Box direction="Column" gap="100" style={{ padding: config.space.S100 }}>
           <MenuItem
             onClick={handleMarkAsRead}
@@ -221,7 +224,8 @@ const useDraggableItem = (
   item: SidebarDraggable,
   targetRef: RefObject<HTMLElement>,
   onDragging: (item?: SidebarDraggable) => void,
-  dragHandleRef?: RefObject<HTMLElement>
+  dragHandleRef?: RefObject<HTMLElement>,
+  onActualDragStart?: () => void
 ): boolean => {
   const [dragging, setDragging] = useState(false);
 
@@ -238,13 +242,16 @@ const useDraggableItem = (
           onDragStart: () => {
             setDragging(true);
             onDragging?.(item);
+            if (typeof onActualDragStart === 'function') {
+              onActualDragStart();
+            }
           },
           onDrop: () => {
             setDragging(false);
             onDragging?.(undefined);
           },
         });
-  }, [targetRef, dragHandleRef, item, onDragging]);
+  }, [targetRef, dragHandleRef, item, onDragging, onActualDragStart]);
 
   return dragging;
 };
@@ -388,6 +395,11 @@ function SpaceTab({
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const targetRef = useRef<HTMLDivElement>(null);
+  const screenSize = useScreenSizeContext();
+  const isMobile = screenSize === ScreenSize.Mobile;
+  const [isMobileSheetOpen, setMobileSheetOpen] = useState(false);
+
+  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const spaceDraggable: SidebarDraggable = useMemo(
     () =>
@@ -400,20 +412,46 @@ function SpaceTab({
     [folder, space]
   );
 
-  useDraggableItem(spaceDraggable, targetRef, onDragging);
+  const handleDragStart = useCallback(() => {
+    if (isMobileSheetOpen) {
+      setMenuAnchor(undefined);
+      setMobileSheetOpen(false);
+    }
+  }, [isMobileSheetOpen]);
+
+  const isDragging = useDraggableItem(
+    spaceDraggable,
+    targetRef,
+    onDragging,
+    undefined,
+    handleDragStart
+  );
+
   const dropState = useDropTarget(spaceDraggable, targetRef);
   const dropType = dropState?.type;
-
-  const [menuAnchor, setMenuAnchor] = useState<RectCords>();
 
   const handleContextMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     evt.preventDefault();
     const cords = evt.currentTarget.getBoundingClientRect();
-    setMenuAnchor((currentState) => {
-      if (currentState) return undefined;
-      return cords;
-    });
+    if (!isMobile) {
+      setMenuAnchor((currentState) => {
+        if (currentState) return undefined;
+        return cords;
+      });
+    }
   };
+
+  const longPressBinder = useLongPress(
+    () => {
+      if (isMobile && !isDragging) {
+        setMobileSheetOpen(true);
+      }
+    },
+    {
+      threshold: 400,
+      cancelOnMovement: true,
+    }
+  );
 
   return (
     <RoomUnreadProvider roomId={space.roomId}>
@@ -426,6 +464,7 @@ function SpaceTab({
           data-drop-above={dropType === 'reorder-above'}
           data-drop-below={dropType === 'reorder-below'}
           data-inside-folder={!!folder}
+          {...(isMobile ? longPressBinder() : {})}
         >
           <SidebarItemTooltip tooltip={disabled ? undefined : space.name}>
             {(triggerRef) => (
@@ -478,6 +517,21 @@ function SpaceTab({
                 </FocusTrap>
               }
             />
+          )}
+          {createPortal(
+            <MobileContextMenu
+              onClose={() => {
+                setMobileSheetOpen(false);
+              }}
+              isOpen={isMobileSheetOpen}
+            >
+              <SpaceMenu
+                room={space}
+                requestClose={() => setMobileSheetOpen(false)}
+                onUnpin={onUnpin}
+              />
+            </MobileContextMenu>,
+            document.body
           )}
         </SidebarItem>
       )}
