@@ -162,7 +162,7 @@ function MessageNotifications() {
       roomId: string;
       eventId: string;
     }) => {
-      const noti = new window.Notification(roomName, {
+      const noti = new window.Notification(`${username} in ${roomName}`, {
         icon: roomAvatar,
         badge: roomAvatar,
         body: `New inbox notification from ${username}`,
