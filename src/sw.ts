@@ -131,55 +131,52 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   );
 });
 
-const onPushNotification = async (event: PushEvent) => {
-  let title = 'New Notification';
-  const options: NotificationOptions = {
-    body: 'You have a new message!',
+const handlePushNotificationEventData = async (eventData: PushMessageData) => {
+  const pushData = eventData.json();
+  console.log(pushData); // TODO: delete this
+
+  if (typeof pushData.unread === 'number') {
+    try {
+      self.navigator.setAppBadge(pushData.unread);
+    } catch (e) {
+      // Likely Firefox/Gecko-based and doesn't support badging API
+    }
+  } else {
+    await navigator.clearAppBadge();
+  }
+
+  const title = pushData.room_name ?? "New Notification";
+  const sender_display_name = pushData.sender_display_name ?? "Unknown";
+
+  let body = "You have a new message";
+  if (pushData.content.ciphertext) {
+    body = `Encrypted message from ${sender_display_name}`
+  } else if (pushData.content.body) {
+    body = `From ${sender_display_name}: ${pushData.content.body}`;
+  } else {
+    return;
+  }
+
+  self.registration.showNotification(title, {
+    body: body,
     icon: DEFAULT_NOTIFICATION_ICON,
     badge: DEFAULT_NOTIFICATION_BADGE,
     data: {
       url: self.registration.scope,
       timestamp: Date.now(),
+      ...pushData.data,
     },
-    // tag: 'cinny-notification-tag', // Optional: Replaces existing notification with same tag
-    // renotify: true, // Optional: If using tag, renotify will alert user even if tag matches
-    // silent: false, // Optional: Set to true for no sound/vibration. User can also set this.
-  };
+    tag: "Cinny",
+    silent: pushData.silent ?? false,
+  });
+};
 
-  if (event.data) {
-    try {
-      const pushData = event.data.json();
-      title = pushData.title || title;
-      options.body = options.body ?? pushData.data.toString();
-      options.icon = pushData.icon || options.icon;
-      options.badge = pushData.badge || options.badge;
-
-      if (pushData.image) options.image = pushData.image;
-      if (pushData.vibrate) options.vibrate = pushData.vibrate;
-      if (pushData.actions) options.actions = pushData.actions;
-      options.tag = 'Cinny';
-      if (typeof pushData.renotify === 'boolean') options.renotify = pushData.renotify;
-      if (typeof pushData.silent === 'boolean') options.silent = pushData.silent;
-
-      if (pushData.data) {
-        options.data = { ...options.data, ...pushData.data };
-      }
-      if (typeof pushData.unread === 'number') {
-        try {
-          self.navigator.setAppBadge(pushData.unread);
-        } catch (e) {
-          // Likely Firefox/Gecko-based and doesn't support badging API
-        }
-      } else {
-        await navigator.clearAppBadge();
-      }
-    } catch (e) {
-      const pushText = event.data.text();
-      options.body = pushText || options.body;
-    }
+const onPushNotification = async (event: PushEvent) => {
+  if (!event.data) {
+    return;
   }
 
-  return self.registration.showNotification(title, options);
+  handlePushNotificationEventData(event.data);
 };
 
 self.addEventListener('push', (event: PushEvent) => event.waitUntil(onPushNotification(event)));

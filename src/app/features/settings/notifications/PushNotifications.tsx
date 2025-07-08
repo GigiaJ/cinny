@@ -26,8 +26,8 @@ export async function enablePushNotifications(
   const registration = await navigator.serviceWorker.ready;
   const currentBrowserSub = await registration.pushManager.getSubscription();
 
-  /* Self-Healing Check. Effectively checks if the browser has invalidated our subscription and recreates it 
-     only when necessary. This prevents us from needing an external call to get back the web push info. 
+  /* Self-Healing Check. Effectively checks if the browser has invalidated our subscription and recreates it
+     only when necessary. This prevents us from needing an external call to get back the web push info.
   */
   if (currentBrowserSub && pushSubAtom && currentBrowserSub.endpoint === pushSubAtom.endpoint) {
     console.error('Valid saved subscription found. Ensuring pusher is enabled on homeserver...');
@@ -40,7 +40,7 @@ export async function enablePushNotifications(
       lang: navigator.language || 'en',
       data: {
         url: clientConfig.pushNotificationDetails?.pushNotifyUrl,
-        format: 'event_id_only' as const,
+        // format: 'event_id_only' as const,
         endpoint: pushSubAtom.endpoint,
         p256dh: pushSubAtom.keys!.p256dh!,
         auth: pushSubAtom.keys!.auth!,
@@ -80,7 +80,7 @@ export async function enablePushNotifications(
     lang: navigator.language || 'en',
     data: {
       url: clientConfig.pushNotificationDetails?.pushNotifyUrl,
-      format: 'event_id_only' as const,
+      // format: 'event_id_only' as const,
       endpoint: newSubscription.endpoint,
       p256dh: subJson.keys!.p256dh!,
       auth: subJson.keys!.auth!,
