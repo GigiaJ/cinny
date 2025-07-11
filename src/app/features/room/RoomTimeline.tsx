@@ -245,6 +245,10 @@ const useEventTimelineLoader = (
 ) => {
   const loadEventTimeline = useCallback(
     async (eventId: string) => {
+      if (!room.getUnfilteredTimelineSet().getTimelineForEvent(eventId)) {
+        await mx.roomInitialSync(room.roomId, PAGINATION_LIMIT);
+        await mx.getLatestTimeline(room.getUnfilteredTimelineSet());
+      }
       const [err, replyEvtTimeline] = await to(
         mx.getEventTimeline(room.getUnfilteredTimelineSet(), eventId)
       );
@@ -795,12 +799,12 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
     )
   );
 
-  useEffect(() => {
-    if (eventId) {
-      setTimeline(getEmptyTimeline());
-      loadEventTimeline(eventId);
-    }
-  }, [eventId, loadEventTimeline]);
+  useEffect(
+    () => {
+      if (eventId) {
+        handleOpenEvent(eventId);
+      }
+    }, [eventId]);
 
   // Scroll to bottom on initial timeline load
   useLayoutEffect(() => {

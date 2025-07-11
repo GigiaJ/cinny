@@ -135,7 +135,7 @@ const handlePushNotificationEventData = async (eventData: PushMessageData) => {
   const pushData = eventData.json();
   console.log(pushData); // TODO: delete this
 
-  if (typeof pushData.unread === 'number') {
+  if (typeof pushData?.unread === 'number') {
     try {
       self.navigator.setAppBadge(pushData.unread);
     } catch (e) {
@@ -146,15 +146,15 @@ const handlePushNotificationEventData = async (eventData: PushMessageData) => {
   }
 
   let title = undefined;
-  if (pushData.sender_display_name && pushData.room_name) {
+  if (pushData?.sender_display_name && pushData?.room_name) {
     title = `${pushData.sender_display_name} in ${pushData.room_name}`;
   }
   title = title ?? "New Notification";
 
   let body = "You have a new message";
-  if (pushData.content.ciphertext) {
+  if (pushData?.content?.ciphertext) {
     body = `Encrypted message`;
-  } else if (pushData.content.body) {
+  } else if (pushData?.content?.body) {
     body = pushData.content.body;
   } else {
     return;
@@ -167,6 +167,8 @@ const handlePushNotificationEventData = async (eventData: PushMessageData) => {
     data: {
       url: self.registration.scope,
       timestamp: Date.now(),
+      room_id: pushData.room_id,
+      event_id: pushData.event_id,
       ...pushData.data,
     },
     tag: "Cinny",
@@ -187,17 +189,24 @@ self.addEventListener('push', (event: PushEvent) => event.waitUntil(onPushNotifi
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
-  /**
-   * We should likely add a postMessage back to navigate to the room the event is from
-   */
-  // const targetUrl = event.notification.data?.url || self.registration.scope;
-  const targetUrl = `${self.registration.scope}/inbox/notifications/`;
+  const messageData = event.notification.data;
+  const scope = self.registration.scope;
+  const targetUrl = (messageData?.room_id && messageData?.event_id)
+    ? `${scope}to/${messageData.room_id}/${messageData.event_id}`
+    : `${scope}inbox/notifications/`;
+  const postMessageToClient = (client: WindowClient) => {
+    client.postMessage({
+      type: "notificationToRoomEvent",
+      room_id: event.notification.data?.room_id,
+      event_id: event.notification.data?.event_id,
+    });
+  };
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === targetUrl && 'focus' in client) {
-          return (client as WindowClient).focus();
+        if ('focus' in client) {
+          return (client as WindowClient).focus().then(postMessageToClient);
         }
       }
       if (self.clients.openWindow) {
