@@ -141,6 +141,13 @@ const handlePushNotificationEventData = async (eventData: PushMessageData) => {
     } catch (e) {
       // Likely Firefox/Gecko-based and doesn't support badging API
     }
+    if (pushData.unread == 0) {
+      self.registration.getNotifications({ tag: "Cinny" })
+        .then((notifications) => notifications
+          .forEach((notification) => notification.close()));
+      await navigator.clearAppBadge();
+      return;
+    }
   } else {
     await navigator.clearAppBadge();
   }
