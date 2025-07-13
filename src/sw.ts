@@ -1,11 +1,12 @@
 /// <reference lib="WebWorker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { usePushNotifications } from './sw/pushNotification';
+import { EventType } from 'matrix-js-sdk';
 
 export type {};
 declare const self: ServiceWorkerGlobalScope;
 
-const DEFAULT_NOTIFICATION_ICON = '/public/res/apple/apple-touch-icon-180x180.png';
-const DEFAULT_NOTIFICATION_BADGE = '/public/res/apple-touch-icon-72x72.png';
+const { handlePushNotificationPushData } = usePushNotifications(self);
 
 const pendingReplies = new Map();
 let messageIdCounter = 0;
@@ -131,64 +132,33 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   );
 });
 
-const handlePushNotificationEventData = async (eventData: PushMessageData) => {
-  const pushData = eventData.json();
-  console.log(pushData); // TODO: delete this
-
-  if (typeof pushData?.unread === 'number') {
-    try {
-      self.navigator.setAppBadge(pushData.unread);
-    } catch (e) {
-      // Likely Firefox/Gecko-based and doesn't support badging API
-    }
-    if (pushData.unread == 0) {
-      self.registration.getNotifications({ tag: "Cinny" })
-        .then((notifications) => notifications
-          .forEach((notification) => notification.close()));
-      await navigator.clearAppBadge();
-      return;
-    }
-  } else {
-    await navigator.clearAppBadge();
-  }
-
-  let title = undefined;
-  if (pushData?.sender_display_name && pushData?.room_name) {
-    title = `${pushData.sender_display_name} in ${pushData.room_name}`;
-  }
-  title = title ?? "New Notification";
-
-  let body = "You have a new message";
-  if (pushData?.content?.ciphertext) {
-    body = `Encrypted message`;
-  } else if (pushData?.content?.body) {
-    body = pushData.content.body;
-  } else {
-    return;
-  }
-
-  self.registration.showNotification(title, {
-    body: body,
-    icon: DEFAULT_NOTIFICATION_ICON,
-    badge: DEFAULT_NOTIFICATION_BADGE,
-    data: {
-      url: self.registration.scope,
-      timestamp: Date.now(),
-      room_id: pushData.room_id,
-      event_id: pushData.event_id,
-      ...pushData.data,
-    },
-    tag: "Cinny",
-    silent: pushData.silent ?? false,
-  });
-};
 
 const onPushNotification = async (event: PushEvent) => {
-  if (!event.data) {
+  if (!event?.data) {
     return;
   }
+  const pushData = event.data.json();
+  console.log(pushData);
 
-  handlePushNotificationEventData(event.data);
+  try {
+    if (typeof pushData?.unread === 'number') {
+      self.navigator.setAppBadge(pushData.unread);
+
+      if (pushData.unread == 0) {
+        self.registration.getNotifications({ tag: "Cinny" })
+          .then((notifications) => notifications
+            .forEach((notification) => notification.close()));
+        await navigator.clearAppBadge();
+        return;
+      }
+    } else {
+      await navigator.clearAppBadge();
+    }
+  } catch (_) {
+    // Likely Firefox/Gecko-based and doesn't support badging API
+  }
+
+  handlePushNotificationPushData(pushData);
 };
 
 self.addEventListener('push', (event: PushEvent) => event.waitUntil(onPushNotification(event)));
@@ -198,14 +168,26 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
 
   const messageData = event.notification.data;
   const scope = self.registration.scope;
-  const targetUrl = (messageData?.room_id && messageData?.event_id)
-    ? `${scope}to/${messageData.room_id}/${messageData.event_id}`
-    : `${scope}inbox/notifications/`;
+
+  console.log(messageData);
+  const eventType = messageData?.type as (EventType | undefined);
+  if (!eventType) return Promise.resolve();
+
+  let targetUrl: string = `${scope}inbox/`;
+  if (
+    (eventType == EventType.RoomMessage || eventType == EventType.RoomMessageEncrypted) &&
+    messageData?.room_id && messageData?.event_id
+  ) targetUrl = `${scope}to/${messageData.room_id}/${messageData.event_id}`;
+  if (
+    eventType == EventType.RoomMember &&
+    messageData?.content?.membership == "invite"
+  ) targetUrl = `${scope}inbox/invites/`;
+  console.log(`target url = ${targetUrl}`);
+
   const postMessageToClient = (client: WindowClient) => {
     client.postMessage({
       type: "notificationToRoomEvent",
-      room_id: event.notification.data?.room_id,
-      event_id: event.notification.data?.event_id,
+      message: messageData
     });
   };
 

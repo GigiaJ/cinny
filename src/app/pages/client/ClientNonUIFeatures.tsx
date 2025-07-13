@@ -119,6 +119,7 @@ function InviteNotifications() {
   }, []);
 
   useEffect(() => {
+    if (document.visibilityState != "visible") return;
     if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
       if (showNotifications && notificationPermission('granted')) {
         notify(invites.length - perviousInviteLen);
@@ -267,29 +268,34 @@ function MessageNotifications() {
 
 function HandleNotificationClick() {
   const { navigateRoom } = useRoomNavigate();
+  const navigate = useNavigate();
 
   const handleNotificationClickEvent = (event: any) => {
     if (
       !event.data ||
       !event.source
-    ) {
-      return;
-    }
+    ) return;
     const eventData = event.data;
-    if (
-      !(eventData.type == "notificationToRoomEvent") ||
-      !eventData.room_id ||
-      !eventData.event_id
-    ) {
-      return;
-    }
+    if (!(eventData?.type == "notificationToRoomEvent")) return;
+    const messageData = eventData?.message;
+    if (!messageData) navigate(getInboxNotificationsPath());
 
-    console.log("main thread received notification click event:");
-    console.log(event);
-    navigateRoom(eventData.room_id, eventData.event_id);
+    const eventType = messageData!.type as EventType;
+    switch (eventType) {
+      case EventType.RoomMessage:
+      case EventType.RoomMessageEncrypted:
+        navigateRoom(messageData!.room_id, messageData!.event_id);
+        return;
+      case EventType.RoomMember:
+        if (!(messageData?.content?.membership == "invite")) return;
+        navigate(getInboxInvitesPath());
+        return;
+      default:
+        return;
+    }
   };
 
-  useEffect( () => {
+  useEffect(() => {
     navigator.serviceWorker.addEventListener("message", handleNotificationClickEvent);
     console.log("notification click event is listening on main thread");
     return () => {
