@@ -94,6 +94,7 @@ function InviteNotifications() {
 
   const navigate = useNavigate();
   const [showNotifications] = useSetting(settingsAtom, 'useInAppNotifications');
+  const [usePushNotifications] = useSetting(settingsAtom, 'usePushNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
 
   const notify = useCallback(
@@ -119,7 +120,7 @@ function InviteNotifications() {
   }, []);
 
   useEffect(() => {
-    if (document.visibilityState != "visible") return;
+    if (usePushNotifications && document.visibilityState != "visible") return;
     if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
       if (showNotifications && notificationPermission('granted')) {
         notify(invites.length - perviousInviteLen);
@@ -129,7 +130,16 @@ function InviteNotifications() {
         playSound();
       }
     }
-  }, [mx, invites, perviousInviteLen, showNotifications, notificationSound, notify, playSound]);
+  }, [
+    mx,
+    invites,
+    perviousInviteLen,
+    showNotifications,
+    usePushNotifications,
+    notificationSound,
+    notify,
+    playSound
+  ]);
 
   return (
     // eslint-disable-next-line jsx-a11y/media-has-caption
@@ -146,6 +156,7 @@ function MessageNotifications() {
   const mx = useMatrixClient();
   const useAuthentication = useMediaAuthentication();
   const [showNotifications] = useSetting(settingsAtom, 'useInAppNotifications');
+  const [usePushNotifications] = useSetting(settingsAtom, 'usePushNotifications');
   const [notificationSound] = useSetting(settingsAtom, 'isNotificationSounds');
 
   const navigate = useNavigate();
@@ -197,7 +208,7 @@ function MessageNotifications() {
       data
     ) => {
       if (mx.getSyncState() !== 'SYNCING') return;
-      if (document.visibilityState != "visible") return;
+      if (usePushNotifications && document.visibilityState != "visible") return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
 
       if (
@@ -252,6 +263,7 @@ function MessageNotifications() {
     notificationSound,
     notificationSelected,
     showNotifications,
+    usePushNotifications,
     playSound,
     notify,
     selectedRoomId,
