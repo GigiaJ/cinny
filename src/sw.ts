@@ -1,7 +1,7 @@
 /// <reference lib="WebWorker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { usePushNotifications } from './sw/pushNotification';
-import { EventType } from 'matrix-js-sdk';
+import { EventType } from "matrix-js-sdk/lib/@types/event";
 
 export type {};
 declare const self: ServiceWorkerGlobalScope;

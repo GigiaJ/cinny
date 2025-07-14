@@ -1,4 +1,4 @@
-import { EventType } from "matrix-js-sdk";
+import { EventType } from "matrix-js-sdk/lib/@types/event";
 
 const DEFAULT_NOTIFICATION_ICON = '/public/res/apple/apple-touch-icon-180x180.png';
 const DEFAULT_NOTIFICATION_BADGE = '/public/res/apple-touch-icon-72x72.png';
