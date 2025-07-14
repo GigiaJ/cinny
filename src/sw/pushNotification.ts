@@ -9,13 +9,13 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
     title: string,
     body: string,
     data: any,
-    silent: boolean = false
+    silent: boolean | null = null
   ) => {
     await self.registration.showNotification(title, {
       body,
       icon: DEFAULT_NOTIFICATION_ICON,
       badge: DEFAULT_NOTIFICATION_BADGE,
-      tag: "Cinny",
+      tag: data?.event_id ?? "Cinny",
       silent,
       data
     });

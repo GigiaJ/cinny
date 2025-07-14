@@ -145,7 +145,7 @@ const onPushNotification = async (event: PushEvent) => {
       self.navigator.setAppBadge(pushData.unread);
 
       if (pushData.unread == 0) {
-        self.registration.getNotifications({ tag: "Cinny" })
+        self.registration.getNotifications()
           .then((notifications) => notifications
             .forEach((notification) => notification.close()));
         await navigator.clearAppBadge();
@@ -158,7 +158,7 @@ const onPushNotification = async (event: PushEvent) => {
     // Likely Firefox/Gecko-based and doesn't support badging API
   }
 
-  handlePushNotificationPushData(pushData);
+  await handlePushNotificationPushData(pushData);
 };
 
 self.addEventListener('push', (event: PushEvent) => event.waitUntil(onPushNotification(event)));
