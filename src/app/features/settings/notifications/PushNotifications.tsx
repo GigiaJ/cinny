@@ -41,6 +41,7 @@ export async function enablePushNotifications(
       data: {
         url: clientConfig.pushNotificationDetails?.pushNotifyUrl,
         // format: 'event_id_only' as const,
+        events_only: true,
         endpoint: pushSubAtom.endpoint,
         p256dh: pushSubAtom.keys!.p256dh!,
         auth: pushSubAtom.keys!.auth!,

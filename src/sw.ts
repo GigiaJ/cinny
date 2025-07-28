@@ -140,23 +140,23 @@ const onPushNotification = async (event: PushEvent) => {
   const pushData = event.data.json();
   console.log(pushData);
 
-  try {
-    if (typeof pushData?.unread === 'number') {
-      self.navigator.setAppBadge(pushData.unread);
-
-      if (pushData.unread == 0) {
-        self.registration.getNotifications()
-          .then((notifications) => notifications
-            .forEach((notification) => notification.close()));
-        await navigator.clearAppBadge();
-        return;
-      }
-    } else {
-      await navigator.clearAppBadge();
-    }
-  } catch (_) {
-    // Likely Firefox/Gecko-based and doesn't support badging API
-  }
+  // try {
+  //   if (typeof pushData?.unread === 'number') {
+  //     self.navigator.setAppBadge(pushData.unread);
+  //
+  //     if (pushData.unread == 0) {
+  //       self.registration.getNotifications()
+  //         .then((notifications) => notifications
+  //           .forEach((notification) => notification.close()));
+  //       await navigator.clearAppBadge();
+  //       return;
+  //     }
+  //   } else {
+  //     await navigator.clearAppBadge();
+  //   }
+  // } catch (_) {
+  //   // Likely Firefox/Gecko-based and doesn't support badging API
+  // }
 
   await handlePushNotificationPushData(pushData);
 };
