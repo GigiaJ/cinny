@@ -81,14 +81,14 @@ function FaviconUpdater() {
     }
     try {
       navigator.setAppBadge(total);
+      if (usePushNotifications && total === 0) {
+        registration.getNotifications()
+          .then((pushNotifications) => pushNotifications
+            .forEach((pushNotification) => pushNotification.close()));
+        navigator.clearAppBadge();
+      }
     } catch (e) {
       // Likely Firefox/Gecko-based and doesn't support badging API
-    }
-    if (usePushNotifications && total === 0) {
-      registration.getNotifications()
-        .then((pushNotifications) => pushNotifications
-          .forEach((pushNotification) => pushNotification.close()));
-      navigator.clearAppBadge();
     }
   }, [roomToUnread, usePushNotifications, registration]);
 
