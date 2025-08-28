@@ -1,3 +1,4 @@
+/* eslint-disable camelcase */
 import { EventType } from "matrix-js-sdk/lib/@types/event";
 
 const DEFAULT_NOTIFICATION_ICON = '/public/res/apple/apple-touch-icon-180x180.png';
@@ -79,28 +80,35 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
     )
   };
 
+  const fallbackNotification = async () => {
+    await self.registration.showNotification("You have a new notification", {
+      icon: DEFAULT_NOTIFICATION_ICON,
+      badge: DEFAULT_NOTIFICATION_BADGE,
+      tag: "Cinny",
+    });
+  };
+
   const handlePushNotificationPushData = async (pushData: any) => {
     const eventType = pushData?.type as (EventType | undefined);
     if (!eventType) {
-      console.log("no event type");
-      return;
+      console.warn("no event type");
     }
 
     switch (eventType) {
       case EventType.RoomMessage:
-        await handleRoomMessageNotification(pushData);
-        return;
+        return handleRoomMessageNotification(pushData);
       case EventType.RoomMessageEncrypted:
-        await handleEncryptedMessageNotification(pushData);
-        return;
+        return handleEncryptedMessageNotification(pushData);
       case EventType.RoomMember:
-        if (!(pushData?.content?.membership == "invite")) return;
-        await handleInvitationNotification(pushData);
-        return;
+        if (!(pushData?.content?.membership === "invite")) break;
+        return handleInvitationNotification(pushData);
+
       default:
         // no voip support in app anyway
         return;
     }
+
+    return fallbackNotification();
   };
 
   return { handlePushNotificationPushData };

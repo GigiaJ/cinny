@@ -1,7 +1,7 @@
 /// <reference lib="WebWorker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
-import { usePushNotifications } from './sw/pushNotification';
 import { EventType } from "matrix-js-sdk/lib/@types/event";
+import { usePushNotifications } from './sw/pushNotification';
 
 export type {};
 declare const self: ServiceWorkerGlobalScope;
@@ -204,6 +204,8 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
       return Promise.resolve();
     })
   );
+
+  return Promise.resolve();
 });
 
 if (self.__WB_MANIFEST) {
