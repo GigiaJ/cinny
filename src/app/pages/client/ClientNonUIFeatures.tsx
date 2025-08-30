@@ -1,7 +1,7 @@
 import { useAtomValue } from 'jotai';
 import React, { ReactNode, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
+import { EventType, RoomEvent, RoomEventHandlerMap } from 'matrix-js-sdk';
 import { roomToUnreadAtom, unreadEqual, unreadInfoToUnread } from '../../state/room/roomToUnread';
 import LogoSVG from '../../../../public/res/svg/cinny.svg';
 import LogoUnreadSVG from '../../../../public/res/svg/cinny-unread.svg';
@@ -129,7 +129,7 @@ function InviteNotifications() {
   }, []);
 
   useEffect(() => {
-    if (usePushNotifications && document.visibilityState != "visible") return;
+    if (usePushNotifications && document.visibilityState !== "visible") return;
     if (invites.length > perviousInviteLen && mx.getSyncState() === 'SYNCING') {
       if (showNotifications && notificationPermission('granted')) {
         notify(invites.length - perviousInviteLen);
@@ -217,7 +217,7 @@ function MessageNotifications() {
       data
     ) => {
       if (mx.getSyncState() !== 'SYNCING') return;
-      if (usePushNotifications && document.visibilityState != "visible") return;
+      if (usePushNotifications && document.visibilityState !== "visible") return;
       if (document.hasFocus() && (selectedRoomId === room?.roomId || notificationSelected)) return;
 
       if (
@@ -291,38 +291,37 @@ function HandleNotificationClick() {
   const { navigateRoom } = useRoomNavigate();
   const navigate = useNavigate();
 
-  const handleNotificationClickEvent = (event: any) => {
-    if (
-      !event.data ||
-      !event.source
-    ) return;
-    const eventData = event.data;
-    if (!(eventData?.type == "notificationToRoomEvent")) return;
-    const messageData = eventData?.message;
-    if (!messageData) navigate(getInboxNotificationsPath());
-
-    const eventType = messageData!.type as EventType;
-    switch (eventType) {
-      case EventType.RoomMessage:
-      case EventType.RoomMessageEncrypted:
-        navigateRoom(messageData!.room_id, messageData!.event_id);
-        return;
-      case EventType.RoomMember:
-        if (!(messageData?.content?.membership == "invite")) return;
-        navigate(getInboxInvitesPath());
-        return;
-      default:
-        return;
-    }
-  };
-
   useEffect(() => {
+    const handleNotificationClickEvent = (event: any) => {
+      if (
+        !event.data ||
+        !event.source
+      ) return;
+      const eventData = event.data;
+      if (!(eventData?.type === "notificationToRoomEvent")) return;
+      const messageData = eventData?.message;
+      if (!messageData) navigate(getInboxNotificationsPath());
+
+      const eventType = messageData!.type as EventType;
+      switch (eventType) {
+        case EventType.RoomMessage:
+        case EventType.RoomMessageEncrypted:
+          navigateRoom(messageData!.room_id, messageData!.event_id);
+          return;
+        case EventType.RoomMember:
+          if (!(messageData?.content?.membership === "invite")) return;
+          navigate(getInboxInvitesPath());
+          break;
+        default:
+          break;
+      }
+    };
+
     navigator.serviceWorker.addEventListener("message", handleNotificationClickEvent);
-    console.log("notification click event is listening on main thread");
     return () => {
       navigator.serviceWorker.removeEventListener("message", handleNotificationClickEvent);
     }
-  }, [navigateRoom]);
+  }, [navigate, navigateRoom]);
 
   return null;
 }

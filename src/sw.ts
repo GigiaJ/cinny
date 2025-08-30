@@ -3,7 +3,7 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { EventType } from "matrix-js-sdk/lib/@types/event";
 import { usePushNotifications } from './sw/pushNotification';
 
-export type {};
+export type { };
 declare const self: ServiceWorkerGlobalScope;
 
 const { handlePushNotificationPushData } = usePushNotifications(self);
@@ -126,7 +126,7 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     })()
   );
   event.waitUntil(
-    (async function () {
+    (async function() {
       console.log('Ensuring fetch processing completes before worker termination.');
     })()
   );
@@ -167,20 +167,20 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
   const messageData = event.notification.data;
-  const scope = self.registration.scope;
+  const { scope } = self.registration;
 
   console.log(messageData);
   const eventType = messageData?.type as (EventType | undefined);
   if (!eventType) return Promise.resolve();
 
-  let targetUrl: string = `${scope}inbox/`;
+  let targetUrl = `${scope}inbox/`;
   if (
-    (eventType == EventType.RoomMessage || eventType == EventType.RoomMessageEncrypted) &&
+    (eventType === EventType.RoomMessage || eventType === EventType.RoomMessageEncrypted) &&
     messageData?.room_id && messageData?.event_id
   ) targetUrl = `${scope}to/${messageData.room_id}/${messageData.event_id}`;
   if (
-    eventType == EventType.RoomMember &&
-    messageData?.content?.membership == "invite"
+    eventType === EventType.RoomMember &&
+    messageData?.content?.membership === "invite"
   ) targetUrl = `${scope}inbox/invites/`;
   console.log(`target url = ${targetUrl}`);
 

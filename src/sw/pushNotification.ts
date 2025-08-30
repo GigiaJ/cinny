@@ -56,7 +56,7 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
     const sender_display_name = pushData?.sender_display_name;
     const room_name = pushData?.room_name;
 
-    let body: string = "";
+    let body = "";
     if (sender_display_name && room_name)
       body = `${sender_display_name} invites you to ${room_name}`;
     if (sender_display_name && !room_name)
