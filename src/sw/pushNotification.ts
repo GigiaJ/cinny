@@ -8,7 +8,7 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
 
   const showNotificationWithData = async (
     title: string,
-    body: string,
+    body: string | undefined,
     data: any,
     silent: boolean | null = null
   ) => {
@@ -80,12 +80,24 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
     )
   };
 
-  const fallbackNotification = async () => {
-    await self.registration.showNotification("You have a new notification", {
-      icon: DEFAULT_NOTIFICATION_ICON,
-      badge: DEFAULT_NOTIFICATION_BADGE,
-      tag: "Cinny",
-    });
+  const fallbackNotification = async (pushData: any) => {
+    const body = pushData?.content?.body;
+    let title;
+    if (body) {
+      title = pushData?.sender_display_name
+        ? `${pushData.sender_display_name}${pushData?.room_name ? ` in ${pushData.room_name}` : ''}`
+        : "New Notification";
+    } else {
+      title = "You have a new Notification";
+    }
+    const data = {
+      type: pushData?.type,
+      room_id: pushData?.room_id,
+      event_id: pushData?.event_id,
+      timestamp: Date.now(),
+      ...pushData.data
+    };
+    await showNotificationWithData(title, body, data, pushData.silent ?? false);
   };
 
   const handlePushNotificationPushData = async (pushData: any) => {
@@ -96,6 +108,7 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
 
     switch (eventType) {
       case EventType.RoomMessage:
+      case EventType.Sticker:
         return handleRoomMessageNotification(pushData);
       case EventType.RoomMessageEncrypted:
         return handleEncryptedMessageNotification(pushData);
@@ -108,7 +121,7 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
         break;
     }
 
-    return fallbackNotification();
+    return fallbackNotification(pushData);
   };
 
   return { handlePushNotificationPushData };
