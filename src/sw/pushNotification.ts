@@ -105,7 +105,7 @@ export const usePushNotifications = (self: ServiceWorkerGlobalScope) => {
 
       default:
         // no voip support in app anyway
-        return;
+        break;
     }
 
     return fallbackNotification();
