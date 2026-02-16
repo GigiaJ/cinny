@@ -1,12 +1,36 @@
-import cons from './cons';
+import { Session, Sessions } from '../../app/state/sessions';
 
-const isAuthenticated = () => localStorage.getItem(cons.secretKey.ACCESS_TOKEN) !== null;
+/*
+ * Transition code for moving to the multi-account session storage solution
+ */
 
-const getSecret = () => ({
-  accessToken: localStorage.getItem(cons.secretKey.ACCESS_TOKEN),
-  deviceId: localStorage.getItem(cons.secretKey.DEVICE_ID),
-  userId: localStorage.getItem(cons.secretKey.USER_ID),
-  baseUrl: localStorage.getItem(cons.secretKey.BASE_URL),
-});
+const getActiveSession = (): Session | null => {
+  const sessionsJSON = localStorage.getItem('matrixSessions');
+  if (!sessionsJSON) {
+    return null;
+  }
+  try {
+    const sessions = JSON.parse(sessionsJSON) as Sessions;
+    return sessions[0] || null;
+  } catch (e) {
+    console.error('Failed to parse matrixSessions from localStorage', e);
+    return null;
+  }
+};
+
+const isAuthenticated = (): boolean => {
+  const session = getActiveSession();
+  return !!session?.accessToken;
+};
+
+const getSecret = () => {
+  const session = getActiveSession();
+  return {
+    accessToken: session?.accessToken,
+    deviceId: session?.deviceId,
+    userId: session?.userId,
+    baseUrl: session?.baseUrl,
+  };
+};
 
 export { isAuthenticated, getSecret };

@@ -174,9 +174,9 @@ export function ClientRoot({ children }: ClientRootProps) {
   useSyncState(
     mx,
     useCallback((state) => {
-      if (state === 'PREPARED') {
+//      if (state === 'PREPARED') {
         setLoading(false);
-      }
+//      }
     }, [])
   );
   return (
@@ -204,7 +204,7 @@ export function ClientRoot({ children }: ClientRootProps) {
           </Box>
         </SplashScreen>
       )}
-      {loading || !mx ? (
+      {!mx ? (
         <ClientRootLoading />
       ) : (
         <MatrixClientProvider value={mx}>

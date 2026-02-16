@@ -57,6 +57,12 @@ export const useEditor = (): Editor => {
   return editor;
 };
 
+type DOMBeforeInputEvent = React.FormEvent<HTMLDivElement> & {
+  inputType: string;
+  data: string | null;
+  isComposing: boolean;
+};
+
 export type EditorChangeHandler = (value: Descendant[]) => void;
 type CustomEditorProps = {
   editableName?: string;
@@ -71,6 +77,7 @@ type CustomEditorProps = {
   onKeyUp?: KeyboardEventHandler;
   onChange?: EditorChangeHandler;
   onPaste?: ClipboardEventHandler;
+  onDOMBeforeInput?: (event: DOMBeforeInputEvent) => void;
 };
 export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
   (
@@ -87,6 +94,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       onKeyUp,
       onChange,
       onPaste,
+      onDOMBeforeInput,
     },
     ref
   ) => {
@@ -106,22 +114,17 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
       [editor, onKeyDown]
     );
 
-    const renderPlaceholder = useCallback(({ attributes, children }: RenderPlaceholderProps) => {
-      // drop style attribute as we use our custom placeholder css.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { style, ...props } = attributes;
-      return (
-        <Text
-          as="span"
-          {...props}
-          className={css.EditorPlaceholder}
-          contentEditable={false}
-          truncate
-        >
-          {children}
-        </Text>
-      );
-    }, []);
+    const renderPlaceholder = useCallback(
+      ({ attributes, children }: RenderPlaceholderProps) => (
+        <span {...attributes} className={css.EditorPlaceholderContainer}>
+          {/* Inner component to style the actual text position and appearance */}
+          <Text as="span" className={css.EditorPlaceholderTextVisual} truncate>
+            {children}
+          </Text>
+        </span>
+      ),
+      []
+    );
 
     return (
       <div className={css.Editor} ref={ref}>
@@ -151,6 +154,7 @@ export const CustomEditor = forwardRef<HTMLDivElement, CustomEditorProps>(
                 onKeyDown={handleKeydown}
                 onKeyUp={onKeyUp}
                 onPaste={onPaste}
+                onDOMBeforeInput={onDOMBeforeInput}
               />
             </Scroll>
             {after && (
