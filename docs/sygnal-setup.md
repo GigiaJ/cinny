@@ -128,7 +128,7 @@ apps:
     # This path is *inside the container*. We will map our generated key to it.
     vapid_private_key: /data/private_key.pem
     # An email for VAPID contact details
-    vapid_contact_email: mailto:your-email@your-domain.com
+    vapid_contact_email: your-email@your-domain.com
 ```
 
 #### 3.3. Caddy Configuration (`Caddyfile`)

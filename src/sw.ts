@@ -1,11 +1,12 @@
 /// <reference lib="WebWorker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
+import { EventType } from "matrix-js-sdk/lib/@types/event";
+import { usePushNotifications } from './sw/pushNotification';
 
-export type {};
+export type { };
 declare const self: ServiceWorkerGlobalScope;
 
-const DEFAULT_NOTIFICATION_ICON = '/public/res/apple/apple-touch-icon-180x180.png';
-const DEFAULT_NOTIFICATION_BADGE = '/public/res/apple-touch-icon-72x72.png';
+const { handlePushNotificationPushData } = usePushNotifications(self);
 
 const pendingReplies = new Map();
 let messageIdCounter = 0;
@@ -125,61 +126,39 @@ self.addEventListener('fetch', (event: FetchEvent) => {
     })()
   );
   event.waitUntil(
-    (async function () {
+    (async function() {
       console.log('Ensuring fetch processing completes before worker termination.');
     })()
   );
 });
 
+
 const onPushNotification = async (event: PushEvent) => {
-  let title = 'New Notification';
-  const options: NotificationOptions = {
-    body: 'You have a new message!',
-    icon: DEFAULT_NOTIFICATION_ICON,
-    badge: DEFAULT_NOTIFICATION_BADGE,
-    data: {
-      url: self.registration.scope,
-      timestamp: Date.now(),
-    },
-    // tag: 'cinny-notification-tag', // Optional: Replaces existing notification with same tag
-    // renotify: true, // Optional: If using tag, renotify will alert user even if tag matches
-    // silent: false, // Optional: Set to true for no sound/vibration. User can also set this.
-  };
-
-  if (event.data) {
-    try {
-      const pushData = event.data.json();
-      title = pushData.title || title;
-      options.body = options.body ?? pushData.data.toString();
-      options.icon = pushData.icon || options.icon;
-      options.badge = pushData.badge || options.badge;
-
-      if (pushData.image) options.image = pushData.image;
-      if (pushData.vibrate) options.vibrate = pushData.vibrate;
-      if (pushData.actions) options.actions = pushData.actions;
-      options.tag = 'Cinny';
-      if (typeof pushData.renotify === 'boolean') options.renotify = pushData.renotify;
-      if (typeof pushData.silent === 'boolean') options.silent = pushData.silent;
-
-      if (pushData.data) {
-        options.data = { ...options.data, ...pushData.data };
-      }
-      if (typeof pushData.unread === 'number') {
-        try {
-          self.navigator.setAppBadge(pushData.unread);
-        } catch (e) {
-          // Likely Firefox/Gecko-based and doesn't support badging API
-        }
-      } else {
-        await navigator.clearAppBadge();
-      }
-    } catch (e) {
-      const pushText = event.data.text();
-      options.body = pushText || options.body;
-    }
+  if (!event?.data) {
+    return;
   }
+  const pushData = event.data.json();
+  console.log(pushData);
 
-  return self.registration.showNotification(title, options);
+  // try {
+  //   if (typeof pushData?.unread === 'number') {
+  //     self.navigator.setAppBadge(pushData.unread);
+  //
+  //     if (pushData.unread == 0) {
+  //       self.registration.getNotifications()
+  //         .then((notifications) => notifications
+  //           .forEach((notification) => notification.close()));
+  //       await navigator.clearAppBadge();
+  //       return;
+  //     }
+  //   } else {
+  //     await navigator.clearAppBadge();
+  //   }
+  // } catch (_) {
+  //   // Likely Firefox/Gecko-based and doesn't support badging API
+  // }
+
+  await handlePushNotificationPushData(pushData);
 };
 
 self.addEventListener('push', (event: PushEvent) => event.waitUntil(onPushNotification(event)));
@@ -187,16 +166,36 @@ self.addEventListener('push', (event: PushEvent) => event.waitUntil(onPushNotifi
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
 
-  /**
-   * We should likely add a postMessage back to navigate to the room the event is from
-   */
-  const targetUrl = event.notification.data?.url || self.registration.scope;
+  const messageData = event.notification.data;
+  const { scope } = self.registration;
+
+  console.log(messageData);
+  const eventType = messageData?.type as (EventType | undefined);
+  if (!eventType) return Promise.resolve();
+
+  let targetUrl = `${scope}inbox/`;
+  if (
+    (eventType === EventType.RoomMessage || eventType === EventType.RoomMessageEncrypted) &&
+    messageData?.room_id && messageData?.event_id
+  ) targetUrl = `${scope}to/${messageData.room_id}/${messageData.event_id}`;
+  if (
+    eventType === EventType.RoomMember &&
+    messageData?.content?.membership === "invite"
+  ) targetUrl = `${scope}inbox/invites/`;
+  console.log(`target url = ${targetUrl}`);
+
+  const postMessageToClient = (client: WindowClient) => {
+    client.postMessage({
+      type: "notificationToRoomEvent",
+      message: messageData
+    });
+  };
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === targetUrl && 'focus' in client) {
-          return (client as WindowClient).focus();
+        if ('focus' in client) {
+          return (client as WindowClient).focus().then(postMessageToClient);
         }
       }
       if (self.clients.openWindow) {
@@ -205,6 +204,8 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
       return Promise.resolve();
     })
   );
+
+  return Promise.resolve();
 });
 
 if (self.__WB_MANIFEST) {

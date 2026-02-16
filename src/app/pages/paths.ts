@@ -83,6 +83,9 @@ export type InboxNotificationsPathSearchParams = {
 export const INBOX_NOTIFICATIONS_PATH = `/inbox/${_NOTIFICATIONS_PATH}`;
 export const INBOX_INVITES_PATH = `/inbox/${_INVITES_PATH}`;
 
+export const _TO_PATH = '/to';
+export const TO_ROOM_EVENT_PATH = `${_TO_PATH}/:room_id/:event_id?`;
+
 export const SPACE_SETTINGS_PATH = '/space-settings/';
 
 export const ROOM_SETTINGS_PATH = '/room-settings/';
