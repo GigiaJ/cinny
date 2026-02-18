@@ -12,6 +12,7 @@ import { createEmoticonElement, moveCursor, replaceWithElement } from '../utils'
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
 import { useRelevantImagePacks } from '../../../hooks/useImagePacks';
 import { IEmoji, emojis } from '../../../plugins/emoji';
+import { isKeyHotkey } from 'is-hotkey';
 import { useKeyDown } from '../../../hooks/useKeyDown';
 import { mxcUrlToHttp } from '../../../utils/matrix';
 import { useMediaAuthentication } from '../../../hooks/useMediaAuthentication';
@@ -74,14 +75,17 @@ export function EmoticonAutocomplete({
     requestClose();
   };
 
-  useKeyDown(window, (evt: KeyboardEvent) => {
-    onTabPress(evt, () => {
-      if (autoCompleteEmoticon.length === 0) return;
-      const emoticon = autoCompleteEmoticon[0];
-      const key = 'url' in emoticon ? emoticon.url : emoticon.unicode;
-      handleAutocomplete(key, emoticon.shortcode);
-    });
-  });
+    useKeyDown(window, (evt: KeyboardEvent) => {
+        const isTab = isKeyHotkey('tab', evt);
+        const isEnter = isKeyHotkey('enter', evt);
+
+        if ((isTab || isEnter) && autoCompleteEmoticon.length > 0) {
+            const emoticon = autoCompleteEmoticon[0];
+            const key = 'url' in emoticon ? emoticon.url : emoticon.unicode;
+            handleAutocomplete(key, emoticon.shortcode);
+        }
+    })
+
 
   return autoCompleteEmoticon.length === 0 ? null : (
     <AutocompleteMenu headerContent={<Text size="L400">Emojis</Text>} requestClose={requestClose}>
