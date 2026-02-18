@@ -67,10 +67,13 @@ export const readyServiceWorker = () => {
       }
 
       if (event.data.type === 'token' && event.data.id) {
-        const token = getActiveSessionFromStorage().accessToken ?? undefined;
+        const session = getActiveSessionFromStorage()
         event.source.postMessage({
-          replyTo: event.data.id,
-          payload: token,
+            replyTo: event.data.id,
+            payload: {
+           token: session.accessToken ?? undefined,
+           homeserverUrl: session?.baseUrl ?? undefined,
+            },
         });
       } else if (event.data.type === 'openRoom' && event.data.id) {
         /* Example:

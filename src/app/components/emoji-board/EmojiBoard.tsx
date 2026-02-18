@@ -386,8 +386,8 @@ function ImagePackSidebarStack({
                 objectFit: 'contain',
               }}
               src={
-                mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ||
-                pack.meta.avatar
+                mxcUrlToHttp(mx, pack.getAvatarUrl(usage) ?? '', useAuthentication) ??
+                undefined
               }
               alt={label || 'Unknown Pack'}
             />
@@ -550,7 +550,7 @@ export const CustomEmojiGroups = memo(
                   loading="lazy"
                   className={css.CustomEmojiImg}
                   alt={image.body || image.shortcode}
-                  src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? image.url}
+                  src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? undefined}
                 />
               </EmojiItem>
             ))}
@@ -605,7 +605,7 @@ export const StickerGroups = memo(
                   loading="lazy"
                   className={css.StickerImg}
                   alt={image.body || image.shortcode}
-                  src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? image.url}
+                  src={mxcUrlToHttp(mx, image.url, useAuthentication) ?? undefined}
                 />
               </StickerItem>
             ))}

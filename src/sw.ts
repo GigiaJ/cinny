@@ -1,6 +1,8 @@
 /// <reference lib="WebWorker" />
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 
+let trustedHomeserverUrl: string | null = null;
+
 export type {};
 declare const self: ServiceWorkerGlobalScope;
 
@@ -16,8 +18,17 @@ function sendAndWaitForReply(client: WindowClient, type: string, payload: object
     pendingReplies.set(id, resolve);
   });
   client.postMessage({ type, id, payload });
+  
   return promise;
 }
+
+function validMediaRequest(url: string, baseUrl: string): boolean {
+        const downloadUrl = new URL('/_matrix/client/v1/media/download', baseUrl);
+        const thumbnailUrl = new URL('/_matrix/client/v1/media/thumbnail', baseUrl);
+
+        return url.startsWith(downloadUrl.href) || url.startsWith(thumbnailUrl.href);
+    }
+
 
 async function fetchWithRetry(
   url: string,
@@ -30,7 +41,7 @@ async function fetchWithRetry(
   /*  eslint-disable no-await-in-loop */
   for (let attempt = 1; attempt <= retries; attempt += 1) {
     try {
-      const response = await fetch(url, {
+        const response = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -58,6 +69,7 @@ async function fetchWithRetry(
   throw new Error(`Fetch failed after ${retries} retries. Last error: ${lastError?.message}`);
 }
 
+
 function fetchConfig(token?: string): RequestInit | undefined {
   if (!token) return undefined;
 
@@ -71,7 +83,9 @@ function fetchConfig(token?: string): RequestInit | undefined {
 
 self.addEventListener('message', (event: ExtendableMessageEvent) => {
   if (event.data.type === 'togglePush') {
-    const token = event.data?.token;
+    const token = event?.data?.token;
+      //   const homeServer = payload?.homeServerUrl;
+
     const fetchOptions = fetchConfig(token);
     event.waitUntil(
       fetch(`${event.data.url}/_matrix/client/v3/pushers/set`, {
@@ -118,7 +132,10 @@ self.addEventListener('fetch', (event: FetchEvent) => {
       if (!event.clientId) throw new Error('Missing clientId');
       const client = await self.clients.get(event.clientId);
       if (!client) throw new Error('Client not found');
-      const token = await sendAndWaitForReply(client, 'token', {});
+
+
+     const { token, homeserverUrl } = await sendAndWaitForReply(client, 'token', {})
+        validMediaRequest(url, homeserverUrl);
       if (!token) throw new Error('Failed to retrieve token');
       const response = await fetchWithRetry(url, token);
       return response;
